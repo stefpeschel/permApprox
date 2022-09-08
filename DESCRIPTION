@@ -1,0 +1,17 @@
+Package: permpap
+Type: Package
+Title: Permutation p-Value Approximation
+Version: 0.1.0
+Author: Stefanie Peschel [aut, cre]
+Maintainer: Stefanie Peschel <stefpeschel@gmail.com>
+Description: Approximate p-values in permutation tests 
+  while strictly avoiding p-values of zero.
+License: GPL-3 + file LICENSE
+Imports:
+  evir,
+  fitdistrplus,
+  goftest,
+  Rdpack
+RdMacros: Rdpack
+Encoding: UTF-8
+RoxygenNote: 7.2.0

@@ -19,6 +19,8 @@
 
 # RStudio files
 .Rproj.user/
+permpap.Rproj
+.Rbuildignore
 
 # produced vignettes
 vignettes/*.html
