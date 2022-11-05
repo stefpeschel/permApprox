@@ -7,7 +7,7 @@
 gpd_WNLLSM(
   x,
   maxX = NULL,
-  eps = 1e-08,
+  eps = 0,
   method = "WNLLSM",
   optimTol = 1e-08,
   shapeIni = 0.01,

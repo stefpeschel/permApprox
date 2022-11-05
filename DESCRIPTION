@@ -10,8 +10,9 @@ License: GPL-3 + file LICENSE
 Imports:
   evir,
   fitdistrplus,
+  foreach,
   goftest,
   Rdpack
 RdMacros: Rdpack
 Encoding: UTF-8
-RoxygenNote: 7.2.0
+RoxygenNote: 7.2.1
