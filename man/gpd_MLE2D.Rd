@@ -9,7 +9,7 @@ gpd_MLE2D(
   maxX = NULL,
   eps = 0,
   optimMethod = "Nelder-Mead",
-  optimTol = 1e-08,
+  tol = 1e-08,
   shapeIni = NULL,
   scaleIni = NULL,
   shapeMin = -Inf,
@@ -31,7 +31,7 @@ so that the GPD density is non-zero at maxX + eps.}
 
 \item{optimMethod}{character defining the optimization method.}
 
-\item{optimTol}{numeric giving the desired accuracy of the optimization
+\item{tol}{numeric giving the desired accuracy of the optimization
 process.}
 
 \item{shapeIni, scaleIni}{initial values for the shape and scale parameters,

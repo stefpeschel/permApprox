@@ -11,7 +11,7 @@
 #' @param eps numeric. Optional small epsilon, which is added to \code{maxX}
 #'   so that the GPD density is non-zero at maxX + eps.
 #' @param optimMethod character defining the optimization method.
-#' @param optimTol numeric giving the desired accuracy of the optimization
+#' @param tol numeric giving the desired accuracy of the optimization
 #'   process.
 #' @param shapeIni,scaleIni initial values for the shape and scale parameters,
 #'   i.e., values where the optimization starts.
@@ -27,7 +27,7 @@ gpd_MLE2D <- function(x,
                       maxX = NULL,
                       eps = 0,
                       optimMethod = "Nelder-Mead",
-                      optimTol = 1e-8,
+                      tol = 1e-8,
                       shapeIni = NULL,
                       scaleIni = NULL,
                       shapeMin = -Inf,
@@ -46,9 +46,9 @@ gpd_MLE2D <- function(x,
   }
 
   if (optimMethod == "L-BFGS-B") {
-    optcontr <- list(factr = optimTol)
+    optcontr <- list(factr = tol)
   } else {
-    optcontr <- list(reltol = optimTol)
+    optcontr <- list(reltol = tol)
   }
 
   # Method of moments estimator

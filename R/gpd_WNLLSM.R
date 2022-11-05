@@ -14,7 +14,7 @@
 #' @param eps numeric. Optional small epsilon, which is added to \code{maxX}
 #'   so that the GPD density is non-zero at maxX + eps.
 #'   \code{eps} must be larger than zero.
-#' @param optimTol numeric giving the desired accuracy of the optimization
+#' @param tol numeric giving the desired accuracy of the optimization
 #'   process.
 #' @param shapeIni,scaleIni initial values for the shape and scale parameters,
 #'   i.e., values where the optimization starts.
@@ -25,7 +25,7 @@
 #'
 #' @details A simplified version of the R code has been provided by
 #'   \cite{Zhao et al. (2019)}. The function has been extended by the arguments:
-#'   \code{maxX}, \code{eps}, and \code{optimTol} to ensure that the GPD
+#'   \code{maxX}, \code{eps}, and \code{tol} to ensure that the GPD
 #'   density is non-zero at maxX + eps or max(x) + eps.
 #'
 #' @references
@@ -36,9 +36,10 @@
 
 gpd_WNLLSM <- function(x,
                        maxX = NULL,
-                       eps = 1e-8,
+                       #eps = 1e-8,
+                       eps = 0,
                        method = "WNLLSM",
-                       optimTol =  1e-8,
+                       tol =  1e-8,
                        shapeIni = 0.01,
                        scaleIni = 0.01,
                        F0 = 0,
@@ -51,7 +52,7 @@ gpd_WNLLSM <- function(x,
   # b: xi/sigma
   # beta: (xi, b)
 
-  stopifnot(eps > 0)
+  #stopifnot(eps > 0)
 
   x <- sort(x)
   n <- length(x)
@@ -100,13 +101,13 @@ gpd_WNLLSM <- function(x,
 
     b_WLLS1 <- optim(par = bIni, fn = .WNLLSM_WLLS1, method = "Brent",
                      lower = lower, upper = 10,
-                     control = list(reltol = optimTol),
+                     control = list(reltol = tol),
                      #...,
                      z = z, x = x, nu0 = nu0, n = n, F0 = F0, u = u)$par
 
     b_WLLS <- optim(par = b_WLLS1, fn = .WNLLSM_WLLS, method = "Brent",
                     lower = lower, upper = 10,
-                    control = list(reltol = optimTol),
+                    control = list(reltol = tol),
                     #...,
                     z = z, x = x, nu0 = nu0, n = n, F0 = F0, u = u)$par
 
@@ -160,7 +161,7 @@ gpd_WNLLSM <- function(x,
 
     # First step
     beta_WLS1 <- optim(par = betaIni, fn = .WNLSM_WLS1,
-                       control = list(reltol = optimTol),
+                       control = list(reltol = tol),
                        #...,
                        x = x, nu0 = nu0, n = n, F0 = F0, u = u)$par
 
@@ -169,7 +170,7 @@ gpd_WNLLSM <- function(x,
     #                    method = "L-BFGS-B",
     #                    lower = c(shapeMin, bMin),
     #                    upper = c(shapeMax, bMax),
-    #                    control = list(factr = optimTol),
+    #                    control = list(factr = tol),
     #                    #...,
     #                    x = x, nu0 = nu0, n = n, F0 = F0, u = u)$par
 
@@ -182,7 +183,7 @@ gpd_WNLLSM <- function(x,
                       method = "L-BFGS-B",
                       lower = c(shapeMin, bMin),
                       upper = c(shapeMax, bMax),
-                      control = list(factr = optimTol),
+                      control = list(factr = tol),
                       #...,
                       x = x, nu0 = nu0, n = n, F0 = F0, u = u)$par
 

@@ -4,7 +4,7 @@
 \alias{gpd_MLE1D}
 \title{One-dimensional MLE for the GPD}
 \usage{
-gpd_MLE1D(x, maxX = NULL, shapePos = FALSE, optimTol = 1e-08, eps = 0)
+gpd_MLE1D(x, maxX = NULL, shapePos = FALSE, tol = 1e-08, eps = 0)
 }
 \arguments{
 \item{x}{data vector}
@@ -16,7 +16,7 @@ function must be positive. If \code{NULL}, the maximum of the data vector
 \item{shapePos}{logical. If \code{TRUE}, the optimization is done under the
 constraint of a positive shape parameter.}
 
-\item{optimTol}{numeric giving the desired accuracy of the optimization
+\item{tol}{numeric giving the desired accuracy of the optimization
 process.}
 
 \item{eps}{numeric. Optional small epsilon, which is added to \code{maxX}

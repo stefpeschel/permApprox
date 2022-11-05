@@ -9,7 +9,7 @@ gpd_WNLLSM(
   maxX = NULL,
   eps = 0,
   method = "WNLLSM",
-  optimTol = 1e-08,
+  tol = 1e-08,
   shapeIni = 0.01,
   scaleIni = 0.01,
   F0 = 0,
@@ -28,7 +28,7 @@ function must be positive. If \code{NULL}, the maximum of the data vector
 so that the GPD density is non-zero at maxX + eps.
 \code{eps} must be larger than zero.}
 
-\item{optimTol}{numeric giving the desired accuracy of the optimization
+\item{tol}{numeric giving the desired accuracy of the optimization
 process.}
 
 \item{shapeIni, scaleIni}{initial values for the shape and scale parameters,
@@ -51,7 +51,7 @@ Weighted nonlinear least squares moments (WNLSM) estimation and
 \details{
 A simplified version of the R code has been provided by
   \cite{Zhao et al. (2019)}. The function has been extended by the arguments:
-  \code{maxX}, \code{eps}, and \code{optimTol} to ensure that the GPD
+  \code{maxX}, \code{eps}, and \code{tol} to ensure that the GPD
   density is non-zero at maxX + eps or max(x) + eps.
 }
 \references{

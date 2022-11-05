@@ -11,7 +11,7 @@ gpd_NLS2(
   eps = 0,
   twosteps = TRUE,
   optimMethod = "Nelder-Mead",
-  optimTol = 1e-08,
+  tol = 1e-08,
   shapeIni = NULL,
   scaleIni = NULL,
   shapeMin = -Inf,
@@ -34,7 +34,7 @@ function must be positive. If \code{NULL}, the maximum of the data vector
 \item{eps}{numeric. Optional small epsilon, which is added to \code{maxX}
 so that the GPD density is non-zero at maxX + eps.}
 
-\item{optimTol}{numeric giving the desired accuracy of the optimization
+\item{tol}{numeric giving the desired accuracy of the optimization
 process.}
 
 \item{shapeIni, scaleIni}{initial values for the shape and scale parameters,

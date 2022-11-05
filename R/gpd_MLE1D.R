@@ -13,7 +13,7 @@
 #'   so that the GPD density is non-zero at maxX + eps.
 #' @param shapePos logical. If \code{TRUE}, the optimization is done under the
 #'   constraint of a positive shape parameter.
-#' @param optimTol numeric giving the desired accuracy of the optimization
+#' @param tol numeric giving the desired accuracy of the optimization
 #'   process.
 #' @references
 #'   \insertRef{Castillo2015likelihood}{permpap}
@@ -24,7 +24,7 @@
 gpd_MLE1D <- function(x,
                       maxX = NULL,
                       shapePos = FALSE,
-                      optimTol = 1e-8,
+                      tol = 1e-8,
                       eps = 0) {
 
   # Positive-shape constraint
@@ -42,10 +42,10 @@ gpd_MLE1D <- function(x,
   }
 
   # Optimization
-  sigma <- optimize(.MLE1D_fp, interval=int, maxX = maxXact, maximum = FALSE,
-                    tol = optimTol)$minimum
+  sigma <- optimize(.MLE1D_fp, interval=int, maxX = maxXact, x = x,
+                    maximum = FALSE, tol = tol)$minimum
 
-  shape <- -.MLE1D_fk(sigma)
+  shape <- -.MLE1D_fk(sigma, x)
   scale <- -shape * sigma
 
   # GPD density at maxX
@@ -63,17 +63,18 @@ gpd_MLE1D <- function(x,
 
 
 # Function for calculating shape from sigma
-.MLE1D_fk <- function(sigma) {
-  -mean(log(1-x/sigma))
+.MLE1D_fk <- function(sigma, x) {
+  -mean(log(1 - x / sigma))
 }
 
 
 # Function to minimize
-.MLE1D_fp <- function(sigma, maxX) {
+.MLE1D_fp <- function(sigma, maxX, x) {
   if ((sigma > 0) && (maxX > sigma)) {
     out <- 1e+6
   } else {
-    out <- -length(x)*(-log(.MLE1D_fk(sigma)*sigma)+.MLE1D_fk(sigma)-1)
+    out <- -length(x) * (-log(.MLE1D_fk(sigma, x) * sigma) +
+                           .MLE1D_fk(sigma, x) - 1)
   }
 
   return(out)
