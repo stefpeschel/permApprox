@@ -1,4 +1,4 @@
-getThreshIdx <- function(threshMethod, idxVec, shapeVec,
+get_thresh_idx <- function(threshMethod, idxVec, shapeVec,
                          gofPvalVec, gofAlpha, nExceedMin,
                          gofTailRMMeth, gofTailRMPar){
 
