@@ -7,7 +7,7 @@
 gpd_WNLLSM(
   x,
   maxX = NULL,
-  eps = 0,
+  maxXOrig = NULL,
   method = "WNLLSM",
   tol = 1e-08,
   shapeIni = 0.01,
@@ -24,10 +24,6 @@ gpd_WNLLSM(
 function must be positive. If \code{NULL}, the maximum of the data vector
 \code{x} is used.}
 
-\item{eps}{numeric. Optional small epsilon, which is added to \code{maxX}
-so that the GPD density is non-zero at maxX + eps.
-\code{eps} must be larger than zero.}
-
 \item{tol}{numeric giving the desired accuracy of the optimization
 process.}
 
@@ -36,6 +32,10 @@ i.e., values where the optimization starts.}
 
 \item{q}{threshold value. E.g., set to q=0.9 to use the 90% percentile.
 Default is 0, i.e., all data are used.}
+
+\item{eps}{numeric. Optional small epsilon, which is added to \code{maxX}
+so that the GPD density is non-zero at maxX + eps.
+\code{eps} must be larger than zero.}
 
 \item{shapeMin, scaleMin}{lower bound on the shape and scale parameters.
 If != -Inf, \code{optimMethod} is set to "L-BFGS-B".}

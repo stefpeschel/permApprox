@@ -36,8 +36,7 @@
 
 gpd_WNLLSM <- function(x,
                        maxX = NULL,
-                       #eps = 1e-8,
-                       eps = 0,
+                       maxXOrig = NULL,
                        method = "WNLLSM",
                        tol =  1e-8,
                        shapeIni = 0.01,
@@ -92,11 +91,11 @@ gpd_WNLLSM <- function(x,
     lower <- -1 / max(c(x, maxX))
 
     if (is.null(maxX)) {
-      maxX <- max(x)
+      maxX <- maxXOrig <- max(x)
     }
 
     # Increase lower limit because b must be larger than 'lower'
-    lower <- lower + eps
+    lower <- lower
 
 
     b_WLLS1 <- optim(par = bIni, fn = .WNLLSM_WLLS1, method = "Brent",
@@ -147,7 +146,7 @@ gpd_WNLLSM <- function(x,
     shapeMin <- -Inf
 
     if (is.null(maxX)) {
-      maxX <- max(x)
+      maxX <- maxXOrig <- max(x)
     }
 
     # increase lower limit because b must be larger than lower
@@ -196,7 +195,7 @@ gpd_WNLLSM <- function(x,
 
   bound <- - scale / shape
 
-  densMax <- VGAM::dgpd(maxX, scale = scale, shape = shape)
+  densMax <- VGAM::dgpd(maxXOrig, scale = scale, shape = shape)
 
   out <- list(shape = shape,
               scale = scale,

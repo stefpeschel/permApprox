@@ -29,16 +29,16 @@
 #' @importFrom Rdpack reprompt
 #' @export
 
-gpd_LME <- function(x, maxX = NULL, r = -1/2, eps = 0, tol = 1e-8) {
+gpd_LME <- function(x, maxX = NULL, maxXOrig = NULL, r = -1/2, tol = 1e-8) {
 
   # Starting value for b
   b <- -1
 
   # Maximum value (GPD density must be non-zero at this value)
-  xn <- max(c(x, maxX + eps)) # Edited by SP
+  xn <- max(c(x, maxX)) # Edited by SP
 
   if (is.null(maxX)) {
-    maxX <- xn
+    maxX <- maxXOrig <- xn
   }
 
   # Starting value for error estimate
@@ -80,7 +80,7 @@ gpd_LME <- function(x, maxX = NULL, r = -1/2, eps = 0, tol = 1e-8) {
   bound <- -scale / shape
 
   # GPD density at maxX
-  densMax <- VGAM::dgpd(maxX, scale = scale, shape = shape)
+  densMax <- VGAM::dgpd(maxXOrig, scale = scale, shape = shape)
 
   out <- list(shape = shape,
               scale = scale,

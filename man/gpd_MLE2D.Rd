@@ -7,7 +7,7 @@
 gpd_MLE2D(
   x,
   maxX = NULL,
-  eps = 0,
+  maxXOrig = NULL,
   optimMethod = "Nelder-Mead",
   tol = 1e-08,
   shapeIni = NULL,
@@ -26,9 +26,6 @@ gpd_MLE2D(
 function must be positive. If \code{NULL}, the maximum of the data vector
 \code{x} is used.}
 
-\item{eps}{numeric. Optional small epsilon, which is added to \code{maxX}
-so that the GPD density is non-zero at maxX + eps.}
-
 \item{optimMethod}{character defining the optimization method.}
 
 \item{tol}{numeric giving the desired accuracy of the optimization
@@ -44,6 +41,9 @@ If != -Inf, \code{optimMethod} is set to "L-BFGS-B".}
 If != Inf, \code{optimMethod} is set to "L-BFGS-B".}
 
 \item{...}{Further arguments passed to \code{optim()}.}
+
+\item{eps}{numeric. Optional small epsilon, which is added to \code{maxX}
+so that the GPD density is non-zero at maxX + eps.}
 }
 \description{
 Two-dimensional Maximum Likelihood Estimation for the two-parameter

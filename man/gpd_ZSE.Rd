@@ -4,7 +4,7 @@
 \alias{gpd_ZSE}
 \title{Parameter estimation for the GPD proposed by Zhang & Stephens}
 \usage{
-gpd_ZSE(x, maxX = NULL, eps = 0, m = NULL)
+gpd_ZSE(x, maxX = NULL, maxXOrig = NULL, m = NULL)
 }
 \arguments{
 \item{x}{data vector}
@@ -13,11 +13,11 @@ gpd_ZSE(x, maxX = NULL, eps = 0, m = NULL)
 function must be positive. If \code{NULL}, the maximum of the data vector
 \code{x} is used.}
 
-\item{eps}{numeric. Optional small epsilon, which is added to \code{maxX}
-so that the GPD density is non-zero at maxX + eps.}
-
 \item{q}{threshold value. E.g., set to q=0.9 to use the 90% percentile.
 Default is 0, i.e., all data are used.}
+
+\item{eps}{numeric. Optional small epsilon, which is added to \code{maxX}
+so that the GPD density is non-zero at maxX + eps.}
 
 \item{optimTol}{numeric giving the desired accuracy of the optimization
 process.}

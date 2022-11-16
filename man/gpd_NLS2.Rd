@@ -8,7 +8,7 @@ gpd_NLS2(
   x,
   q = 0,
   maxX = NULL,
-  eps = 0,
+  maxXOrig = NULL,
   twosteps = TRUE,
   optimMethod = "Nelder-Mead",
   tol = 1e-08,
@@ -31,9 +31,6 @@ Default is 0, i.e., all data are used.}
 function must be positive. If \code{NULL}, the maximum of the data vector
 \code{x} is used.}
 
-\item{eps}{numeric. Optional small epsilon, which is added to \code{maxX}
-so that the GPD density is non-zero at maxX + eps.}
-
 \item{tol}{numeric giving the desired accuracy of the optimization
 process.}
 
@@ -45,6 +42,9 @@ If != -Inf, \code{optimMethod} is set to "L-BFGS-B".}
 
 \item{shapeMax, scaleMax}{upper bound on the shape and scale parameters.
 If != Inf, \code{optimMethod} is set to "L-BFGS-B".}
+
+\item{eps}{numeric. Optional small epsilon, which is added to \code{maxX}
+so that the GPD density is non-zero at maxX + eps.}
 }
 \description{
 Parameter estimation for the two-parameter Generalized Pareto Distribution

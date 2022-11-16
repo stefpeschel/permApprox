@@ -4,7 +4,7 @@
 \alias{gpd_LME}
 \title{Likelihood Moment Estimation for the GPD}
 \usage{
-gpd_LME(x, maxX = NULL, r = -1/2, eps = 0, tol = 1e-08)
+gpd_LME(x, maxX = NULL, maxXOrig = NULL, r = -1/2, tol = 1e-08)
 }
 \arguments{
 \item{x}{data vector}
@@ -17,11 +17,11 @@ function must be positive. If \code{NULL}, the maximum of the data vector
 be smaller than 1/2 and different from zero. Default is -1/2.
 See details.}
 
-\item{eps}{numeric. Optional small epsilon, which is added to \code{maxX}
-so that the GPD density is non-zero at maxX + eps.}
-
 \item{tol}{tolerance used as convergence criterion. The iteration stops if
 |f(b)/f'(b)/b| < tol. Defaults to 1e-8.}
+
+\item{eps}{numeric. Optional small epsilon, which is added to \code{maxX}
+so that the GPD density is non-zero at maxX + eps.}
 }
 \description{
 Likelihood Moment Estimation for the two-parameter

@@ -4,7 +4,7 @@
 \alias{gpd_MLE1D}
 \title{One-dimensional MLE for the GPD}
 \usage{
-gpd_MLE1D(x, maxX = NULL, shapePos = FALSE, tol = 1e-08, eps = 0)
+gpd_MLE1D(x, maxX = NULL, maxXOrig = NULL, shapePos = FALSE, tol = 1e-08)
 }
 \arguments{
 \item{x}{data vector}

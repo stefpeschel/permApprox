@@ -23,9 +23,9 @@
 
 gpd_MLE1D <- function(x,
                       maxX = NULL,
+                      maxXOrig = NULL,
                       shapePos = FALSE,
-                      tol = 1e-8,
-                      eps = 0) {
+                      tol = 1e-8) {
 
   # Positive-shape constraint
   if (shapePos) {
@@ -35,10 +35,10 @@ gpd_MLE1D <- function(x,
   }
 
   # Actual maximum value (GPD density must be non-zero at this value)
-  maxXact <- max(c(x, maxX + eps))
+  maxXact <- max(c(x, maxX))
 
   if (is.null(maxX)) {
-    maxX <- maxXact
+    maxX <- maxXOrig <- maxXact
   }
 
   # Optimization
@@ -49,7 +49,7 @@ gpd_MLE1D <- function(x,
   scale <- -shape * sigma
 
   # GPD density at maxX
-  densMax <- VGAM::dgpd(maxX, scale = scale, shape = shape)
+  densMax <- VGAM::dgpd(maxXOrig, scale = scale, shape = shape)
 
   out <- list(shape = shape,
               scale = scale,
@@ -64,7 +64,12 @@ gpd_MLE1D <- function(x,
 
 # Function for calculating shape from sigma
 .MLE1D_fk <- function(sigma, x) {
-  -mean(log(1 - x / sigma))
+  # edit by SP
+  tmp <- 1 - x / sigma
+  tmp[tmp < 0] <- 0
+  tmp <- log(tmp)
+  tmp[is.infinite(tmp)] <- NA
+  -mean(tmp, na.rm = TRUE)
 }
 
 

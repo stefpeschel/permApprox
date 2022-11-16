@@ -27,7 +27,7 @@
 #' @export
 
 
-gpd_ZSE <- function(x, maxX = NULL, eps = 0, m = NULL) {
+gpd_ZSE <- function(x, maxX = NULL, maxXOrig = NULL, m = NULL) {
 
   # constr: "none", "shapePos", "maxX"
   # shapePos doesn't work
@@ -42,10 +42,10 @@ gpd_ZSE <- function(x, maxX = NULL, eps = 0, m = NULL) {
   }
 
   # Actual maximum value (GPD density must be non-zero at this value)
-  maxXact <- max(c(x, maxX + eps))
+  maxXact <- max(c(x, maxX))
 
   if (is.null(maxX)) {
-    maxX <- maxXact
+    maxX <- maxXOrig <- maxXact
   }
 
   b <- w <- L <-
@@ -69,7 +69,7 @@ gpd_ZSE <- function(x, maxX = NULL, eps = 0, m = NULL) {
   scale <- sigma
   bound <- - scale / shape
 
-  densMax <- VGAM::dgpd(maxX, scale = scale, shape = shape)
+  densMax <- VGAM::dgpd(maxXOrig, scale = scale, shape = shape)
 
   out <- list(shape = shape,
               scale = scale,

@@ -25,7 +25,7 @@
 
 gpd_MLE2D <- function(x,
                       maxX = NULL,
-                      eps = 0,
+                      maxXOrig = NULL,
                       optimMethod = "Nelder-Mead",
                       tol = 1e-8,
                       shapeIni = NULL,
@@ -66,10 +66,10 @@ gpd_MLE2D <- function(x,
   params <- c(shapeIni, scaleIni)
 
   # Actual maximum value (GPD density must be non-zero at this value)
-  maxXact <- max(c(x, maxX + eps))
+  maxXact <- max(c(x, maxX))
 
   if (is.null(maxX)) {
-    maxX <- maxXact
+    maxX <- maxXOrig <- maxXact
   }
 
   fit <- optim(par = params, fn = .MLE2D_negloglik, method = optimMethod,
@@ -86,7 +86,7 @@ gpd_MLE2D <- function(x,
   scale <- fit$par[2]
   bound <- - scale / shape
 
-  densMax <- VGAM::dgpd(maxX, scale = scale, shape = shape)
+  densMax <- VGAM::dgpd(maxXOrig, scale = scale, shape = shape)
 
   out <- list(shape = shape,
               scale = scale,

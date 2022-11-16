@@ -30,7 +30,7 @@
 gpd_NLS2 <- function(x,
                      q = 0,
                      maxX = NULL,
-                     eps = 0,
+                     maxXOrig = NULL,
                      twosteps = TRUE,
                      optimMethod = "Nelder-Mead",
                      tol = 1e-8,
@@ -94,10 +94,10 @@ gpd_NLS2 <- function(x,
   # }
 
   # Actual maximum value (GPD density must be non-zero at this value)
-  maxXact <- max(c(x.u, maxX + eps))
+  maxXact <- max(c(x, maxX))
 
   if (is.null(maxX)) {
-    maxX <- maxXact
+    maxX <- maxXOrig <- maxXact
   }
 
   # Modified optim call to estimate initial values
@@ -133,7 +133,7 @@ gpd_NLS2 <- function(x,
 
   bound <- - scale / shape
 
-  densMax <- VGAM::dgpd(maxX, scale = scale, shape = shape)
+  densMax <- VGAM::dgpd(maxXOrig, scale = scale, shape = shape)
 
   out <- list(shape = shape,
               scale = scale,
