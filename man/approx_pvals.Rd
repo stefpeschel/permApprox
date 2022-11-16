@@ -7,20 +7,20 @@
 approx_pvals(
   tPerm,
   tObs,
+  method = "gpd",
+  fitThresh = 0.1,
+  includeObs = TRUE,
+  fitMethod = "MLE1D",
+  constraint = "tObs",
   tol = 1e-08,
   eps = NULL,
-  includeObs = TRUE,
-  fitMethod = "MLE",
+  factor = 1,
   finalOnly = FALSE,
-  constraint = "tObs",
-  fitThresh = 0.1,
   nonZero = TRUE,
-  appMethod = "gpd",
-  threshVec = NULL,
   threshMethod = "PRbelowAlpha",
   thresh0 = NULL,
   nExceed0 = NULL,
-  nExceedMin = 1,
+  nExceedMin = 10,
   stepSize = 1,
   gofTest = "ad",
   gofAlpha = 0.05,
@@ -29,7 +29,7 @@ approx_pvals(
   seed = NULL,
   cores = 1L,
   verbose = FALSE,
-  gpd_estimate = NULL,
+  gpdEstimate = NULL,
   plotHist = F,
   histBreaks = 100,
   histXlim = NULL,
@@ -37,7 +37,8 @@ approx_pvals(
   plotPvals = TRUE,
   plotPvalsxvar = "thresh",
   plotTitle = "",
-  maintext = ""
+  maintext = "",
+  ...
 )
 }
 \arguments{
@@ -45,20 +46,20 @@ approx_pvals(
 
 \item{tObs}{numeric value giving the observed test statistic}
 
-\item{includeObs}{logical. Indicates whether the observed test statistic
-should be included in the permutation distribution.}
-
-\item{fitMethod}{...}
+\item{method}{character indicating the method used for p-value estimation.
+Possible values are: "gpd" (default), "gamma", "empirical".}
 
 \item{fitThresh}{threshold for initial p-value, above which a GPD or Gamma
 distribution is fitted for p-value approximation (e.g. 2 times alpha).
 Defaults is 0.1.}
 
+\item{includeObs}{logical. Indicates whether the observed test statistic
+should be included in the permutation distribution.}
+
+\item{fitMethod}{...}
+
 \item{nonZero}{logical. If \code{TRUE} (default), a p-value of zero is
 strictly avoided.}
-
-\item{appMethod}{character indicating the method used for p-value estimation.
-Possible values are: "gpd" (default), "gamma", "empirical".}
 
 \item{threshMethod}{method for threshold detection.
 Possible values are:
@@ -75,7 +76,7 @@ number of exceedances is increased in each step, depending on threshMethod}
 
 \item{seed}{...}
 
-\item{gpd_estimate}{...}
+\item{gpdEstimate}{...}
 
 \item{threshMethodPar}{fix threshold/number of exceedances or start value for
 threshold / number of exceedances, depending on threshMethod}

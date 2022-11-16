@@ -19,13 +19,12 @@
 
 fit_gpd <- function(data,
                     thresh = NULL,
+                    fitMethod = "MLE1D",
                     tol = 1e-8,
-                    eps = 0,
-                    nExceed = NULL,
-                    exceedPerm = NULL,
-                    fitMethod = "MLE",
-                    maxVal = NULL,
+                    eps = NULL,
+                    factor = 1,
                     constraint = "none",
+                    maxVal = NULL,
                     gofTest = "ad",
                     ...) {
 
@@ -35,20 +34,24 @@ fit_gpd <- function(data,
   fitMethod <- match.arg(fitMethod, choices = c("LME", "MLE1D", "MLE2D", "MOM",
                                                 "NLS2", "WNLLSM", "ZSE"))
 
-  constraint <- match.arg(constraint, choices = c("none", "shapePos", "tObs"))
+  constraint <- match.arg(constraint, choices = c("none", "shapePos", "tObs",
+                                                  "tObsMax"))
 
   gofTest <- match.arg(gofTest, choices = c("ad", "cvm"))
 
+  #-----------------------------------------------------------------------------
+
   # Estimate GPD parameters
   fit <- try(.est_gpd_params(data = data,
-                             maxVal = maxVal,
                              thresh = thresh,
+                             maxVal = maxVal,
+                             constraint = constraint,
                              tol = tol,
                              eps = eps,
+                             factor = factor,
                              fitMethod = fitMethod,
                              ...),
              silent = TRUE)
-
 
   if ("try-error" %in% class(fit)) {
     shape <- scale <- negLogLik <- NA
@@ -60,6 +63,11 @@ fit_gpd <- function(data,
     names(shape) <- names(scale) <- NULL
 
     #negLogLik <- fit$negLogLik
+
+    tSort <- sort(data, decreasing = FALSE)
+
+    # exceedances (test statistics above the threshold)
+    exceedPerm <- tSort[tSort > thresh]
 
     if (gofTest == "ad") {
       #testres <- try(eva::gpdAd(exceedPerm-thresh), silent = TRUE)

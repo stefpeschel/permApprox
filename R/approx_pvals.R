@@ -16,7 +16,7 @@
 #'   Defaults is 0.1.
 #' @param nonZero logical. If \code{TRUE} (default), a p-value of zero is
 #'   strictly avoided.
-#' @param appMethod character indicating the method used for p-value estimation.
+#' @param method character indicating the method used for p-value estimation.
 #'   Possible values are: "gpd" (default), "gamma", "empirical".
 #'
 #'
@@ -45,7 +45,7 @@
 #' @param plotHist
 #' @param histBreaks
 #' @param histXlim
-#' @param gpd_estimate
+#' @param gpdEstimate
 #' ...
 #'
 #' @export
@@ -53,7 +53,7 @@
 
 # tPerm  <- gpddata
 # tObs  <- max(tPerm)-0.01
-# appMethod = "gpd"
+# method = "gpd"
 # threshVec = NULL
 # threshMethod = "PRbelowAlpha"
 # thresh0 = NULL
@@ -86,42 +86,43 @@
 # plotTitle = ""
 # maintext = ""
 # verbose = TRUE
-# gpd_estimate = NULL
+# gpdEstimate = NULL
 
 
 approx_pvals <- function(tPerm,
-                        tObs,
-                        tol = 1e-8,
-                        eps = NULL,
-                        includeObs = TRUE,
-                        fitMethod = "MLE",
-                        finalOnly = FALSE,
-                        constraint = "tObs",
-                        fitThresh = 0.1,
-                        nonZero = TRUE,
-                        appMethod = "gpd",
-                        threshVec = NULL,
-                        threshMethod = "PRbelowAlpha",
-                        thresh0 = NULL,
-                        nExceed0 = NULL,
-                        nExceedMin = 1,
-                        stepSize = 1,
-                        gofTest = "ad",
-                        gofAlpha = 0.05,
-                        gofTailRMMeth = "allrej",
-                        gofTailRMPar = NULL,
-                        seed = NULL,
-                        cores = 1L,
-                        verbose = FALSE,
-                        gpd_estimate = NULL,
-                        plotHist = F,
-                        histBreaks = 100,
-                        histXlim = NULL,
-                        histYlim = NULL,
-                        plotPvals = TRUE,
-                        plotPvalsxvar = "thresh",
-                        plotTitle = "",
-                        maintext = "") {
+                         tObs,
+                         method = "gpd",
+                         fitThresh = 0.1,
+                         includeObs = TRUE,
+                         fitMethod = "MLE1D",
+                         constraint = "tObs",
+                         tol = 1e-8,
+                         eps = NULL,
+                         factor = 1,
+                         finalOnly = FALSE,
+                         nonZero = TRUE,
+                         threshMethod = "PRbelowAlpha",
+                         thresh0 = NULL,
+                         nExceed0 = NULL,
+                         nExceedMin = 10,
+                         stepSize = 1,
+                         gofTest = "ad",
+                         gofAlpha = 0.05,
+                         gofTailRMMeth = "allrej",
+                         gofTailRMPar = NULL,
+                         seed = NULL,
+                         cores = 1L,
+                         verbose = FALSE,
+                         gpdEstimate = NULL,
+                         plotHist = F,
+                         histBreaks = 100,
+                         histXlim = NULL,
+                         histYlim = NULL,
+                         plotPvals = TRUE,
+                         plotPvalsxvar = "thresh",
+                         plotTitle = "",
+                         maintext = "",
+                         ...) {
 
   # possible threshold detection methods are:
   # - "minimum proportion of rejected GOF-tests"
@@ -132,15 +133,21 @@ approx_pvals <- function(tPerm,
   #                                                     "PRbelowAlpha",
   #                                                     "fwdStop"))
 
-  appMethod <- match.arg(appMethod, choices = c("gpd", "gamma", "empirical"))
+  method <- match.arg(method, choices = c("gpd", "gamma", "empirical"))
 
   fitMethod <- match.arg(fitMethod, choices = c("LME", "MLE1D", "MLE2D", "MOM",
                                                 "NLS2", "WNLLSM", "ZSE"))
 
-  constraint <- match.arg(constraint, choices = c("none", "shapePos", "tObs"))
+  constraint <- match.arg(constraint, choices = c("none", "shapePos", "tObs",
+                                                  "tObsMax"))
   #
   # gofTailRMMeth <- match.arg(gofTailRMMeth, choices = c("none", "num", "prop",
   #                                                       "allrej", "changepoint"))
+
+  if (constraint == "shapePos" && !fitMethod %in% c("MLE1D", "MLE2D", "NLS2")) {
+    stop("Constraint \"shapePos\" only available for methods ",
+         "MLE1D, MLE2D, and NLS2.")
+  }
 
   if (length(tObs) == 1) {
     tPerm <- as.matrix(tPerm)
@@ -165,86 +172,137 @@ approx_pvals <- function(tPerm,
   })
 
   #-----------------------------------------------------------------------------
-  # Empirical p-value
+  # Empirical p-value(s) (observed test statistic is always included)
+  pval <- (nlarger + 1) / (nPerm + 1)
 
-  pvals <- nlarger / nPerm
+  if (method == "empirical") {
 
-  if (appMethod == "empirical") {
+    return(list(pval = pval))
 
-    if (any(pvals == 0)) {
-      warning("One or more estimated p-values are zero. Consider including ",
-              "the observed test statistic.")
-    }
-
-    return(list(pvals = pvals))
-
-  } else if (all(pvals > fitThresh)) {
+  } else if (all(pval > fitThresh)) {
     # no distribution is fitted
 
     # out <- list(pvals = pvals)
 
-    # if (appMethod == "gpd") {
+    # if (method == "gpd") {
     #   out$shape <- out$scale <- out$gofPval <- out$thresh <- out$excessPerm <-
     #     out$excessObs <- out$nExceed <- out$shapeVec <- out$scaleVec <-
     #     out$gofPvalVec <- out$nExceedVec <- NA
-    # } else if (appMethod == "gamma") {
+    # } else if (method == "gamma") {
     #   out$shape <- out$rate <- out$gofPval <- NA
     # }
 
-    return(list(pvals = pvals))
+    return(list(pval = pval))
   }
+
+  # Indices of p-values above threshold
+  idxFit <- which(pval <= fitThresh)
 
   #-----------------------------------------------------------------------------
   # Fitting a Gamma distribution
 
-  if (appMethod == "gamma") {
+  if (method == "gamma") {
 
-    capture.output(gammafit <- fitdistrplus::fitdist(tPerm,
-                                                     distr = "gamma",
-                                                     method = "mle"),
-                   file='NUL')
+    shape <- rate <- gofPval <- rep(NA, nTest)
 
-    shape <- as.numeric(gammafit$estimate["shape"])
-    rate <- as.numeric(gammafit$estimate["rate"])
+    # capture.output(gammafit <- fitdistrplus::fitdist(data = tPerm[, 1],
+    #                                                  distr = "gamma",
+    #                                                  method = "mle"),
+    #                file='NULL')
 
-    params <- list(shape = shape, rate = rate)
+    for (i in idxFit) {
+      gammafit <- fitdistrplus::fitdist(data = tPerm[, i],
+                                        distr = "gamma",
+                                        method = "mle")
 
-    pvals <- pgamma(q = tObs, shape = shape, rate = rate, lower.tail = FALSE)
+      shape[i] <- as.numeric(gammafit$estimate["shape"])
+      rate[i] <- as.numeric(gammafit$estimate["rate"])
 
-    cvmtest <- goftest::cvm.test(tPerm, "gamma", shape = shape, rate = rate)
-    gofPval <- cvmtest$p.value
+      pval[i] <- pgamma(q = tObs[i], shape = shape[i], rate = rate[i],
+                        lower.tail = FALSE)
 
-    output <- list(pvals = pvals, params = params, gofPval = gofPval)
+      cvmtest <- goftest::cvm.test(x = tPerm[, i], null = "gamma",
+                                   shape = shape[i], rate = rate[i])
+      gofPval[i] <- cvmtest$p.value
+    }
+
+    output <- list(pval = pval, shape = shape, rate = rate, gofPval = gofPval)
 
     return(output)
   }
 
-  #-----------------------------------------------------------------------------
+
+  #=============================================================================
   # Tail approximation using the GPD
 
-  # Indices of p-values above threshold
-  indFit <- which(pvals <= fitThresh)
+  # Maximum value at which the GPD density must be positive
+  if (constraint == "tObs") {
+    tMax <- tObs
 
-  # Maximum test statistic (needed for constraint)
-  tMax <- max(tObs)
+  } else if (constraint == "tObsMax") {
+    tMax <- rep(max(tObs), length(tObs))
 
-  # Add epsilon
-  if (is.null(eps)) {
-    eps <- tMax / 10
+  } else {
+    tMax <- NULL
   }
 
-  tMax <- tMax + eps
+  #-----------------------------------------------------------------------------
+  # Initialize parallel stuff
 
-  if (is.null(gpd_estimate)) {
-    #fitMethod.tmp <- ifelse(finalOnly, "ZSE", fitMethod)
+  if (verbose) {
+    # Create progress bar:
+    pb <- utils::txtProgressBar(0, length(idxFit), style=3)
 
-    gpdEstList <- list()
+    # Function for progress bar
+    progress <- function(n) {
+      utils::setTxtProgressBar(pb, n)
+    }
+  }
 
-    for (i in seq_along(indFit)) {
-      gpdEstList[[i]] <- get_gpd_estimates(tPerm = tPerm[, indFit[i]],
-                                           tObs = tObs[indFit[i]],
+  comb <- function(x, ...) {
+    lapply(seq_along(x),
+           function(i) c(x[[i]], lapply(list(...), function(y) y[[i]])))
+  }
+
+  if (cores > 1) {
+    if (parallel::detectCores() < cores) cores <- parallel::detectCores()
+
+    cl <- parallel::makeCluster(cores, outfile = "")
+    doSNOW::registerDoSNOW(cl)
+    '%do_or_dopar%' <- get('%dopar%')
+
+  } else {
+    '%do_or_dopar%' <- get('%do%')
+  }
+
+  if (verbose) {
+    opts <- list(progress = progress)
+  } else {
+    opts <- list()
+  }
+
+  loopres <-
+    foreach(i = seq_along(idxFit),
+            .export = c("get_gpd_thresh", "fit_gpd", "get_thresh_idx",
+                        ".est_gpd_params",
+                        "gpdAd_adapt", "gpdCvm_adapt",
+                        "gpd_LME", "gpd_MLE1D", "gpd_MLE2D",
+                        "gpd_MOM", "gpd_NLS2", "gpd_WNLLSM", "gpd_ZSE"),
+            .packages = "permpap",
+            .combine='comb', .multicombine=TRUE,
+            .init=list(list(), list(), list(), list(), list(), list(),
+                       list(), list(), list()),
+            .options.snow = opts) %do_or_dopar% {
+
+              if (verbose) progress(i)
+
+              out <- list()
+
+              threshList <- get_gpd_thresh(tPerm = tPerm[, idxFit[i]],
+                                           tObs = tObs[idxFit[i]],
                                            tMax = tMax,
                                            tol = tol,
+                                           eps = eps,
                                            threshVec = threshVec,
                                            threshMethod = threshMethod,
                                            thresh0 = thresh0,
@@ -256,201 +314,121 @@ approx_pvals <- function(tPerm,
                                            constraint = constraint,
                                            fitInformation = fitInformation,
                                            optimMethod = optimMethod,
-                                           shape0 = shape0, scale0 = scale0,
-                                           shapeMin = shapeMin, scaleMin = scaleMin,
-                                           shapeMax = shapeMax, scaleMax = scaleMax,
+                                           shape0 = shape0,
+                                           scale0 = scale0,
+                                           shapeMin = shapeMin,
+                                           scaleMin = scaleMin,
+                                           shapeMax = shapeMax,
+                                           scaleMax = scaleMax,
                                            gofTest = gofTest,
+                                           gofAlpha = gofAlpha,
+                                           gofTailRMMeth = gofTailRMMeth,
+                                           gofTailRMPar = gofTailRMPar,
                                            seed = seed,
-                                           cores = cores,
-                                           verbose = verbose)
-      gpdEstList[[i]]$tObs <- tObs[indFit[i]]
-    }
-  }
+                                           cores = 1,
+                                           verbose = F)
 
-  getFinalPval <- function(gpdEst) {
+              thresh <- threshList$thresh
+              out$thresh <- thresh
+              out$nExceed <- threshList$nExceed
+              out$fitFailed <- FALSE
+              out$zeroRepl <- FALSE
 
-    toassign <- c("idxVec", "nExceedVec", "shapeVec", "scaleVec", "negLogLikVec",
-                  "gofPvalVec", "pvalVec", "threshVec", "tObs")
+              if (is.na(thresh)) {
 
-    for (i in seq_along(toassign)) {
-      assign(toassign[i], gpdEst[[toassign[i]]])
-    }
+                if (verbose) {
+                  message("In test ", idxFit[i],
+                          ": No iteration led to a good fit ",
+                          "(GOF test rejected for ",
+                          "all thresholds). Empirical p-value used.")
+                }
 
-    if (threshMethod == "fix") {
-      idxUse <- 1
+                gofPval <- shape <- scale <- thresh <- excessPerm <- nExceed <-
+                  excessObs <- NA
 
-      tailRem <- 0
-      propTailRem <- 0
-      rmTailIdx <- NA
+                out$shape <- out$scale <- out$gofPval <- NA
 
-    } else {
-      threshIdxList <- getThreshIdx(threshMethod = threshMethod,
-                                    idxVec = idxVec,
-                                    shapeVec = shapeVec,
-                                    gofPvalVec = gofPvalVec,
-                                    gofAlpha = gofAlpha,
-                                    nExceedMin = nExceedMin,
-                                    gofTailRMMeth = gofTailRMMeth,
-                                    gofTailRMPar = gofTailRMPar)
+                out$pval <- (nlarger[idxFit[i]] + 1) / (nPerm + 1)
 
-      idxUse <- threshIdxList$idxUse
+                out$fitFailed <- TRUE
 
-      tailRem <- ifelse(!is.null(threshIdxList$tailRem), threshIdxList$tailRem, 0)
-      propTailRem <- ifelse(!is.null(threshIdxList$propTailRem),
-                            threshIdxList$propTailRem, 0)
-      rmTailIdx <- ifelse(!is.null(threshIdxList$rmTailIdx), threshIdxList$rmTailIdx, NA)
-    }
-
-    if (is.null(idxUse)) {
-
-      if (verbose) {
-        message(paste0("No iteration led to a good fit (GOF test rejected for ",
-                       "all thresholds). Empirical p-value used."))
-      }
-
-      gofPval <- shape <- scale <- thresh <- excessPerm <- nExceed <-
-        excessObs <- NA
-
-      fitFailed <- TRUE
-
-      pvals <- (nlarger + 1) / (nPerm + 1)
-
-    } else {
-      if (finalOnly) {
-        # Final fit with selected threshold
-        finalfit <- get_gpd_estimates(tPerm = tPerm,
-                                      tObs = tObs,
-                                      threshVec = threshVec[idxUse],
-                                      threshMethod = "fix",
-                                      thresh0 = thresh0,
-                                      nExceed0 = nExceed0,
-                                      nExceedMin = nExceedMin,
-                                      stepSize = stepSize,
-                                      includeObs = includeObs,
+              } else {
+                # Fit and test the GPD distribution
+                fittestres <- fit_gpd(data = tPerm[, idxFit[i]],
+                                      thresh = thresh,
                                       fitMethod = fitMethod,
+                                      tol = tol,
+                                      eps = eps,
+                                      factor = factor,
                                       constraint = constraint,
-                                      fitInformation = fitInformation,
-                                      optimMethod = optimMethod,
-                                      shape0 = shape0, scale0 = scale0,
-                                      shapeMin = shapeMin, scaleMin = scaleMin,
-                                      shapeMax = shapeMax, scaleMax = scaleMax,
+                                      maxVal = tMax[idxFit[i]],
                                       gofTest = gofTest,
-                                      seed = seed,
-                                      cores = 1,
-                                      verbose = verbose)
+                                      ...)
 
-        gofPval <- finalfit$gofPvalVec
-        shape <- finalfit$shapeVec
-        scale <- finalfit$scaleVec
-        pvals <- finalfit$pvalVec
+                out$shape <- fittestres$shape
+                out$scale <- fittestres$scale
+                out$gofPval <- fittestres$pval
 
-      } else {
-        gofPval <- gofPvalVec[idxUse]
-        shape <- shapeVec[idxUse]
-        scale <- scaleVec[idxUse]
-        pval <- pvalVec[idxUse]
-      }
+                out$pval <- (out$nExceed / nPerm) *
+                  pgpd_upper_tail(q = tObs[idxFit[i]] - thresh,
+                                  loc = 0,
+                                  scale = out$scale,
+                                  shape = out$shape)
 
-      tObs <- tObs
-      thresh <- threshVec[idxUse]
-      exceedPerm <- tPerm[tPerm > thresh]
-      nExceed <- nExceedVec[idxUse]
+                if (out$pval == 0) {
+                  if (verbose) {
+                    message("In test ", idxFit[i],
+                            ": GPD approximation led to a p-value of zero. ",
+                            "Empirical p-value used.")
+                  }
 
-      excessPerm <- exceedPerm - thresh
-      excessObs <- tObs - thresh
+                  out$pval <- (nlarger[idxFit[i]] + 1) / (nPerm + 1)
+                  out$zeroRepl <- TRUE
+                }
+              }
 
-      fitFailed <- FALSE
-    }
+              out$names <- names(out)
 
-    if (plotPvals && (!threshMethod == "fix")) {
-      plot_gof_pvals(gofPvalVec = gofPvalVec, gofAlpha = gofAlpha,
-                     thresh = thresh,
-                     threshMethod = threshMethod,
-                     propReject = threshIdxList$propReject,
-                     xvar = plotPvalsxvar,
-                     idxVec = idxVec, threshVec = threshVec,
-                     title = "GOF p-values",
-                     mar = NULL, cexaxis = NULL,
-                     cexlab = NULL, cexmain = NULL, cexlegend = NULL,
-                     plotPropReject = TRUE)
-    }
+              out
+            }
 
-    if (plotHist && !fitFailed) {
-      plot_excess_hist(excessPerm = excessPerm, excessObs = excessObs,
-                       nExceed = nExceed, shape = shape, scale = scale,
-                       gofPval = gofPval, pval = pval, breaks = histBreaks,
-                       maintext = maintext, main = NULL,
-                       mar = NULL, xlim = NULL, ylim = NULL,
-                       col = NULL, cexaxis = NULL,
-                       cexlab = NULL, cexmain = NULL, cexlegend = NULL)
-    }
-
-    if (pval == 0) {
-      if (verbose) {
-        message("GPD approximation led to a p-value of zero. Empirical p-value used.")
-      }
-
-      pval <- (nlarger + 1) / (nPerm + 1)
-    }
-
-    out <- list(pval = pval,
-                tObs = tObs,
-                gofPval = gofPval,
-                shape = shape,
-                scale = scale,
-                thresh = thresh,
-                exceedPerm = exceedPerm,
-                nExceed = nExceed,
-                excessPerm = excessPerm,
-                excessObs = excessObs,
-                fitFailed = fitFailed)
-
-    return(out)
+  if (verbose) {
+    # Close progress bar
+    close(pb)
   }
 
-  finallist <- lapply(gpdEstList, getFinalPval)
+  # Stop cluster
+  if (cores > 1) parallel::stopCluster(cl)
 
-  excessObs <- gofPval <- shape <- scale <- thresh <- nExceed <-
-    fitFailed <- rep(NA, nTest)
+  names(loopres) <- loopres[[length(loopres)]][[1]]
+  loopres[[length(loopres)]] <- NULL
 
-  #exceedPerm <- excessPerm <- list()
+  threshVec <- nExceedVec <- shapeVec <- scaleVec <- gofPvalVec <-
+    fitFailed <- zeroRepl <- rep(NA, nTest)
 
-  for (i in seq_along(indFit)) {
-    pvals[indFit[i]] <- finallist[[i]]$pval
-    excessObs[indFit[i]] <- finallist[[i]]$excessObs
-    gofPval[indFit[i]] <- finallist[[i]]$gofPval
-    shape[indFit[i]] <- finallist[[i]]$shape
-    scale[indFit[i]] <- finallist[[i]]$scale
-    thresh[indFit[i]] <- finallist[[i]]$thresh
-    nExceed[indFit[i]] <- finallist[[i]]$nExceed
-    fitFailed[[indFit[i]]] <- finallist[[i]]$fitFailed
-
-    #exceedPerm[[i]] <- finallist[[i]]$exceedPerm
-    #excessPerm[[i]] <- finallist[[i]]$excessPerm
-  }
+  threshVec[idxFit] <- unlist(loopres$thresh)
+  nExceedVec[idxFit] <- unlist(loopres$nExceed)
+  shapeVec[idxFit] <- unlist(loopres$shape)
+  scaleVec[idxFit] <- unlist(loopres$scale)
+  gofPvalVec[idxFit] <- unlist(loopres$gofPval)
+  pval[idxFit] <- unlist(loopres$pval)
+  fitFailed[idxFit] <- unlist(loopres$fitFailed)
+  zeroRepl[idxFit] <- unlist(loopres$zeroRepl)
 
   callArgs <- mget(names(formals()),sys.frame(sys.nframe()))
-  callArgs$gpd_estimate <- NULL
+  callArgs$gpdEstimate <- NULL
 
-  output <- list(pvals = pvals,
-                 shape = shape,
-                 scale = scale,
-                 nExceed = nExceed,
-                 gofPval = gofPval,
-                 #propReject = threshIdxList$propReject,
-                 thresh = thresh,
-                 #excessPerm = excessPerm,
-                 excessObs = excessObs,
-                 #tailRem = tailRem,
-                 #pvalVec = pvalVec,
-                 #shapeVec = shapeVec,
-                 #scaleVec = scaleVec,
-                 #gofPvalVec = gofPvalVec,
-                 #threshVec = threshVec,
-                 #nExceedVec = nExceedVec,
-                 #idxVec = idxVec,
+  output <- list(pval = pval,
+                 idxFit = idxFit,
+                 shape = shapeVec,
+                 scale = scaleVec,
+                 thresh = threshVec,
+                 nExceed = nExceedVec,
+                 gofPval = gofPvalVec,
                  tMax = tMax,
                  eps = eps,
+                 fitFailed = fitFailed,
+                 zeroRepl = zeroRepl,
                  callArgs = callArgs)
 
   return(output)

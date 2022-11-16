@@ -7,13 +7,12 @@
 fit_gpd(
   data,
   thresh = NULL,
+  fitMethod = "MLE1D",
   tol = 1e-08,
-  eps = 0,
-  nExceed = NULL,
-  exceedPerm = NULL,
-  fitMethod = "MLE",
-  maxVal = NULL,
+  eps = NULL,
+  factor = 1,
   constraint = "none",
+  maxVal = NULL,
   gofTest = "ad",
   ...
 )
@@ -24,9 +23,6 @@ fit_gpd(
 \item{thresh}{numeric defining the GPD threshold. Data above this threshold
 are the exceedances.}
 
-\item{nExceed}{integer giving the number of exceedances (data above the
-threshold).}
-
 \item{fitMethod}{!!! character giving the method used for fitting the GPD
 distribution.}
 
@@ -34,6 +30,9 @@ distribution.}
 be positive. If \code{NULL}, the maximum of the data vector is used.}
 
 \item{...}{arguments passed to the function for GPD parameter estimation.}
+
+\item{nExceed}{integer giving the number of exceedances (data above the
+threshold).}
 }
 \description{
 Fit and test the GPD
