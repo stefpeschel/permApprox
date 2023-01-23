@@ -1,6 +1,7 @@
 
 get_gpd_thresh <- function(tPerm,
                            tObs,
+                           useAllPerm,
                            tMax,
                            tol,
                            eps = NULL,
@@ -49,9 +50,9 @@ get_gpd_thresh <- function(tPerm,
       stop("Either thresh0 or nExceed0 must be set.")
     }
 
-    if ((tObs - thresh) < 0) {
-      stop("Threshold must be smaller than tObs.")
-    }
+    # if ((tObs - thresh) < 0) {
+    #   stop("Threshold must be smaller than tObs.")
+    # }
 
     nExceed <- sum(tPerm > thresh)
 
@@ -117,7 +118,8 @@ get_gpd_thresh <- function(tPerm,
                           thresh = thresh,
                           fitMethod = "ZSE",
                           tol = 1e-8,
-                          eps = 0,
+                          eps = "fix",
+                          epsVal = 0,
                           factor = 1,
                           constraint = "none",
                           maxVal = NULL,

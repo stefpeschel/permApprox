@@ -10,7 +10,7 @@ fit_gpd(
   fitMethod = "MLE1D",
   tol = 1e-08,
   eps = NULL,
-  factor = 1,
+  epsVal = 0.9,
   constraint = "none",
   maxVal = NULL,
   gofTest = "ad",
