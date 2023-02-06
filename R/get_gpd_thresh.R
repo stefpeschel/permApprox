@@ -8,8 +8,8 @@ get_gpd_thresh <- function(tPerm,
                            threshPoss = NULL,
                            threshMethod = "PRbelowAlpha",
                            thresh0 = NULL,
-                           nExceed0 = NULL,
-                           nExceedMin = 1,
+                           exceed0 = NULL,
+                           exceedMin = 1,
                            stepSize = 1,
                            includeObs = FALSE,
                            fitMethod = "MLE",
@@ -26,6 +26,7 @@ get_gpd_thresh <- function(tPerm,
                            seed = NULL,
                            cores = 1L,
                            verbose = FALSE,
+                           doPlot = TRUE,
                            ...) {
 
   if (!is.null(seed)) set.seed(seed)
@@ -36,18 +37,31 @@ get_gpd_thresh <- function(tPerm,
   tSort <- sort(tPerm, decreasing = FALSE)
   nPerm_gpd <- nPerm
 
-  #-----------------------------------------------------------------------------
+  if (!is.null(thresh0) && !is.null(exceed0)) {
+    stop("Either thresh0 or exceed0 must be set to NULL")
+  }
 
+  if (exceed0 <= 1) {
+    exceed0 <- floor(nPerm * exceed0)
+  }
+
+  if (exceedMin < 1) {
+    exceedMin <- floor(nPerm * exceedMin)
+  }
+
+  #-----------------------------------------------------------------------------
   if (threshMethod == "fix") {
     if (!is.null(thresh0)) {
       thresh <- thresh0
 
-    } else if (!is.null(nExceed0)) {
+    } else if (!is.null(exceed0)) {
+
       threshTmp <- c(0, tSort)
-      thresh <- sort(threshTmp, decreasing = TRUE)[nExceed0 + 1]
+
+      thresh <- sort(threshTmp, decreasing = TRUE)[exceed0 + 1]
 
     } else {
-      stop("Either thresh0 or nExceed0 must be set.")
+      stop("Either thresh0 or exceed0 must be set.")
     }
 
     # if ((tObs - thresh) < 0) {
@@ -60,36 +74,30 @@ get_gpd_thresh <- function(tPerm,
   }
 
   if (is.null(threshPoss)) {
+
+    # Maximum threshold to ensure the minimum number of exceedances
+    threshMax <- sort(tPerm, decreasing = TRUE)[exceedMin]
+
     # Define vector with possible thresholds
-    #  (thresholds must be smaller than the observed test statistic and the
-    #  largest tPerm to ensure at least 1 exceedance)
-    threshPoss <- tSort[tSort < min(tObs, max(tPerm))]
+    #  (threshold must be smaller than the observed test statistic and the
+    #  maximum threshold defined before)
+    threshPoss <- tSort[tSort < min(tObs, threshMax)]
     threshPoss <- c(0, threshPoss)
 
-    #-----------------
-    # Adapt threshold vector to start threshold or start number of exceedances
-    if (!is.null(thresh0) && !is.null(nExceed0)) {
-      stop("Either thresh0 or nExceed0 must be set to NULL")
-    }
+    # Adapt threshold vector to thresh0 or exceed0
 
     if (!is.null(thresh0)) {
       threshPoss <- threshPoss[threshPoss > thresh0]
       threshPoss <- c(thresh0, threshPoss)
     }
 
-    if (!is.null(nExceed0)) {
-      tmp <- sort(tSort, decreasing = TRUE)[nExceed0 + 1]
+    if (!is.null(exceed0)) {
+      tmp <- sort(c(tPerm, 0), decreasing = TRUE)[exceed0 + 1]
       threshPoss <- threshPoss[threshPoss >= tmp]
     }
 
     # Adapt threshold vector according to stepSize
     threshPoss <- threshPoss[c(TRUE, rep(FALSE, stepSize - 1))]
-
-    # Adapt threshold vector to minimum number of exceedances
-    if (nExceedMin > 1) {
-      tmp <- sort(tSort, decreasing = TRUE)[nExceedMin]
-      threshPoss <- threshPoss[threshPoss < tmp]
-    }
 
     # Make thresholds unique
     threshPoss <- unique(threshPoss)
@@ -101,6 +109,8 @@ get_gpd_thresh <- function(tPerm,
   #-----------------------------------------------------------------------------
   idxVec <- nExceedVec <- shapeVec <- scaleVec <- gofPvalVec <-
     numeric(length(threshPoss))
+
+  idxUse <- NA
 
   for (i in seq_along(threshPoss)) {
     idxVec[i] <- i
@@ -129,6 +139,19 @@ get_gpd_thresh <- function(tPerm,
     shapeVec[i] <- fittestres$shape
     scaleVec[i] <- fittestres$scale
     gofPvalVec[i] <- fittestres$pval
+
+    if (threshMethod == "ftr" && is.na(idxUse) && fittestres$pval > gofAlpha) {
+      idxUse <- i
+      #break
+    } else if (threshMethod == "ftrMin5" && i >= 5 && is.na(idxUse) &&
+               all(gofPvalVec[(i-5):i] > gofAlpha)) {
+      #break
+      idxUse <- i-5
+    }
+  }
+
+  if (is.na(idxUse)) {
+    idxUse <- i
   }
 
   #-----------------------------------------------------------------------------
@@ -137,23 +160,34 @@ get_gpd_thresh <- function(tPerm,
                                 shapeVec = shapeVec,
                                 gofPvalVec = gofPvalVec,
                                 gofAlpha = gofAlpha,
-                                nExceedMin = nExceedMin,
+                                exceedMin = exceedMin,
                                 gofTailRMMeth = gofTailRMMeth,
                                 gofTailRMPar = gofTailRMPar)
 
   idxUse <- threshIdxList$idxUse
 
-  #tailRem <- ifelse(!is.null(threshIdxList$tailRem), threshIdxList$tailRem, 0)
-  #propTailRem <- ifelse(!is.null(threshIdxList$propTailRem),
-  #                      threshIdxList$propTailRem, 0)
-  #rmTailIdx <- ifelse(!is.null(threshIdxList$rmTailIdx), threshIdxList$rmTailIdx, NA)
+  if (is.null(idxUse) || is.na(idxUse)) {
+    idxUse <- length(threshPoss)
+  }
 
-  if (is.null(idxUse)) {
-    thresh <- nExceed <- NA
+  thresh <- threshPoss[idxUse]
+  nExceed <- nExceedVec[idxUse]
 
-  } else {
-    thresh <- threshPoss[idxUse]
-    nExceed <- nExceedVec[idxUse]
+  if (doPlot) {
+    #tmp <- gofPvalVec[(idxUse-50):(idxUse+100)]
+    #thtmp <- threshPoss[(idxUse-50):(idxUse+100)]
+    #thtmp <- seq(threshPoss[1], rev(threshPoss)[1], length = 10)
+
+    plot(gofPvalVec ~ threshPoss, pch = 20,
+         ylab = "AD pvalue", xlab = "threshold")
+    #abline(v = thtmp, col = "lightgray")
+    grid(50, NA, lwd = 1, lty = 1)
+    abline(h = gofAlpha)
+    abline(v = thresh, col = "red")
+    points(gofPvalVec ~ threshPoss, pch = 20)
+    legend("topleft",
+           legend = c("AD p-values", "AD alpha", "selected threshold"),
+           col = c(1, 1, 2), pch = c(20, NA, NA), lty = c(NA, 1, 1))
   }
 
   return(list(thresh = thresh, nExceed = nExceed))

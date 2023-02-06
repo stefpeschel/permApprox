@@ -25,7 +25,7 @@
 #'   "fix", "ftr", "minPR", "PRbelowAlpha", "fwdStop"
 #' @param threshMethodPar fix threshold/number of exceedances or start value for
 #'   threshold / number of exceedances, depending on threshMethod
-#' @param nExceedMin minimum number of exceedances
+#' @param exceedMin minimum number of exceedances
 
 #' @param stepSize numeric giving the value by which either the threshold or the
 #'   number of exceedances is increased in each step, depending on threshMethod
@@ -57,8 +57,8 @@
 # threshVec = NULL
 # threshMethod = "PRbelowAlpha"
 # thresh0 = NULL
-# nExceed0 = NULL
-# nExceedMin = 1
+# exceed0 = NULL
+# exceedMin = 1
 # fitThresh = 0.1
 # stepSize = 1
 # includeObs = FALSE
@@ -102,8 +102,8 @@ permpap <- function(tPerm,
                     epsVal = 0.9,
                     threshMethod = "PRbelowAlpha",
                     thresh0 = NULL,
-                    nExceed0 = NULL,
-                    nExceedMin = 10,
+                    exceed0 = NULL,
+                    exceedMin = 0.1,
                     stepSize = 1,
                     gofTest = "ad",
                     gofAlpha = 0.05,
@@ -175,8 +175,7 @@ permpap <- function(tPerm,
                         ntPerm = ntPerm, useAllPerm = useAllPerm)
   pvals <- pemp$pvals
 
-  if (includeObs) tPerm <- rbind(tObs, tPerm)
-
+  if (includeObs) tPerm <- cbind(tObs, tPerm)
   #-----------------------------------------------------------------------------
   # Empirical p-value(s) (observed test statistic is always included)
 

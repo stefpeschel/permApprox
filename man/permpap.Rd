@@ -18,8 +18,8 @@ permpap(
   epsVal = 0.9,
   threshMethod = "PRbelowAlpha",
   thresh0 = NULL,
-  nExceed0 = NULL,
-  nExceedMin = 10,
+  exceed0 = NULL,
+  exceedMin = 0.1,
   stepSize = 1,
   gofTest = "ad",
   gofAlpha = 0.05,
@@ -67,7 +67,7 @@ should be included in the permutation distribution.}
 Possible values are:
 "fix", "ftr", "minPR", "PRbelowAlpha", "fwdStop"}
 
-\item{nExceedMin}{minimum number of exceedances}
+\item{exceedMin}{minimum number of exceedances}
 
 \item{stepSize}{numeric giving the value by which either the threshold or the
 number of exceedances is increased in each step, depending on threshMethod}
