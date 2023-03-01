@@ -27,6 +27,11 @@ get_pvals_gpd <- function(tObs,
                           verbose,
                           ...) {
 
+  if (is.null(thresh0) & is.null(exceed0)) {
+    exceed0 <- nPerm
+    message("exceed0 set to nPerm (number of permutations).")
+  }
+
   # Maximum value at which the GPD density must be positive
   if (constraint == "tObs") {
     tMax <- tObs

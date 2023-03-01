@@ -1,2 +1,2 @@
-# permpap
+# permAprox
 Permutation p-value approximation
