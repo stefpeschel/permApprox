@@ -26,7 +26,7 @@ get_gpd_thresh <- function(tPerm,
                            seed = NULL,
                            cores = 1L,
                            verbose = FALSE,
-                           doPlot = TRUE,
+                           doPlot = FALSE,
                            ...) {
 
   if (!is.null(seed)) set.seed(seed)
@@ -143,28 +143,29 @@ get_gpd_thresh <- function(tPerm,
     if (threshMethod == "ftr" && is.na(idxUse) && fittestres$pval > gofAlpha) {
       idxUse <- i
       #break
-    } else if (threshMethod == "ftrMin5" && i >= 5 && is.na(idxUse) &&
+    } else if (threshMethod == "ftrMin5" && i > 5 && is.na(idxUse) &&
                all(gofPvalVec[(i-5):i] > gofAlpha)) {
       #break
       idxUse <- i-5
     }
   }
 
-  if (is.na(idxUse)) {
+  if (threshMethod %in% c("ftr", "ftrMin5") && is.na(idxUse)) {
     idxUse <- i
   }
 
-  #-----------------------------------------------------------------------------
-  threshIdxList <- get_thresh_idx(threshMethod = threshMethod,
-                                idxVec = idxVec,
-                                shapeVec = shapeVec,
-                                gofPvalVec = gofPvalVec,
-                                gofAlpha = gofAlpha,
-                                exceedMin = exceedMin,
-                                gofTailRMMeth = gofTailRMMeth,
-                                gofTailRMPar = gofTailRMPar)
+  if (is.na(idxUse)) {
+    threshIdxList <- get_thresh_idx(threshMethod = threshMethod,
+                                    idxVec = idxVec,
+                                    shapeVec = shapeVec,
+                                    gofPvalVec = gofPvalVec,
+                                    gofAlpha = gofAlpha,
+                                    exceedMin = exceedMin,
+                                    gofTailRMMeth = gofTailRMMeth,
+                                    gofTailRMPar = gofTailRMPar)
 
-  idxUse <- threshIdxList$idxUse
+    idxUse <- threshIdxList$idxUse
+  }
 
   if (is.null(idxUse) || is.na(idxUse)) {
     idxUse <- length(threshPoss)

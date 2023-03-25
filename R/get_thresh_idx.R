@@ -38,30 +38,26 @@ get_thresh_idx <- function(threshMethod, idxVec, shapeVec,
 
   } else if(threshMethod == "fwdStop"){
 
-    # Sort p-values and take the log
-    pvalssort <- sort(gofPvalVec)
-    logpvals <- log(1-pvalssort)
+    # Log-transformed p-values
+    y <- -log(1 - gofPvalVec)
 
     # Transform log-p-values as described in Barder et. al 2018
-    transSum <- sapply(1:length(pvalssort), function(k){
-      -1/k * sum(logpvals[1:k])
+    ysum <- sapply(1:length(gofPvalVec), function(k) {
+      1 / k * sum(y[1:k])
     })
 
-    if(all(transSum <= gofAlpha)){
+    if (all(ysum <= gofAlpha)) {
       idxUse <- length(gofPvalVec)
 
-    } else if(all(transSum > gofAlpha)){
+    } else if (all(ysum > gofAlpha)) {
       idxUse <- 1
 
     } else{
       # Select the first value above alpha
-      idxUseSort <- which(transSum > gofAlpha)[1]
-
-      # Select the final index on the basis of the unsorted p-values
-      idxUse <- which(gofPvalVec == pvalssort[idxUseSort])
+      idxUse <- which(ysum > gofAlpha)[1]
     }
 
-    out <- list(idxUse = idxUse, transSum = transSum)
+    out <- list(idxUse = idxUse, ysum = ysum)
 
   } else if (threshMethod == "gofCP") {
 
