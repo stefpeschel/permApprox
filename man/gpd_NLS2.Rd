@@ -52,5 +52,5 @@ Parameter estimation for the two-parameter Generalized Pareto Distribution
   \cite{Song & Song (2012)}.
 }
 \references{
-\insertRef{Song2012quantile}{permpap}
+\insertRef{Song2012quantile}{permAprox}
 }

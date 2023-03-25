@@ -9,7 +9,7 @@
 #' @param x data vector
 #'
 #' @references
-#'   \insertRef{Hosking1987parameter}{permpap}
+#'   \insertRef{Hosking1987parameter}{permAprox}
 #'
 #' @importFrom Rdpack reprompt
 #' @export

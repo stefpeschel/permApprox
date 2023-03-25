@@ -16,7 +16,7 @@
 #' @param tol numeric giving the desired accuracy of the optimization
 #'   process.
 #' @references
-#'   \insertRef{Castillo2015likelihood}{permpap}
+#'   \insertRef{Castillo2015likelihood}{permAprox}
 #'
 #' @importFrom Rdpack reprompt
 #' @export

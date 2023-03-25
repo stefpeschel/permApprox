@@ -28,5 +28,5 @@ One-dimensional Maximum Likelihood Estimation for the two-parameter
   \cite{Castillo & Serra (2015)}.
 }
 \references{
-\insertRef{Castillo2015likelihood}{permpap}
+\insertRef{Castillo2015likelihood}{permAprox}
 }

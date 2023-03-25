@@ -29,7 +29,7 @@
 #'   density is non-zero at maxX + eps or max(x) + eps.
 #'
 #' @references
-#'   \insertRef{Zhao2019new}{permpap}
+#'   \insertRef{Zhao2019new}{permAprox}
 #'
 #' @importFrom Rdpack reprompt
 #' @export

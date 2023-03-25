@@ -14,5 +14,5 @@ Method of Moments estimation for the two-parameter Generalized Pareto
   Distribution (GPD) proposed by \cite{Hosking & Wallis (1987)}.
 }
 \references{
-\insertRef{Hosking1987parameter}{permpap}
+\insertRef{Hosking1987parameter}{permAprox}
 }

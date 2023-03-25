@@ -24,7 +24,7 @@
 #'   \cr\cr
 #'
 #' @references
-#'   \insertRef{Zhang2007lme}{permpap}
+#'   \insertRef{Zhang2007lme}{permAprox}
 #'
 #' @importFrom Rdpack reprompt
 #' @export

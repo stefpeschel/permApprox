@@ -88,8 +88,7 @@
 # verbose = TRUE
 # gpdEstimate = NULL
 
-
-permpap <- function(tPerm,
+permaprox <- function(tPerm,
                     tObs,
                     useAllPerm = FALSE,
                     method = "gpd",
@@ -122,21 +121,26 @@ permpap <- function(tPerm,
                     plotTitle = "",
                     maintext = "",
                     jpoint = 0.2,
-                    usegrid = "none",
                     alpha = 0.05,
                     multAdj = "adaptBH",
                     trueNullMethod = "convest",
                     pTrueNull = NULL,
+                    nseq = 100,
+                    pPerm = NULL,
                     ...) {
 
   # possible threshold detection methods are:
-  # - "minimum proportion of rejected GOF-tests"
-  # - "failure-to-reject"
-  # threshMethod <- match.arg(threshMethod, choices = c("fix",
-  #                                                     "ftr",
-  #                                                     "minPR",
-  #                                                     "PRbelowAlpha",
-  #                                                     "fwdStop"))
+  # - Failure to reject
+  # - Failure to reject (min 5 subsequent acceptances)
+  # - Proportion of rejections below alpha
+  # - Forward Stop
+  # - GOF change point
+  threshMethod <- match.arg(threshMethod, choices = c("fix",
+                                                      "ftr",
+                                                      "ftrMin5",
+                                                      "PRbelowAlpha",
+                                                      "fwdStop",
+                                                      "gofCP"))
 
   method <- match.arg(method, choices = c("gpd", "gamma", "empirical"))
 
@@ -145,9 +149,6 @@ permpap <- function(tPerm,
 
   constraint <- match.arg(constraint, choices = c("none", "shapePos", "tObs",
                                                   "tObsMax"))
-  #
-  # gofTailRMMeth <- match.arg(gofTailRMMeth, choices = c("none", "num", "prop",
-  #                                                       "allrej", "changepoint"))
 
   if (constraint == "shapePos" && !fitMethod %in% c("MLE1D", "MLE2D", "NLS2")) {
     stop("Constraint \"shapePos\" only available for methods ",
@@ -171,182 +172,80 @@ permpap <- function(tPerm,
   tPerm <- abs(tPerm)
   tObs <- abs(tObs)
 
-  pemp <- get_pvals_emp(tObs = tObs, tPerm = tPerm, nTest = nTest, nPerm = nPerm,
-                        ntPerm = ntPerm, useAllPerm = useAllPerm)
-  pvals <- pemp$pvals
+  pEmpList <- get_pvals_emp(tObs = tObs, tPerm = tPerm, nTest = nTest, nPerm = nPerm,
+                            ntPerm = ntPerm, useAllPerm = useAllPerm)
+  pEmp <- pEmpList$pvals
 
   if (includeObs) tPerm <- cbind(tObs, tPerm)
   #-----------------------------------------------------------------------------
   # Empirical p-value(s) (observed test statistic is always included)
 
+  if (method == "empirical" | all(pEmp > fitThresh)) {
 
-  if (method == "empirical") {
+    pvals <- pEmp
 
-    return(list(pvals = pvals))
+    gammaFit <- gpdFit <- NULL
 
-  } else if (all(pvals > fitThresh)) { # no distribution is fitted
+  } else if (method == "gamma") {
 
-    # out <- list(pvals = pvals)
+    gammaFit <- get_pvals_gamma(pvals = pEmp,
+                                tPerm = tPerm,
+                                tObs = tObs,
+                                nTest = nTest,
+                                fitThresh = fitThresh)
 
-    # if (method == "gpd") {
-    #   out$shape <- out$scale <- out$gofPval <- out$thresh <- out$excessPerm <-
-    #     out$excessObs <- out$nExceed <- out$shapeVec <- out$scaleVec <-
-    #     out$gofPvalVec <- out$nExceedVec <- NA
-    # } else if (method == "gamma") {
-    #   out$shape <- out$rate <- out$gofPval <- NA
-    # }
+    pvals <- gammaFit$pvals
 
-    return(list(pvals = pvals))
+    gammaFit$pvals <- NULL
+
+    gpdFit <- NULL
+
+  } else if (method == "gpd") {
+
+    # Tail approximation using the GPD
+
+    args <- as.list(environment())
+
+    gpdFit <- do.call(get_pvals_gpd, args)
+
+    pvals <- gpdFit$pvals
+
+    gammaFit <- NULL
   }
-
-  pvalsEmp <- pvals
-
-  #-----------------------------------------------------------------------------
-  # Fitting a Gamma distribution
-
-  if (method == "gamma") {
-
-    output <- get_pvals_gamma(pvals = pvals,
-                              tPerm = tPerm,
-                              tObs = tObs,
-                              nTest = nTest,
-                              fitThresh = fitThresh)
-
-    output$pvalsEmp <- pvalsEmp
-
-    return(output)
-  }
-
-  #-----------------------------------------------------------------------------
-  # Tail approximation using the GPD
-
-  args <- as.list(environment())
-
-  res <- do.call(get_pvals_gpd, args)
-
-  pvals <- res$pvals
 
   #-----------------------------------------------------------------------------
   # Multiple testing adjustment
 
-  if (multAdj == "YB") {
-
-    pAdj <- NULL
-
-  } else if (multAdj == "Lee") {
-
-    args <- as.list(environment())
-    args$res <- NULL
-    args$cores <- 1
-
-    #---------------------------------------------------------------------------
-    # Initialize parallel stuff
-
-    if (verbose) {
-      # Create progress bar:
-      pb <- utils::txtProgressBar(0, nPerm, style=3)
-
-      # Function for progress bar
-      progress <- function(n) {
-        utils::setTxtProgressBar(pb, n)
-      }
-    }
-
-    if (cores > 1) {
-      if (parallel::detectCores() < cores) cores <- parallel::detectCores()
-
-      cl <- parallel::makeCluster(cores, outfile = "")
-      doSNOW::registerDoSNOW(cl)
-      '%do_or_dopar%' <- get('%dopar%')
-
-    } else {
-      '%do_or_dopar%' <- get('%do%')
-    }
-
-    if (verbose) {
-      opts <- list(progress = progress)
-    } else {
-      opts <- list()
-    }
-
-    #---------------------------------------------------------------------------
-    # Compute p-values
-
-    loopres <-
-      foreach(i = 1:nPerm,
-              .export = c("get_gpd_thresh", "fit_gpd", "get_thresh_idx",
-                          "get_pvals_gpd", "get_pvals_emp", ".est_gpd_params",
-                          "gpdAd_adapt", "gpdCvm_adapt",
-                          "gpd_LME", "gpd_MLE1D", ".MLE1D_fk", ".MLE1D_fp",
-                          "gpd_MLE2D", ".MLE2D_negloglik", "gpd_MOM",
-                          "gpd_NLS2", ".NLS2_gpdf", ".NLS2_ecdf", ".NLS2_gpdf2",
-                          ".NLS2_ecdf2", ".NLS2_rss1", ".NLS2_rss2",
-                          "gpd_WNLLSM", ".WNLLSM_sum_i", ".WNLLSM_WLLS1",
-                          ".WNLLSM_WLLS", ".WNLSM_WLS1", ".WNLSM_WLS",
-                          "gpd_ZSE", ".ZSE_lx"),
-              .packages = c("permpap", "foreach"),
-              .options.snow = opts) %do_or_dopar% {
-
-
-                if (verbose) progress(i)
-
-                args$tObs <- tPerm[, i]
-                args$tPerm <- cbind(tObs, tPerm[, -i])
-
-                res <- do.call(get_pvals_gpd, args)
-                res$pvals
-              }
-
-    if (verbose) {
-      # Close progress bar
-      close(pb)
-    }
-
-    # Stop cluster
-    if (cores > 1) parallel::stopCluster(cl)
-
-    #---------------------------------------------------------------------------
-
-    pPerm <- matrix(unlist(loopres), nrow = nTest, ncol = nPerm)
-
-    minP <- apply(pPerm, 2, min)
-
-    # pAdjust would be 0 or 1 with the original method
-    pAdj <- sapply(1:nTest, function(i) sum(minP <= pvals[i]) / nPerm)
-
-    #descdist(minP, discrete = FALSE)
-
-    minPfit <- fitdistrplus::fitdist(data = minP, distr = "beta")
-    minPfit$estimate
-    #plot(minPfit)
-
-    pvalsAdj <- sapply(1:nTest, function(i)  pbeta(pvals[i],
-                                               minPfit$estimate[1],
-                                               minPfit$estimate[2]))
-
-  } else if (multAdj == "none") {
-    pvalsAdj <- NULL
+  if (multAdj == "none") {
+    pAdjust <- NULL
+    adjustRes <- NULL
 
   } else {
-    pvalsAdj <- multAdjust(pvals,
-                           adjust = multAdj,
-                           trueNullMethod = trueNullMethod,
-                           pTrueNull = pTrueNull,
-                           verbose = verbose)
+    adjustRes <- mult_adjust(pvals,
+                             tPerm = tPerm,
+                             pPerm = pPerm,
+                             adjust = multAdj,
+                             trueNullMethod = trueNullMethod,
+                             pTrueNull = pTrueNull,
+                             nseq = nseq,
+                             verbose = verbose)
+    pAdjust <- adjustRes$pAdjust
   }
-
 
   #-----------------------------------------------------------------------------
   callArgs <- mget(names(formals()),sys.frame(sys.nframe()))
   callArgs$gpdEstimate <- NULL
 
-  output <- list(pvals = pvals,
-                 pvalsAdj = pvalsAdj,
-                 pvalsEmp = pvalsEmp
+  output <- list(p = pvals,
+                 pAdjust = pAdjust,
+                 pEmp = pEmp,
+                 gammaFit = gammaFit,
+                 gpdFit = gpdFit,
+                 adjustRes = adjustRes
                  #fdr.output = fdr.output,
                  #sp = sp,
                  #fdr.pa = fdr.pa
-                 )
+  )
 
   return(output)
 }

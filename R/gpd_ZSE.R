@@ -21,7 +21,7 @@
 #' @param shapeMax,scaleMax upper bound on the shape and scale parameters.
 #'   If != Inf, \code{optimMethod} is set to "L-BFGS-B".
 #' @references
-#'   \insertRef{Zhang2009new}{permpap}
+#'   \insertRef{Zhang2009new}{permAprox}
 #'
 #' @importFrom Rdpack reprompt
 #' @export
