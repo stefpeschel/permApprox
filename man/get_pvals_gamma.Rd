@@ -4,7 +4,16 @@
 \alias{get_pvals_gamma}
 \title{Compute p-values via Gamma approximation}
 \usage{
-get_pvals_gamma(pvals, tPerm, tObs, nTest, fitThresh)
+get_pvals_gamma(
+  pEmp,
+  tPerm,
+  tObs,
+  nTest,
+  fitThresh,
+  alternative,
+  gofTestGamma,
+  gofAlpha
+)
 }
 \description{
 Compute p-values via Gamma approximation
