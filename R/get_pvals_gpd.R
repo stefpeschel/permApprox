@@ -11,6 +11,7 @@ get_pvals_gpd <- function(tObs,
                           constraint,
                           fitThresh,
                           gammaOnFail,
+                          gofTestGamma,
                           includeObs,
                           fitMethod,
                           tol,
@@ -27,21 +28,18 @@ get_pvals_gpd <- function(tObs,
                           cores,
                           verbose,
                           ...) {
-
+  
   if (is.null(thresh0) & is.null(exceed0)) {
     message("exceed0 set to used number of permutations.")
     # Will be set by get_gpd_thresh
   }
 
   # Maximum value at which the GPD density must be positive
-  if (constraint == "tObs") {
-    tMax <- tObs
-
-  } else if (constraint == "tObsMax") {
+  if (constraint == "tObsMax") {
     tMax <- rep(max(tObs), length(tObs))
 
   } else {
-    tMax <- NULL
+    tMax <- tObs
   }
 
   pvals <- pEmp
@@ -112,7 +110,7 @@ get_pvals_gpd <- function(tObs,
             .init=list(list(), list(), list(), list(), list(), list(),
                        list(), list(), list(), list()),
             .options.snow = opts) %do_or_dopar% {
-
+              
               if (verbose) progress(i)
 
               out <- list()
@@ -159,7 +157,7 @@ get_pvals_gpd <- function(tObs,
                                            gofTailRMPar = gofTailRMPar,
                                            cores = 1,
                                            verbose = F)
-
+              
               thresh <- threshList$thresh
               out$thresh <- thresh
               out$nExceed <- threshList$nExceed
@@ -202,7 +200,7 @@ get_pvals_gpd <- function(tObs,
 
                   out$gofPval <- cvmtest$p.value
 
-                  if (out$gofPval <= gofAlpha) {
+                  if (gofTestGamma && (out$gofPval <= gofAlpha)) {
                     if (verbose) {
                       message(" Empirical p-value used.")
                     }
