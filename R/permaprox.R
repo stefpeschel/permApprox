@@ -102,7 +102,7 @@ permaprox <- function(tObs,
                       nseq = 100,
                       pPerm = NULL,
                       ...) {
-
+  
   # possible threshold detection methods are:
   # - Failure to reject
   # - Failure to reject (min 5 subsequent acceptances)
@@ -132,45 +132,43 @@ permaprox <- function(tObs,
     stop("Constraint \"shapePos\" only available for methods ",
          "MLE1D, MLE2D, and NLS2.")
   }
-
+  
   if (length(tObs) == 1) {
     tPerm <- matrix(tPerm, ncol = length(tPerm), nrow = 1)
   }
-
-  # Number of permutations
+  
+  # Number of permutations and tests
   nPerm <- ncol(tPerm)
-
-  # Number of tests
   nTest <- length(tObs)
-
-  # Shift test statistics according to H0 -> center around zero
+  
+  # Determine centering vector
   if (is.numeric(nullValue)) {
-    tPerm <- tPerm - nullValue
-    tObs <- tObs - nullValue
-
-  } else if (nullValue == "mean") {
-    # Compute the row means and store them in a vector
-    row_means <- rowMeans(tPerm)
-
-    # Subtract the row means from each row of the matrix
-    tPerm <- sweep(tPerm, 1, row_means, FUN = "-")
-    tObs <- tObs - row_means
-
-  } else { # median
-    # Compute the row medians and store them in a vector
-    row_medians <- apply(tPerm, 1, median)
-
-    # Subtract the row means from each row of the matrix
-    tPerm <- sweep(tPerm, 1, row_medians, FUN = "-")
-    tObs <- tObs - row_medians
+    center_vec <- nullValue
+  } else {
+    center_vec <- switch(
+      nullValue,
+      mean = if (nTest == 1) mean(tPerm) else rowMeans(tPerm),
+      median = if (nTest == 1) median(tPerm) else apply(tPerm, 1, median),
+      stop("Invalid 'nullValue': must be numeric, 'mean', or 'median'")
+    )
   }
-
+  
+  # Center permutation statistics
+  if (nTest == 1) {
+    tPerm <- tPerm - center_vec
+  } else {
+    tPerm <- sweep(tPerm, 1, center_vec, FUN = "-")
+  }
+  
+  # Center observed statistics
+  tObs <- tObs - center_vec
+  
   pEmpList <- get_pvals_emp(tObs = tObs, tPerm = tPerm, nTest = nTest,
                             nPerm = nPerm, alternative = alternative)
-
+  
   pEmp <- pEmpList$pvals
   nExtreme <- pEmpList$nExtreme
-
+  
   if (includeObs) tPerm <- cbind(tObs, tPerm)
   #-----------------------------------------------------------------------------
   # Empirical p-value(s) (observed test statistic is always included)
@@ -240,7 +238,9 @@ permaprox <- function(tObs,
                  gammaFit = gammaFit,
                  gpdFit = gpdFit,
                  approxType = approxType,
-                 adjustRes = adjustRes
+                 adjustRes = adjustRes,
+                 tPerm = tPerm,
+                 tObs = tObs
                  #fdr.output = fdr.output,
                  #sp = sp,
                  #fdr.pa = fdr.pa
