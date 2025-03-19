@@ -24,7 +24,7 @@ get_gpd_thresh <- function(tPerm,
                            verbose = FALSE,
                            doPlot = FALSE,
                            ...) {
-
+  
   if (!is.null(seed)) set.seed(seed)
 
   nPerm <- length(tPerm)
@@ -48,13 +48,17 @@ get_gpd_thresh <- function(tPerm,
   if (exceedMin < 1) {
     exceedMin <- floor(nPerm * exceedMin)
   }
-
+  
   #-----------------------------------------------------------------------------
   if (threshMethod == "fix") {
     if (!is.null(thresh0)) {
       thresh <- thresh0
 
     } else if (!is.null(exceed0)) {
+      
+      if (exceed0 > nPerm) {
+        stop("'exceed0' larger than number of permutations in use (", nPerm, ").")
+      }
 
       threshTmp <- c(0, tSort)
 
