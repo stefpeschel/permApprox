@@ -6,7 +6,7 @@
                             constraint,
                             tol,
                             eps,
-                            epsVal,
+                            epsType,
                             fitMethod,
                             ...) {
 
@@ -20,11 +20,8 @@
     maxExcess <- maxVal - thresh
     maxOrig <- maxExcess
 
-    if (eps == "quantile") {
-      eps <- quantile(data, epsVal)
-
-    } else {
-      eps <- epsVal
+    if (epsType == "quantile") {
+      eps <- quantile(data, eps)
     }
 
     maxExcess <- maxExcess + eps

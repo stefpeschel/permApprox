@@ -17,7 +17,7 @@ get_pvals_gpd(
   fitMethod,
   tol,
   eps,
-  epsVal,
+  epsType,
   threshMethod,
   thresh0,
   exceed0,
