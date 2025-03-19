@@ -1,0 +1,597 @@
+---
+title: "permAprox application"
+output: html_document
+date: "2024-10-10"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Load packages
+
+```{r}
+library(readr)
+
+#install.packages("permAprox_0.1.0.9000.tar.gz", repos = NULL, type="source")
+#library(permAprox)
+
+library(ggplot2)
+
+path <- "G:/HiDrive/PhD/projects/permaprox_application/"
+```
+
+## Import data
+
+```{r}
+brenz <- readr::read_tsv(paste0(path, "data/brenzinger_results_20240919_modified.tsv"),
+                         show_col_types = FALSE)
+
+campy <- readr::read_tsv(paste0(path, "data/campylobacter_results_20240515_modified.tsv"),
+                         show_col_types = FALSE)
+
+salmo <- readr::read_tsv(paste0(path, "data/salmonella_results_20240522_modified.tsv"),
+                         show_col_types = FALSE)
+```
+
+## Make permuted LR numeric
+
+```{r}
+char_to_num <- function(char_vec) {
+  # Remove square brackets
+  char_vec <- gsub("\\[|\\]", "", char_vec)
+  
+  # Extract numbers from character vectors
+  numeric_list <- lapply(char_vec, 
+                         function(x) as.numeric(unlist(strsplit(x, ","))))
+  numeric_matrix <- do.call(rbind, numeric_list)
+  
+  return(numeric_matrix)
+}
+```
+
+```{r, eval=FALSE}
+# Store LR and permuted LR as lists
+tstat_perm <- list()
+tstat_perm$brenz <- char_to_num(brenz$Permuted_LR)
+tstat_perm$campy <- char_to_num(campy$Permuted_LR)
+#tstat_perm$salmo <- char_to_num(salmo$Permuted_LR)
+
+tstat_obs <- list(brenz = brenz$Likelihood_Ratio,
+                  campy = campy$Likelihood_Ratio
+                  #salmo = salmo$Likelihood_Ratio
+                  )
+```
+
+```{r, eval=FALSE}
+save(tstat_obs, tstat_perm, file = "tstats_lr.RData")
+```
+
+```{r}
+load(paste0(path, "tstats_lr.RData"))
+```
+
+## Data check
+
+### Brenzinger
+
+```{r}
+# Define the range of indices to include in the plot
+index_range <- 1:9
+
+# Combine the data for the specified indices into a data frame
+df <- data.frame(
+  Index = rep(index_range, each = ncol(tstat_perm$brenz)),
+  Permuted = do.call(c, lapply(index_range, function(i) tstat_perm$brenz[i, ])),
+  Observed = rep(tstat_obs$brenz[index_range], each = ncol(tstat_perm$brenz))
+)
+
+# Create the ggplot with faceting
+ggplot(df, aes(x = Permuted)) +
+  geom_histogram(binwidth = 0.1, fill = "lightblue", color = "darkgray") +
+  geom_vline(aes(xintercept = Observed), color = "red", linetype = "dashed") +
+  facet_wrap(~ Index, scales = "free") +
+  theme_minimal() +
+  labs(x = "Permuted Statistic", y = "Frequency", 
+       title = "Histograms of Permuted Statistics with Observed Values")
+
+```
+
+### Campy
+
+```{r}
+# Define the range of indices to include in the plot
+index_range <- 1:9
+
+# Combine the data for the specified indices into a data frame
+df <- data.frame(
+  Index = rep(index_range, each = ncol(tstat_perm$campy)),
+  Permuted = do.call(c, lapply(index_range, function(i) tstat_perm$campy[i, ])),
+  Observed = rep(tstat_obs$campy[index_range], each = ncol(tstat_perm$campy))
+)
+
+# Create the ggplot with faceting
+ggplot(df, aes(x = Permuted)) +
+  geom_histogram(binwidth = 0.1, fill = "lightblue", color = "darkgray") +
+  geom_vline(aes(xintercept = Observed), color = "red", linetype = "dashed") +
+  facet_wrap(~ Index, scales = "free") +
+  theme_minimal() +
+  labs(x = "Permuted Statistic", y = "Frequency", 
+       title = "Histograms of Permuted Statistics with Observed Values")
+
+```
+
+
+### Salmonella
+
+```{r}
+# Define the range of indices to include in the plot
+index_range <- 1:9
+
+# Combine the data for the specified indices into a data frame
+df <- data.frame(
+  Index = rep(index_range, each = ncol(tstat_perm$salmo)),
+  Permuted = do.call(c, lapply(index_range, function(i) tstat_perm$salmo[i, ])),
+  Observed = rep(tstat_obs$salmo[index_range], each = ncol(tstat_perm$salmo))
+)
+
+# Create the ggplot with faceting
+ggplot(df, aes(x = Permuted)) +
+  geom_histogram(binwidth = 0.1, fill = "lightblue", color = "darkgray") +
+  geom_vline(aes(xintercept = Observed), color = "red", linetype = "dashed") +
+  facet_wrap(~ Index, scales = "free") +
+  theme_minimal() +
+  labs(x = "Permuted Statistic", y = "Frequency", 
+       title = "Histograms of Permuted Statistics with Observed Values")
+
+```
+  
+## Run permaprox
+
+### Empirical p-values
+
+```{r, eval=FALSE}
+# Initialize lists
+papprox_list <- list()
+
+# Bacteria to iterate over
+bacteria <- c("brenz", "campy", "salmo")
+
+# Run permaprox
+for (bact in bacteria) {
+  papprox_list[[bact]] <- permaprox(
+    alternative = "greater",
+    nullValue = "median",
+    tPerm = tstat_perm[[bact]],
+    tObs = tstat_obs[[bact]],
+    method = "empirical",
+    includeObs = TRUE,
+    multAdj = "BH",
+    cores = 6
+  )
+}
+
+papprox_list_emp <- papprox_list
+
+save(papprox_list_emp, file = paste0(path, "papprox_list_emp.RData"))
+```
+
+### Gamma approximation (with GoF)
+
+With GoF (Goodness of Fit) test.
+
+```{r, eval=FALSE}
+# Initialize lists
+papprox_list <- list()
+
+# Bacteria to iterate over
+bacteria <- c("brenz", "campy", "salmo")
+
+# Run permaprox
+for (bact in bacteria) {
+  papprox_list[[bact]] <- permaprox(
+    alternative = "greater",
+    nullValue = "median",
+    tPerm = tstat_perm[[bact]],
+    tObs = tstat_obs[[bact]],
+    method = "gamma",
+    includeObs = FALSE,
+    multAdj = "BH",
+    cores = 6
+  )
+}
+
+papprox_list_gamma_gof <- papprox_list
+
+save(papprox_list_gamma_gof, file = paste0(path, "papprox_list_gamma_gof.RData"))
+```
+
+### Gamma approximation
+
+```{r, eval=FALSE}
+# Initialize lists
+papprox_list <- list()
+
+# Bacteria to iterate over
+bacteria <- c("brenz", "campy", "salmo")
+
+# Run permaprox
+for (bact in bacteria) {
+  papprox_list[[bact]] <- permaprox(
+    alternative = "greater",
+    nullValue = "median",
+    tPerm = tstat_perm[[bact]],
+    tObs = tstat_obs[[bact]],
+    method = "gamma",
+    gofTestGamma = FALSE,
+    includeObs = FALSE,
+    multAdj = "BH",
+    cores = 6
+  )
+}
+
+papprox_list_gamma <- papprox_list
+
+save(papprox_list_gamma, file = paste0(path, "papprox_list_gamma.RData"))
+```
+
+### GPD approximation
+
+```{r, eval=FALSE}
+# Initialize lists
+papprox_list <- list()
+
+# Bacteria to iterate over
+bacteria <- c("brenz", "campy", "salmo")
+
+# Run permaprox
+for (bact in bacteria) {
+  papprox_list[[bact]] <- permaprox(
+    tPerm = tstat_perm[[bact]],
+    tObs = tstat_obs[[bact]],
+    fitThresh = 0.2,
+    alternative = "greater",
+    nullValue = "median",
+    method = "gpd",
+    threshMethod = "PRbelowAlpha",
+    fitMethod = "MLE2D",
+    constraint = "tObs",
+    eps = 0.01,
+    epsType = "fix",
+    stepSize = 10,
+    includeObs = FALSE,
+    multAdj = "BH",
+    cores = 8
+  )
+}
+
+papprox_list_gpd <- papprox_list
+
+save(papprox_list_gpd, file = paste0(path, "papprox_list_gpd.RData"))
+```
+## Load approximated p-values
+
+```{r}
+load(paste0(path, "papprox_list_emp.RData"))
+load(paste0(path, "papprox_list_gamma_gof.RData"))
+load(paste0(path, "papprox_list_gamma.RData"))
+load(paste0(path, "papprox_list_gpd.RData"))
+```
+
+
+
+## Goodness of fit
+
+### Brenzinger
+
+Distribution is fitted (because empirical p-value < 0.2):
+
+```{r}
+table(papprox_list_gamma$brenz$gammaFit$fitted)
+```
+
+Approximation type (only Gamma fit):
+
+```{r}
+table(papprox_list_gamma_gof$brenz$approxType)
+```
+
+Approximation type (GPD with Gamma as fall-back):
+
+```{r}
+table(papprox_list_gpd$brenz$approxType)
+```
+
+### Campylobacter
+
+Distribution is fitted (because empirical p-value < 0.2):
+
+```{r}
+table(papprox_list_gamma$campy$gammaFit$fitted)
+```
+
+Approximation type (only Gamma fit):
+
+```{r}
+table(papprox_list_gamma_gof$campy$approxType)
+```
+
+Approximation type (GPD with Gamma as fall-back):
+
+```{r}
+table(papprox_list_gpd$campy$approxType)
+```
+
+### Salmonella
+
+Distribution is fitted (because empirical p-value < 0.2):
+
+```{r}
+table(papprox_list_gamma$salmo$gammaFit$fitted)
+```
+
+Approximation type (only Gamma fit):
+
+```{r}
+table(papprox_list_gamma_gof$salmo$approxType)
+```
+
+Approximation type (GPD with Gamma as fall-back):
+
+```{r}
+table(papprox_list_gpd$salmo$approxType)
+```
+
+## Store as data frames
+
+```{r}
+pType <- "pAdjust" # "p" or "pAdjust"
+
+bacteria <- c("brenz", "campy", "salmo")
+
+for (bact in bacteria) {
+  data <- get(bact)
+  
+  assign(paste0("df_", bact),
+       data.frame(Contrast = data$Contrast,
+                       LR = data$Likelihood_Ratio,
+                       Pval_emp = papprox_list_emp[[bact]][[pType]],
+                       Pval_gamma = papprox_list_gamma[[bact]][[pType]],
+                       Pval_gamma_gof = papprox_list_gamma_gof[[bact]][[pType]],
+                       Pval_gpd = papprox_list_gpd[[bact]][[pType]]))
+}
+
+save(df_brenz, df_campy, df_salmo, file = paste0(path, "LR_approx_pvalues.RData"))
+```
+
+## Volcano plots
+
+### Empirical p-values
+
+```{r}
+df <- df_brenz
+
+# -log10(p_value) berechnen
+df$Neg_log10_pvalue <- -log10(df$Pval_emp)
+
+# Volcano Plot erstellen
+
+ggplot(df, aes(x = LR, y = Neg_log10_pvalue)) +
+  geom_point(aes(color = Pval_emp < 0.05)) +
+  geom_hline(yintercept = -log10(1/1000), linetype = "dashed", color = "red") +  
+  theme_minimal() +
+  labs(x = "Likelihood Ratio", y = "-log10(p-value)", title = "Empirical p-values - Brenzinger") +
+  scale_color_manual(values = c("black", "red")) +
+  theme(legend.position = "none")
+
+```
+```{r}
+df <- df_campy
+
+# -log10(p_value) berechnen
+df$Neg_log10_pvalue <- -log10(df$Pval_emp)
+
+# Volcano Plot erstellen
+
+ggplot(df, aes(x = LR, y = Neg_log10_pvalue)) +
+  geom_point(aes(color = Pval_emp < 0.05)) +
+  geom_hline(yintercept = -log10(0.05), linetype = "dashed", color = "red") +  
+  theme_minimal() +
+  labs(x = "Likelihood Ratio", y = "-log10(p-value)", title = "Empirical p-values - Campylobacter") +
+  scale_color_manual(values = c("black", "red")) +
+  theme(legend.position = "none")
+
+```
+
+```{r}
+df <- df_salmo
+
+# -log10(p_value) berechnen
+df$Neg_log10_pvalue <- -log10(df$Pval_emp)
+
+# Volcano Plot erstellen
+
+ggplot(df, aes(x = LR, y = Neg_log10_pvalue)) +
+  geom_point(aes(color = Pval_emp < 0.05)) +
+  geom_hline(yintercept = -log10(0.05), linetype = "dashed", color = "red") +
+  theme_minimal() +
+  labs(x = "Likelihood Ratio", y = "-log10(p-value)", title = "Empirical p-values - Salmonella") +
+  scale_color_manual(values = c("black", "red")) +
+  theme(legend.position = "none")
+
+```
+### Gamma approximation (with GOF test)
+
+```{r}
+df <- df_brenz
+
+# -log10(p_value) berechnen
+df$Neg_log10_pvalue <- -log10(df$Pval_gamma_gof)
+
+# Volcano Plot erstellen
+
+ggplot(df, aes(x = LR, y = Neg_log10_pvalue)) +
+  geom_point(aes(color = Pval_gamma_gof < 0.05)) +
+  geom_hline(yintercept = -log10(0.05), linetype = "dashed", color = "red") +
+  theme_minimal() +
+  labs(x = "Likelihood Ratio", y = "-log10(p-value)", 
+       title = "Gamma approximation p-values - Brenzinger") +
+  scale_color_manual(values = c("black", "red")) +
+  theme(legend.position = "none")
+
+```
+
+```{r}
+df <- df_campy
+
+# -log10(p_value) berechnen
+df$Neg_log10_pvalue <- -log10(df$Pval_gamma_gof)
+
+# Volcano Plot erstellen
+
+ggplot(df, aes(x = LR, y = Neg_log10_pvalue)) +
+  geom_point(aes(color = Pval_gamma_gof < 0.05)) +
+  geom_hline(yintercept = -log10(0.05), linetype = "dashed", color = "red") +
+  theme_minimal() +
+  labs(x = "Likelihood Ratio", y = "-log10(p-value)", 
+       title = "Gamma approximation p-values - Campylobacter") +
+  scale_color_manual(values = c("black", "red")) +
+  theme(legend.position = "none")
+
+```
+
+```{r}
+df <- df_salmo
+
+# -log10(p_value) berechnen
+df$Neg_log10_pvalue <- -log10(df$Pval_gamma_gof)
+
+# Volcano Plot erstellen
+
+ggplot(df, aes(x = LR, y = Neg_log10_pvalue)) +
+  geom_point(aes(color = Pval_gamma_gof < 0.05)) +
+  geom_hline(yintercept = -log10(0.05), linetype = "dashed", color = "red") +
+  theme_minimal() +
+  labs(x = "Likelihood Ratio", y = "-log10(p-value)", 
+       title = "Gamma approximation p-values - Salmonella") +
+  scale_color_manual(values = c("black", "red")) +
+  theme(legend.position = "none")
+
+```
+
+### Gamma approximation
+
+```{r}
+df <- df_brenz
+
+# -log10(p_value) berechnen
+df$Neg_log10_pvalue <- -log10(df$Pval_gamma)
+
+# Volcano Plot erstellen
+
+ggplot(df, aes(x = LR, y = Neg_log10_pvalue)) +
+  geom_point(aes(color = Pval_gamma < 0.05)) +
+  geom_hline(yintercept = -log10(0.05), linetype = "dashed", color = "red") +
+  theme_minimal() +
+  labs(x = "Likelihood Ratio", y = "-log10(p-value)", 
+       title = "Gamma approximation p-values - Brenzinger") +
+  scale_color_manual(values = c("black", "red")) +
+  theme(legend.position = "none")
+
+```
+
+```{r}
+df <- df_campy
+
+# -log10(p_value) berechnen
+df$Neg_log10_pvalue <- -log10(df$Pval_gamma)
+
+# Volcano Plot erstellen
+
+ggplot(df, aes(x = LR, y = Neg_log10_pvalue)) +
+  geom_point(aes(color = Pval_gamma < 0.05)) +
+  geom_hline(yintercept = -log10(0.05), linetype = "dashed", color = "red") +
+  theme_minimal() +
+  labs(x = "Likelihood Ratio", y = "-log10(p-value)", 
+       title = "Gamma approximation p-values - Campylobacter") +
+  scale_color_manual(values = c("black", "red")) +
+  theme(legend.position = "none")
+
+```
+
+```{r}
+df <- df_salmo
+
+# -log10(p_value) berechnen
+df$Neg_log10_pvalue <- -log10(df$Pval_gamma)
+
+# Volcano Plot erstellen
+
+ggplot(df, aes(x = LR, y = Neg_log10_pvalue)) +
+  geom_point(aes(color = Pval_gamma < 0.05)) +
+  geom_hline(yintercept = -log10(0.05), linetype = "dashed", color = "red") +
+  theme_minimal() +
+  labs(x = "Likelihood Ratio", y = "-log10(p-value)", 
+       title = "Gamma approximation p-values - Salmonella") +
+  scale_color_manual(values = c("black", "red")) +
+  theme(legend.position = "none")
+
+```
+
+### GPD approximation
+
+```{r}
+df <- df_brenz
+
+# -log10(p_value) berechnen
+df$Neg_log10_pvalue <- -log10(df$Pval_gpd)
+
+# Volcano Plot erstellen
+
+ggplot(df, aes(x = LR, y = Neg_log10_pvalue)) +
+  geom_point(aes(color = Pval_gpd < 0.05)) +
+  theme_minimal() +
+  labs(x = "Likelihood Ratio", y = "-log10(p-value)", 
+       title = "GPD approximation p-values - Brenzinger") +
+  scale_color_manual(values = c("black", "red")) +
+  theme(legend.position = "none")
+
+```
+
+```{r}
+df <- df_campy
+
+# -log10(p_value) berechnen
+df$Neg_log10_pvalue <- -log10(df$Pval_gpd)
+
+# Volcano Plot erstellen
+
+ggplot(df, aes(x = LR, y = Neg_log10_pvalue)) +
+  geom_point(aes(color = Pval_gpd < 0.05)) +
+  geom_hline(yintercept = -log10(1/10000), linetype = "dashed", color = "red") +  
+  theme_minimal() +
+  labs(x = "Likelihood Ratio", y = "-log10(p-value)", 
+       title = "GPD approximation p-values - Campylobacter") +
+  scale_color_manual(values = c("black", "red")) +
+  theme(legend.position = "none")
+```
+
+```{r}
+df <- df_salmo
+
+# -log10(p_value) berechnen
+df$Neg_log10_pvalue <- -log10(df$Pval_gpd)
+
+# Volcano Plot erstellen
+
+ggplot(df, aes(x = LR, y = Neg_log10_pvalue)) +
+  geom_point(aes(color = Pval_gpd < 0.05)) +
+  geom_hline(yintercept = -log10(1/10000), linetype = "dashed", color = "red") +  
+  theme_minimal() +
+  labs(x = "Likelihood Ratio", y = "-log10(p-value)", 
+       title = "GPD approximation p-values - Salmonella") +
+  scale_color_manual(values = c("black", "red")) +
+  theme(legend.position = "none")
+
+```
+
