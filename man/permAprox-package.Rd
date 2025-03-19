@@ -2,6 +2,7 @@
 % Please edit documentation in R/permAprox-package.R
 \docType{package}
 \name{permAprox-package}
+\alias{permAprox}
 \alias{permAprox-package}
 \title{permAprox: Permutation p-value approximation}
 \description{
@@ -11,7 +12,7 @@ The main function for approximating permutation p-values is
 \code{\link{permaprox}}.
 }
 \author{
-\strong{Maintainer:} Stefanie Peschel \email{stefanie.peschel@mail.de}\cr\cr
+\strong{Maintainer:} Stefanie Peschel \email{stefpeschel@gmail.com}\cr\cr
   \strong{Acknowledgments:}\cr
   \itemize{
    \item Christian L. Müller, Anne-Laure Boulesteix

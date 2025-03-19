@@ -6,7 +6,7 @@
 #' \code{\link{permaprox}}.
 #'
 #' @author
-#'   \strong{Maintainer:} Stefanie Peschel \email{stefanie.peschel@@mail.de}\cr\cr
+#'   \strong{Maintainer:} Stefanie Peschel \email{stefpeschel@@gmail.com}\cr\cr
 #'   \strong{Acknowledgments:}\cr
 #'   \itemize{
 #'    \item Christian L. Müller, Anne-Laure Boulesteix
