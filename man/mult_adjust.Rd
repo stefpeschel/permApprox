@@ -41,6 +41,3 @@ defined via \code{trueNullMethod}.}
 \description{
 The functions adjusts a vector of p-values for multiple testing
 }
-\references{
-\insertRef{farcomeni2007some}{NetCoMi}
-}

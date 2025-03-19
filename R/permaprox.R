@@ -1,133 +1,107 @@
 #' @title Approximate permutation p-values
 #'
 #' @description
-#'   Approximate the p-value for a one-sided permutation hypothesis test,
-#'   where the p-value is defined as the probability of observing a test
-#'   statistic (in absolute terms) greater than or equal to the observed value
-#'   under the null. Approximation methods include the empirical p-value,
-#'   Gamma approximation, and GPD tail approximation.
+#'  Approximate p-values of one-tailed permutation hypothesis tests, where the
+#'  p-value is defined as the probability that a test statistic (in absolute
+#'  terms) is greater than or equal to the observed value under the null.
+#'  Approximation methods include the empirical p-value, the gamma
+#'  approximation, and the GPD tail approximation.
 #'
-#' @param tObs numeric value giving the observed test statistic
-#' @param tPerm numeric vector with permutation test statistics
+#' @param tObs numeric vector giving the observed test statistic(s).
+#' @param tPerm numeric vector or matrix with permutation test statistics. In
+#'   the multiple testing setting, \code{tPerm} must be a matrix where each row
+#'   contains the permutation test statistics of a test and thus belongs to an
+#'   entry in \code{tObs}.
+#' @param method character indicating the method used for p-value approximation.
+#'   Possible values are: "gpd" (default; fitting the GPD distribution),
+#'   "gamma" (fitting a Gamma distribution), "empirical" (use the empirical
+#'   p-value).
+#' @param fitThresh p-value threshold above which a GPD or gamma distribution is
+#'   fitted to approximate the p-value (e.g., 2 times alpha). Defaults to 0.1.
 #' @param includeObs logical. Indicates whether the observed test statistic
-#'   should be included in the permutation distribution.
-#' @param fitThresh threshold for initial p-value, above which a GPD or Gamma
-#'   distribution is fitted for p-value approximation (e.g. 2 times alpha).
-#'   Defaults is 0.1.
-#' @param nonZero logical. If \code{TRUE} (default), a p-value of zero is
-#'   strictly avoided.
-#' @param method character indicating the method used for p-value estimation.
-#'   Possible values are: "gpd" (default), "gamma", "empirical".
-#'
-#'
+#'   **tObs** should be included in the fitting process. Note that **tObs** is
+#'   always included when computing the empirical p-value.
+#' @param fitMethod character giving the method used for fitting the GPD
+#'   parameters. Possible methods are: "LME", "MLE1D", "MLE2D", "MOM", "NLS2",
+#'   "WNLLSM", and "ZSE".
+#' @param constraint character defining the constraint, under which the GPD is
+#'   fitted. Possible values are:
+#'   \describe{
+#'   \item{\code{"none"}}{No constraint.}
+#'   \item{\code{"shapePos"}}{GPD shape parameter must be positive.}
+#'   \item{\code{"tObs"}}{The upper bound of f(x) (=-scale/shape) must be
+#'   greater than **tObs**.}
+#'   \item{\code{"tObsMax"}}{The upper bound of f(x) (=-scale/shape) must be
+#'   greater than the maximum **tObs** of all tests (in the multiple testing
+#'   setting).}
+#'   }
+#' @param tol convergence tolerance (used for fitting GPD parameters)
+#' @param eps small numeric value or proportion (used for constraint)
+#' @param epsType character defining the type of epsilon. Default is "quantile".
 #' @param threshMethod method for threshold detection.
-#'   Possible values are:
-#'   "fix", "ftr", "minPR", "PRbelowAlpha", "fwdStop"
-#' @param threshMethodPar fix threshold/number of exceedances or start value for
-#'   threshold / number of exceedances, depending on threshMethod
-#' @param exceedMin minimum number of exceedances
-
+#'   Possible values are: "fix", "ftr", "minPR", "PRbelowAlpha", "fwdStop"
+#' @param thresh0 numeric value giving the initial threshold.
+#' @param exceed0 numeric value giving the initial number of exceedances. Either
+#'   \code{thresh0} or \code{exceed0} must be given.
+#' @param exceedMin numeric giving the minimum number of exceedances.
 #' @param stepSize numeric giving the value by which either the threshold or the
-#'   number of exceedances is increased in each step, depending on threshMethod
-#' @param ffwd if TRUE, large steps are made at the beginning until H0 is accepted
-#'   for the first time
-
-#' @param fitMethod ...
-#' @param fitInformation ...
-#' @param optimMethod ...
-#' @param shape0,scale0 start value of the shape and scale parameter
-#' @param shapeMin,scaleMin minimum value of the shape and scale parameter
-#' @param shapeMax,scaleMax maximum value of the shape and scale parameter
-#' @param gofTest goodness-of-fit test method
-#' @param gofAlpha significance level of the GOF test
-#' @param seed ...
-#' @param cores
-#' @param plotHist
-#' @param histBreaks
-#' @param histXlim
-#' @param gpdEstimate
-#' ...
+#'   number of exceedances is increased in each step, depending on threshMethod.
+#' @param gofTest goodness-of-fit test method. Possible values are "ad"
+#'   (Anderson-Darling-Test; default) or "cvm" (Cramér–von Mises criterion).
+#' @param gofAlpha significance level of the GOF test.
+#' @param multAdj character specifying the method used to adjust for multiple
+#'   testing. Possible methods are "lfdr" (local FDR), "adaptBH" (default;
+#'   adaptive Benjamini Hochberg), "rbFDR" (resampling-based FDR), as well as
+#'   the methods contained in \code{p.adjust.methods}.
+#' @param alpha significance level.
+#' @param trueNullMethod method used for identifying the proportion of
+#'   true null hypotheses. Only used if \code{multAdj} is set to "adaptBH".
+#' @param pTrueNull proportion of true null hypotheses.
+#' @param seed random seed.
+#' @param cores number of cores used for parallelization.
+#' @param verbose logical. If TRUE, messages returned by internal functions are
+#'   printed.
+#' @param gpdEstimate not used.
+#' @param nseq length of the sequence of possible cut points. Used for
+#'   resampling-based multiple testing adjustment.
+#' @param pPerm description
 #'
 #' @export
 #' @import foreach
 
-# tPerm  <- gpddata
-# tObs  <- max(tPerm)-0.01
-# method = "gpd"
-# threshVec = NULL
-# threshMethod = "PRbelowAlpha"
-# thresh0 = NULL
-# exceed0 = NULL
-# exceedMin = 1
-# fitThresh = 0.1
-# stepSize = 1
-# includeObs = FALSE
-# fitMethod = "ml"
-# fitInformation = "observed"
-# optimMethod = NULL
-# shape0 = NULL
-# scale0 = NULL
-# shapeMin = -Inf
-# scaleMin = -Inf
-# shapeMax = Inf
-# scaleMax = Inf
-# gofTest = "ad"
-# gofAlpha = 0.05
-# gofTailRMMeth = "allrej"
-# gofTailRMPar = NULL
-# seed = NULL
-# cores = 4L
-# plotHist = TRUE
-# histBreaks = 100
-# histXlim = NULL
-# histYlim = NULL
-# plotPvals = TRUE
-# plotPvalsxvar = "thresh"
-# plotTitle = ""
-# maintext = ""
-# verbose = TRUE
-# gpdEstimate = NULL
-
-permaprox <- function(tPerm,
-                    tObs,
-                    useAllPerm = FALSE,
-                    method = "gpd",
-                    fitThresh = 0.2,
-                    includeObs = TRUE,
-                    fitMethod = "MLE1D",
-                    constraint = "tObs",
-                    tol = 1e-8,
-                    eps = "quantile",
-                    epsVal = 0.9,
-                    threshMethod = "PRbelowAlpha",
-                    thresh0 = NULL,
-                    exceed0 = NULL,
-                    exceedMin = 0.1,
-                    stepSize = 1,
-                    gofTest = "ad",
-                    gofAlpha = 0.05,
-                    gofTailRMMeth = "allrej",
-                    gofTailRMPar = NULL,
-                    seed = NULL,
-                    cores = 1L,
-                    verbose = FALSE,
-                    gpdEstimate = NULL,
-                    plotHist = F,
-                    histBreaks = 100,
-                    histXlim = NULL,
-                    histYlim = NULL,
-                    plotPvals = TRUE,
-                    plotPvalsxvar = "thresh",
-                    plotTitle = "",
-                    maintext = "",
-                    jpoint = 0.2,
-                    alpha = 0.05,
-                    multAdj = "adaptBH",
-                    trueNullMethod = "convest",
-                    pTrueNull = NULL,
-                    nseq = 100,
-                    pPerm = NULL,
-                    ...) {
+permaprox <- function(tObs,
+                      tPerm,
+                      alternative = "twoSided",
+                      nullValue = 0,
+                      method = "gpd",
+                      fitThresh = 0.2,
+                      gammaOnFail = TRUE,
+                      includeObs = TRUE,
+                      fitMethod = "MLE1D",
+                      constraint = "tObsMax",
+                      tol = 1e-8,
+                      eps = 0.8,
+                      epsType = "quantile",
+                      threshMethod = "PRbelowAlpha",
+                      thresh0 = NULL,
+                      threshPoss = NULL,
+                      exceed0 = NULL,
+                      exceedMin = 0.1,
+                      stepSize = 1,
+                      gofTest = "ad",
+                      gofAlpha = 0.05,
+                      gofTestGamma = TRUE,
+                      multAdj = "adaptBH",
+                      alpha = 0.05,
+                      trueNullMethod = "convest",
+                      pTrueNull = NULL,
+                      seed = NULL,
+                      cores = 1L,
+                      verbose = FALSE,
+                      gpdEstimate = NULL,
+                      nseq = 100,
+                      pPerm = NULL,
+                      ...) {
 
   # possible threshold detection methods are:
   # - Failure to reject
@@ -142,6 +116,8 @@ permaprox <- function(tPerm,
                                                       "fwdStop",
                                                       "gofCP"))
 
+  alternative <- match.arg(alternative, choices = c("greater", "less", "twoSided"))
+
   method <- match.arg(method, choices = c("gpd", "gamma", "empirical"))
 
   fitMethod <- match.arg(fitMethod, choices = c("LME", "MLE1D", "MLE2D", "MOM",
@@ -149,6 +125,8 @@ permaprox <- function(tPerm,
 
   constraint <- match.arg(constraint, choices = c("none", "shapePos", "tObs",
                                                   "tObsMax"))
+
+  gofTest <- match.arg(gofTest, choices = c("ad", "cvm"))
 
   if (constraint == "shapePos" && !fitMethod %in% c("MLE1D", "MLE2D", "NLS2")) {
     stop("Constraint \"shapePos\" only available for methods ",
@@ -162,19 +140,36 @@ permaprox <- function(tPerm,
   # Number of permutations
   nPerm <- ncol(tPerm)
 
-  #  Overall number of permutation test statistics
-  ntPerm <- length(tPerm)
-
   # Number of tests
   nTest <- length(tObs)
 
-  # Take absolute values (we test H1: tObs > t)
-  tPerm <- abs(tPerm)
-  tObs <- abs(tObs)
+  # Shift test statistics according to H0 -> center around zero
+  if (is.numeric(nullValue)) {
+    tPerm <- tPerm - nullValue
+    tObs <- tObs - nullValue
 
-  pEmpList <- get_pvals_emp(tObs = tObs, tPerm = tPerm, nTest = nTest, nPerm = nPerm,
-                            ntPerm = ntPerm, useAllPerm = useAllPerm)
+  } else if (nullValue == "mean") {
+    # Compute the row means and store them in a vector
+    row_means <- rowMeans(tPerm)
+
+    # Subtract the row means from each row of the matrix
+    tPerm <- sweep(tPerm, 1, row_means, FUN = "-")
+    tObs <- tObs - row_means
+
+  } else { # median
+    # Compute the row medians and store them in a vector
+    row_medians <- apply(tPerm, 1, median)
+
+    # Subtract the row means from each row of the matrix
+    tPerm <- sweep(tPerm, 1, row_medians, FUN = "-")
+    tObs <- tObs - row_medians
+  }
+
+  pEmpList <- get_pvals_emp(tObs = tObs, tPerm = tPerm, nTest = nTest,
+                            nPerm = nPerm, alternative = alternative)
+
   pEmp <- pEmpList$pvals
+  nExtreme <- pEmpList$nExtreme
 
   if (includeObs) tPerm <- cbind(tObs, tPerm)
   #-----------------------------------------------------------------------------
@@ -186,18 +181,21 @@ permaprox <- function(tPerm,
 
     gammaFit <- gpdFit <- NULL
 
-  } else if (method == "gamma") {
+    approxType <- "empirical"
 
-    gammaFit <- get_pvals_gamma(pvals = pEmp,
+  } else if (method == "gamma") {
+    gammaFit <- get_pvals_gamma(pEmp = pEmp,
                                 tPerm = tPerm,
                                 tObs = tObs,
                                 nTest = nTest,
-                                fitThresh = fitThresh)
+                                fitThresh = fitThresh,
+                                alternative = alternative,
+                                gofTestGamma,
+                                gofAlpha)
 
     pvals <- gammaFit$pvals
-
+    approxType <- gammaFit$approxType
     gammaFit$pvals <- NULL
-
     gpdFit <- NULL
 
   } else if (method == "gpd") {
@@ -209,7 +207,7 @@ permaprox <- function(tPerm,
     gpdFit <- do.call(get_pvals_gpd, args)
 
     pvals <- gpdFit$pvals
-
+    approxType <- gpdFit$approxType
     gammaFit <- NULL
   }
 
@@ -241,6 +239,7 @@ permaprox <- function(tPerm,
                  pEmp = pEmp,
                  gammaFit = gammaFit,
                  gpdFit = gpdFit,
+                 approxType = approxType,
                  adjustRes = adjustRes
                  #fdr.output = fdr.output,
                  #sp = sp,

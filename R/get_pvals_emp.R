@@ -1,23 +1,28 @@
 #' @title Compute empirical permutation p-values
 #' @keywords internal
 
-get_pvals_emp <- function(tObs, tPerm, nTest, nPerm, ntPerm, useAllPerm) {
+get_pvals_emp <- function(tObs, tPerm, nTest, nPerm, alternative) {
 
-  # Number of permutation test statistics being greater than or equal to tObs
-  if (useAllPerm) {
-    nlarger <- sapply(1:nTest, function(i) {
-      sum(tPerm >= tObs[i])
+  # Number of permutation test statistics being more extreme than tObs
+
+  # Compute the number of permutation statistics more extreme than tObs
+  if (alternative == "less") {
+    nExtreme <- sapply(1:nTest, function(i) {
+      sum(tPerm[i, ] <= tObs[i])
     })
 
-    nPerm <- ntPerm
+  } else if (alternative == "greater") {
+    nExtreme <- sapply(1:nTest, function(i) {
+      sum(tPerm[i, ] >= tObs[i])
+    })
 
   } else {
-    nlarger <- sapply(1:nTest, function(i) {
-      sum(tPerm[i, ] >= tObs[i])
+    nExtreme <- sapply(1:nTest, function(i) {
+      sum(abs(tPerm[i, ]) >= abs(tObs[i]))
     })
   }
 
-  pvals <- (nlarger + 1) / (nPerm + 1)
+  pvals <- (nExtreme + 1) / (nPerm + 1)
 
-  return(list(pvals = pvals, nlarger = nlarger))
+  return(list(pvals = pvals, nExtreme = nExtreme))
 }

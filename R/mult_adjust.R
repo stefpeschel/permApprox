@@ -19,9 +19,6 @@
 #'   defined via \code{trueNullMethod}.
 #' @param verbose if \code{TRUE}, progress messages are returned.
 #'
-#' @references
-#'   \insertRef{farcomeni2007some}{NetCoMi}
-#'
 #' @importFrom fdrtool fdrtool
 #' @importFrom stats p.adjust
 #' @export

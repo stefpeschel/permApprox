@@ -1,7 +1,6 @@
 
 get_gpd_thresh <- function(tPerm,
                            tObs,
-                           useAllPerm,
                            tMax,
                            tol,
                            threshPoss = NULL,
@@ -20,8 +19,6 @@ get_gpd_thresh <- function(tPerm,
                            shapeMax = Inf, scaleMax = Inf,
                            gofTest = "ad",
                            gofAlpha = 0.05,
-                           gofTailRMMeth = "allrej",
-                           gofTailRMPar = NULL,
                            seed = NULL,
                            cores = 1L,
                            verbose = FALSE,
@@ -35,6 +32,10 @@ get_gpd_thresh <- function(tPerm,
   # Sort permutation test statistics in increasing order
   tSort <- sort(tPerm, decreasing = FALSE)
   nPerm_gpd <- nPerm
+
+  if (is.null(thresh0) & is.null(exceed0)) {
+    exceed0 <- nPerm
+  }
 
   if (!is.null(thresh0) && !is.null(exceed0)) {
     stop("Either thresh0 or exceed0 must be set to NULL")
@@ -86,13 +87,23 @@ get_gpd_thresh <- function(tPerm,
     # Adapt threshold vector to thresh0 or exceed0
 
     if (!is.null(thresh0)) {
+      if (max(threshPoss) <= thresh0) {
+        stop("Argument 'thresh0' is larger then the maximum possible threshold: ",
+                    round(max(threshPoss), 3))
+      }
       threshPoss <- threshPoss[threshPoss > thresh0]
       threshPoss <- c(thresh0, threshPoss)
     }
 
     if (!is.null(exceed0)) {
-      tmp <- sort(c(tPerm, 0), decreasing = TRUE)[exceed0 + 1]
-      threshPoss <- threshPoss[threshPoss >= tmp]
+      thresh_tmp <- sort(c(tPerm, 0), decreasing = TRUE)[exceed0 + 1]
+
+      if (max(threshPoss) <= thresh_tmp) {
+        stop("Argument 'exceed0' is too low (minimum number of exceedances is ",
+        sum(tPerm > max(threshPoss)))
+      }
+
+      threshPoss <- threshPoss[threshPoss >= thresh_tmp]
     }
 
     # Adapt threshold vector according to stepSize
@@ -132,8 +143,8 @@ get_gpd_thresh <- function(tPerm,
                           factor = 1,
                           constraint = "none",
                           maxVal = NULL,
-                          gofTest = gofTest,
-                          ...)
+                          gofTest = gofTest)#,
+                          #...)
 
     shapeVec[i] <- fittestres$shape
     scaleVec[i] <- fittestres$scale
@@ -149,29 +160,25 @@ get_gpd_thresh <- function(tPerm,
     }
   }
 
-  if (threshMethod %in% c("ftr", "ftrMin5") && is.na(idxUse)) {
-    idxUse <- i
-  }
+  # if (threshMethod %in% c("ftr", "ftrMin5") && is.na(idxUse)) {
+  #   idxUse <- i
+  # }
 
   if (is.na(idxUse)) {
     threshIdxList <- get_thresh_idx(threshMethod = threshMethod,
-                                    idxVec = idxVec,
-                                    shapeVec = shapeVec,
                                     gofPvalVec = gofPvalVec,
-                                    gofAlpha = gofAlpha,
-                                    exceedMin = exceedMin,
-                                    gofTailRMMeth = gofTailRMMeth,
-                                    gofTailRMPar = gofTailRMPar)
+                                    gofAlpha = gofAlpha)
 
     idxUse <- threshIdxList$idxUse
   }
 
   if (is.null(idxUse) || is.na(idxUse)) {
-    idxUse <- length(threshPoss)
-  }
+    thresh <- nExceed <- NA
 
-  thresh <- threshPoss[idxUse]
-  nExceed <- nExceedVec[idxUse]
+  } else {
+    thresh <- threshPoss[idxUse]
+    nExceed <- nExceedVec[idxUse]
+  }
 
   if (doPlot) {
     #tmp <- gofPvalVec[(idxUse-50):(idxUse+100)]

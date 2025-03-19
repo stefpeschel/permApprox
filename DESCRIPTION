@@ -8,13 +8,17 @@ Description: Approximate p-values in permutation tests
   while strictly avoiding p-values of zero.
 License: GPL-3 + file LICENSE
 Imports:
+  changepoint,
+  doSNOW,
   eva,
   evir,
+  fdrtool,
   fitdistrplus,
   foreach,
   goftest,
+  limma,
   Rdpack,
   VGAM
 RdMacros: Rdpack
 Encoding: UTF-8
-RoxygenNote: 7.2.2
+RoxygenNote: 7.3.2

@@ -1,10 +1,8 @@
-get_thresh_idx <- function(threshMethod, idxVec, shapeVec,
-                           gofPvalVec, gofAlpha, exceedMin,
-                           gofTailRMMeth, gofTailRMPar){
+get_thresh_idx <- function(threshMethod, gofPvalVec, gofAlpha){
 
   if(all(gofPvalVec <= gofAlpha)){
 
-    idxUse <- length(gofPvalVec)
+    idxUse <- NA
 
     return(list(idxUse = idxUse))
   }

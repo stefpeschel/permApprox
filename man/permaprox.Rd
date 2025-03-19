@@ -5,105 +5,131 @@
 \title{Approximate permutation p-values}
 \usage{
 permaprox(
-  tPerm,
   tObs,
-  useAllPerm = FALSE,
+  tPerm,
+  alternative = "twoSided",
+  nullValue = 0,
   method = "gpd",
   fitThresh = 0.2,
+  gammaOnFail = TRUE,
   includeObs = TRUE,
   fitMethod = "MLE1D",
-  constraint = "tObs",
+  constraint = "tObsMax",
   tol = 1e-08,
   eps = 0.8,
   epsType = "quantile",
   threshMethod = "PRbelowAlpha",
   thresh0 = NULL,
+  threshPoss = NULL,
   exceed0 = NULL,
   exceedMin = 0.1,
   stepSize = 1,
   gofTest = "ad",
   gofAlpha = 0.05,
-  gofTailRMMeth = "allrej",
-  gofTailRMPar = NULL,
+  gofTestGamma = TRUE,
+  multAdj = "adaptBH",
+  alpha = 0.05,
+  trueNullMethod = "convest",
+  pTrueNull = NULL,
   seed = NULL,
   cores = 1L,
   verbose = FALSE,
   gpdEstimate = NULL,
-  plotHist = F,
-  histBreaks = 100,
-  histXlim = NULL,
-  histYlim = NULL,
-  plotPvals = TRUE,
-  plotPvalsxvar = "thresh",
-  plotTitle = "",
-  maintext = "",
-  jpoint = 0.2,
-  alpha = 0.05,
-  multAdj = "adaptBH",
-  trueNullMethod = "convest",
-  pTrueNull = NULL,
   nseq = 100,
   pPerm = NULL,
   ...
 )
 }
 \arguments{
-\item{tPerm}{numeric vector with permutation test statistics}
+\item{tObs}{numeric vector giving the observed test statistic(s).}
 
-\item{tObs}{numeric value giving the observed test statistic}
+\item{tPerm}{numeric vector or matrix with permutation test statistics. In
+the multiple testing setting, \code{tPerm} must be a matrix where each row
+contains the permutation test statistics of a test and thus belongs to an
+entry in \code{tObs}.}
 
-\item{method}{character indicating the method used for p-value estimation.
-Possible values are: "gpd" (default), "gamma", "empirical".}
+\item{method}{character indicating the method used for p-value approximation.
+Possible values are: "gpd" (default; fitting the GPD distribution),
+"gamma" (fitting a Gamma distribution), "empirical" (use the empirical
+p-value).}
 
-\item{fitThresh}{threshold for initial p-value, above which a GPD or Gamma
-distribution is fitted for p-value approximation (e.g. 2 times alpha).
-Defaults is 0.1.}
+\item{fitThresh}{p-value threshold above which a GPD or gamma distribution is
+fitted to approximate the p-value (e.g., 2 times alpha). Defaults to 0.1.}
 
 \item{includeObs}{logical. Indicates whether the observed test statistic
-should be included in the permutation distribution.}
+**tObs** should be included in the fitting process. Note that **tObs** is
+always included when computing the empirical p-value.}
 
-\item{fitMethod}{...}
+\item{fitMethod}{character giving the method used for fitting the GPD
+parameters. Possible methods are: "LME", "MLE1D", "MLE2D", "MOM", "NLS2",
+"WNLLSM", and "ZSE".}
+
+\item{constraint}{character defining the constraint, under which the GPD is
+fitted. Possible values are:
+\describe{
+\item{\code{"none"}}{No constraint.}
+\item{\code{"shapePos"}}{GPD shape parameter must be positive.}
+\item{\code{"tObs"}}{The upper bound of f(x) (=-scale/shape) must be
+greater than **tObs**.}
+\item{\code{"tObsMax"}}{The upper bound of f(x) (=-scale/shape) must be
+greater than the maximum **tObs** of all tests (in the multiple testing
+setting).}
+}}
+
+\item{tol}{convergence tolerance (used for fitting GPD parameters)}
+
+\item{eps}{small numeric value or proportion (used for constraint)}
+
+\item{epsType}{character defining the type of epsilon. Default is "quantile".}
 
 \item{threshMethod}{method for threshold detection.
-Possible values are:
-"fix", "ftr", "minPR", "PRbelowAlpha", "fwdStop"}
+Possible values are: "fix", "ftr", "minPR", "PRbelowAlpha", "fwdStop"}
 
-\item{exceedMin}{minimum number of exceedances}
+\item{thresh0}{numeric value giving the initial threshold.}
+
+\item{exceed0}{numeric value giving the initial number of exceedances. Either
+\code{thresh0} or \code{exceed0} must be given.}
+
+\item{exceedMin}{numeric giving the minimum number of exceedances.}
 
 \item{stepSize}{numeric giving the value by which either the threshold or the
-number of exceedances is increased in each step, depending on threshMethod}
+number of exceedances is increased in each step, depending on threshMethod.}
 
-\item{gofTest}{goodness-of-fit test method}
+\item{gofTest}{goodness-of-fit test method. Possible values are "ad"
+(Anderson-Darling-Test; default) or "cvm" (Cramér–von Mises criterion).}
 
-\item{gofAlpha}{significance level of the GOF test}
+\item{gofAlpha}{significance level of the GOF test.}
 
-\item{seed}{...}
+\item{multAdj}{character specifying the method used to adjust for multiple
+testing. Possible methods are "lfdr" (local FDR), "adaptBH" (default;
+adaptive Benjamini Hochberg), "rbFDR" (resampling-based FDR), as well as
+the methods contained in \code{p.adjust.methods}.}
 
-\item{gpdEstimate}{...}
+\item{alpha}{significance level.}
 
-\item{nonZero}{logical. If \code{TRUE} (default), a p-value of zero is
-strictly avoided.}
+\item{trueNullMethod}{method used for identifying the proportion of
+true null hypotheses. Only used if \code{multAdj} is set to "adaptBH".}
 
-\item{threshMethodPar}{fix threshold/number of exceedances or start value for
-threshold / number of exceedances, depending on threshMethod}
+\item{pTrueNull}{proportion of true null hypotheses.}
 
-\item{ffwd}{if TRUE, large steps are made at the beginning until H0 is accepted
-for the first time}
+\item{seed}{random seed.}
 
-\item{fitInformation}{...}
+\item{cores}{number of cores used for parallelization.}
 
-\item{optimMethod}{...}
+\item{verbose}{logical. If TRUE, messages returned by internal functions are
+printed.}
 
-\item{shape0, scale0}{start value of the shape and scale parameter}
+\item{gpdEstimate}{not used.}
 
-\item{shapeMin, scaleMin}{minimum value of the shape and scale parameter}
+\item{nseq}{length of the sequence of possible cut points. Used for
+resampling-based multiple testing adjustment.}
 
-\item{shapeMax, scaleMax}{maximum value of the shape and scale parameter}
+\item{pPerm}{description}
 }
 \description{
-Approximate the p-value for a one-sided permutation hypothesis test,
-  where the p-value is defined as the probability of observing a test
-  statistic (in absolute terms) greater than or equal to the observed value
-  under the null. Approximation methods include the empirical p-value,
-  Gamma approximation, and GPD tail approximation.
+Approximate p-values of one-tailed permutation hypothesis tests, where the
+ p-value is defined as the probability that a test statistic (in absolute
+ terms) is greater than or equal to the observed value under the null.
+ Approximation methods include the empirical p-value, the gamma
+ approximation, and the GPD tail approximation.
 }
