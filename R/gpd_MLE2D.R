@@ -56,11 +56,15 @@ gpd_MLE2D <- function(x,
 
   # Set start values for shape and scale (use method of moments)
   if (is.null(shapeIni)) {
-    shapeIni <- momEst$shape
+    if (momEst$shape < 0) {
+      shapeIni <- -0.1
+    } else {
+      shapeIni <- 0.1
+    }
   }
 
   if (is.null(scaleIni)) {
-    scaleIni <- momEst$scale
+    scaleIni <- 1
   }
 
   params <- c(shapeIni, scaleIni)
