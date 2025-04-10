@@ -13,5 +13,5 @@
 #'   }
 #'
 #' @name permAprox-package
-#' @docType package
+#' @docType _PACKAGE
 NULL

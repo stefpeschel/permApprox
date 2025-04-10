@@ -15,6 +15,7 @@ get_pvals_gpd(
   constraint,
   fitThresh,
   gammaOnFail,
+  gofTestGamma,
   includeObs,
   fitMethod,
   tol,
