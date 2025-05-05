@@ -6,13 +6,13 @@
 \usage{
 get_pvals_gamma(
   pEmp,
-  tPerm,
-  tObs,
+  perm_stats,
+  obs_stats,
   nTest,
-  fitThresh,
+  fit_thresh,
   alternative,
-  gofTestGamma,
-  gofAlpha
+  gof_testGamma,
+  gof_alpha
 )
 }
 \description{

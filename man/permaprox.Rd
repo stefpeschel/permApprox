@@ -5,28 +5,28 @@
 \title{Approximate permutation p-values}
 \usage{
 permaprox(
-  tObs,
-  tPerm,
+  obs_stats,
+  perm_stats,
   alternative = "twoSided",
   nullValue = 0,
   method = "gpd",
-  fitThresh = 0.2,
+  fit_thresh = 0.2,
   gammaOnFail = TRUE,
   includeObs = TRUE,
-  fitMethod = "MLE1D",
-  constraint = "tObsMax",
+  fit_method = "MLE1D",
+  constraint = "obs_statsMax",
   tol = 1e-08,
   eps = 0.8,
-  epsType = "quantile",
-  threshMethod = "PRbelowAlpha",
+  eps_type = "quantile",
+  thresh_method = "PRbelowAlpha",
   thresh0 = NULL,
   threshPoss = NULL,
   exceed0 = NULL,
-  exceedMin = 0.1,
-  stepSize = 1,
-  gofTest = "ad",
-  gofAlpha = 0.05,
-  gofTestGamma = TRUE,
+  exceed_min = 0.1,
+  thresh_step = 1,
+  gof_test = "ad",
+  gof_alpha = 0.05,
+  gof_testGamma = TRUE,
   multAdj = "adaptBH",
   alpha = 0.05,
   trueNullMethod = "convest",
@@ -41,26 +41,26 @@ permaprox(
 )
 }
 \arguments{
-\item{tObs}{numeric vector giving the observed test statistic(s).}
+\item{obs_stats}{numeric vector giving the observed test statistic(s).}
 
-\item{tPerm}{numeric vector or matrix with permutation test statistics. In
-the multiple testing setting, \code{tPerm} must be a matrix where each row
+\item{perm_stats}{numeric vector or matrix with permutation test statistics. In
+the multiple testing setting, \code{perm_stats} must be a matrix where each row
 contains the permutation test statistics of a test and thus belongs to an
-entry in \code{tObs}.}
+entry in \code{obs_stats}.}
 
 \item{method}{character indicating the method used for p-value approximation.
 Possible values are: "gpd" (default; fitting the GPD distribution),
 "gamma" (fitting a Gamma distribution), "empirical" (use the empirical
 p-value).}
 
-\item{fitThresh}{p-value threshold above which a GPD or gamma distribution is
+\item{fit_thresh}{p-value threshold above which a GPD or gamma distribution is
 fitted to approximate the p-value (e.g., 2 times alpha). Defaults to 0.1.}
 
 \item{includeObs}{logical. Indicates whether the observed test statistic
-**tObs** should be included in the fitting process. Note that **tObs** is
+**obs_stats** should be included in the fitting process. Note that **obs_stats** is
 always included when computing the empirical p-value.}
 
-\item{fitMethod}{character giving the method used for fitting the GPD
+\item{fit_method}{character giving the method used for fitting the GPD
 parameters. Possible methods are: "LME", "MLE1D", "MLE2D", "MOM", "NLS2",
 "WNLLSM", and "ZSE".}
 
@@ -69,10 +69,10 @@ fitted. Possible values are:
 \describe{
 \item{\code{"none"}}{No constraint.}
 \item{\code{"shapePos"}}{GPD shape parameter must be positive.}
-\item{\code{"tObs"}}{The upper bound of f(x) (=-scale/shape) must be
-greater than **tObs**.}
-\item{\code{"tObsMax"}}{The upper bound of f(x) (=-scale/shape) must be
-greater than the maximum **tObs** of all tests (in the multiple testing
+\item{\code{"obs_stats"}}{The upper bound of f(x) (=-scale/shape) must be
+greater than **obs_stats**.}
+\item{\code{"obs_statsMax"}}{The upper bound of f(x) (=-scale/shape) must be
+greater than the maximum **obs_stats** of all tests (in the multiple testing
 setting).}
 }}
 
@@ -80,9 +80,9 @@ setting).}
 
 \item{eps}{small numeric value or proportion (used for constraint)}
 
-\item{epsType}{character defining the type of epsilon. Default is "quantile".}
+\item{eps_type}{character defining the type of epsilon. Default is "quantile".}
 
-\item{threshMethod}{method for threshold detection.
+\item{thresh_method}{method for threshold detection.
 Possible values are: "fix", "ftr", "minPR", "PRbelowAlpha", "fwdStop"}
 
 \item{thresh0}{numeric value giving the initial threshold.}
@@ -90,15 +90,15 @@ Possible values are: "fix", "ftr", "minPR", "PRbelowAlpha", "fwdStop"}
 \item{exceed0}{numeric value giving the initial number of exceedances. Either
 \code{thresh0} or \code{exceed0} must be given.}
 
-\item{exceedMin}{numeric giving the minimum number of exceedances.}
+\item{exceed_min}{numeric giving the minimum number of exceedances.}
 
-\item{stepSize}{numeric giving the value by which either the threshold or the
-number of exceedances is increased in each step, depending on threshMethod.}
+\item{thresh_step}{numeric giving the value by which either the threshold or the
+number of exceedances is increased in each step, depending on thresh_method.}
 
-\item{gofTest}{goodness-of-fit test method. Possible values are "ad"
+\item{gof_test}{goodness-of-fit test method. Possible values are "ad"
 (Anderson-Darling-Test; default) or "cvm" (Cramér–von Mises criterion).}
 
-\item{gofAlpha}{significance level of the GOF test.}
+\item{gof_alpha}{significance level of the GOF test.}
 
 \item{multAdj}{character specifying the method used to adjust for multiple
 testing. Possible methods are "lfdr" (local FDR), "adaptBH" (default;

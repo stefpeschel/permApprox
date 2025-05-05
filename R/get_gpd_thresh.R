@@ -1,24 +1,24 @@
 
-get_gpd_thresh <- function(tPerm,
-                           tObs,
+get_gpd_thresh <- function(perm_stats,
+                           obs_stats,
                            tMax,
                            tol,
                            threshPoss = NULL,
-                           threshMethod = "PRbelowAlpha",
+                           thresh_method = "PRbelowAlpha",
                            thresh0 = NULL,
                            exceed0 = NULL,
-                           exceedMin = 1,
-                           stepSize = 1,
+                           exceed_min = 1,
+                           thresh_step = 1,
                            includeObs = FALSE,
-                           fitMethod = "MLE",
+                           fit_method = "MLE",
                            constraint = "none",
                            fitInformation = "observed",
                            optimMethod = NULL,
                            shape0 = NULL, scale0 = NULL,
                            shapeMin = -Inf, scaleMin = -Inf,
                            shapeMax = Inf, scaleMax = Inf,
-                           gofTest = "ad",
-                           gofAlpha = 0.05,
+                           gof_test = "ad",
+                           gof_alpha = 0.05,
                            seed = NULL,
                            cores = 1L,
                            verbose = FALSE,
@@ -27,10 +27,10 @@ get_gpd_thresh <- function(tPerm,
   
   if (!is.null(seed)) set.seed(seed)
 
-  nPerm <- length(tPerm)
+  nPerm <- length(perm_stats)
 
   # Sort permutation test statistics in increasing order
-  tSort <- sort(tPerm, decreasing = FALSE)
+  tSort <- sort(perm_stats, decreasing = FALSE)
   nPerm_gpd <- nPerm
 
   if (is.null(thresh0) & is.null(exceed0)) {
@@ -45,12 +45,12 @@ get_gpd_thresh <- function(tPerm,
     exceed0 <- floor(nPerm * exceed0)
   }
 
-  if (exceedMin < 1) {
-    exceedMin <- floor(nPerm * exceedMin)
+  if (exceed_min < 1) {
+    exceed_min <- floor(nPerm * exceed_min)
   }
   
   #-----------------------------------------------------------------------------
-  if (threshMethod == "fix") {
+  if (thresh_method == "fix") {
     if (!is.null(thresh0)) {
       thresh <- thresh0
 
@@ -68,11 +68,11 @@ get_gpd_thresh <- function(tPerm,
       stop("Either thresh0 or exceed0 must be set.")
     }
 
-    # if ((tObs - thresh) < 0) {
-    #   stop("Threshold must be smaller than tObs.")
+    # if ((obs_stats - thresh) < 0) {
+    #   stop("Threshold must be smaller than obs_stats.")
     # }
 
-    nExceed <- sum(tPerm > thresh)
+    nExceed <- sum(perm_stats > thresh)
 
     return(list(thresh = thresh, nExceed = nExceed))
   }
@@ -80,12 +80,12 @@ get_gpd_thresh <- function(tPerm,
   if (is.null(threshPoss)) {
 
     # Maximum threshold to ensure the minimum number of exceedances
-    threshMax <- sort(tPerm, decreasing = TRUE)[exceedMin]
+    threshMax <- sort(perm_stats, decreasing = TRUE)[exceed_min]
 
     # Define vector with possible thresholds
     #  (threshold must be smaller than the observed test statistic and the
     #  maximum threshold defined before)
-    threshPoss <- tSort[tSort < min(tObs, threshMax)]
+    threshPoss <- tSort[tSort < min(obs_stats, threshMax)]
     threshPoss <- c(0, threshPoss)
 
     # Adapt threshold vector to thresh0 or exceed0
@@ -100,18 +100,18 @@ get_gpd_thresh <- function(tPerm,
     }
 
     if (!is.null(exceed0)) {
-      thresh_tmp <- sort(c(tPerm, 0), decreasing = TRUE)[exceed0 + 1]
+      thresh_tmp <- sort(c(perm_stats, 0), decreasing = TRUE)[exceed0 + 1]
 
       if (max(threshPoss) <= thresh_tmp) {
         stop("Argument 'exceed0' is too low (minimum number of exceedances is ",
-        sum(tPerm > max(threshPoss)))
+        sum(perm_stats > max(threshPoss)))
       }
 
       threshPoss <- threshPoss[threshPoss >= thresh_tmp]
     }
 
-    # Adapt threshold vector according to stepSize
-    threshPoss <- threshPoss[c(TRUE, rep(FALSE, stepSize - 1))]
+    # Adapt threshold vector according to thresh_step
+    threshPoss <- threshPoss[c(TRUE, rep(FALSE, thresh_step - 1))]
 
     # Make thresholds unique
     threshPoss <- unique(threshPoss)
@@ -140,38 +140,38 @@ get_gpd_thresh <- function(tPerm,
     # Fit and test the GPD distribution
     fittestres <- fit_gpd(data = tSort,
                           thresh = thresh,
-                          fitMethod = "ZSE",
+                          fit_method = "ZSE",
                           tol = 1e-8,
                           eps = 0,
-                          epsType = "fix",
+                          eps_type = "fix",
                           factor = 1,
                           constraint = "none",
                           maxVal = NULL,
-                          gofTest = gofTest)#,
+                          gof_test = gof_test)#,
                           #...)
 
     shapeVec[i] <- fittestres$shape
     scaleVec[i] <- fittestres$scale
     gofPvalVec[i] <- fittestres$pval
 
-    if (threshMethod == "ftr" && is.na(idxUse) && fittestres$pval > gofAlpha) {
+    if (thresh_method == "ftr" && is.na(idxUse) && fittestres$pval > gof_alpha) {
       idxUse <- i
       #break
-    } else if (threshMethod == "ftrMin5" && i > 5 && is.na(idxUse) &&
-               all(gofPvalVec[(i-5):i] > gofAlpha)) {
+    } else if (thresh_method == "ftrMin5" && i > 5 && is.na(idxUse) &&
+               all(gofPvalVec[(i-5):i] > gof_alpha)) {
       #break
       idxUse <- i-5
     }
   }
 
-  # if (threshMethod %in% c("ftr", "ftrMin5") && is.na(idxUse)) {
+  # if (thresh_method %in% c("ftr", "ftrMin5") && is.na(idxUse)) {
   #   idxUse <- i
   # }
 
   if (is.na(idxUse)) {
-    threshIdxList <- get_thresh_idx(threshMethod = threshMethod,
+    threshIdxList <- get_thresh_idx(thresh_method = thresh_method,
                                     gofPvalVec = gofPvalVec,
-                                    gofAlpha = gofAlpha)
+                                    gof_alpha = gof_alpha)
 
     idxUse <- threshIdxList$idxUse
   }
@@ -193,7 +193,7 @@ get_gpd_thresh <- function(tPerm,
          ylab = "AD pvalue", xlab = "threshold")
     #abline(v = thtmp, col = "lightgray")
     grid(50, NA, lwd = 1, lty = 1)
-    abline(h = gofAlpha)
+    abline(h = gof_alpha)
     abline(v = thresh, col = "red")
     points(gofPvalVec ~ threshPoss, pch = 20)
     legend("topleft",

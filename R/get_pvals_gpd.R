@@ -1,30 +1,30 @@
 #' @title Compute p-values via GPD approximation
 #' @keywords internal
 
-get_pvals_gpd <- function(tObs,
-                          tPerm,
+get_pvals_gpd <- function(obs_stats,
+                          perm_stats,
                           alternative,
                           pEmp,
                           nExtreme,
                           nTest,
                           nPerm,
                           constraint,
-                          fitThresh,
+                          fit_thresh,
                           gammaOnFail,
-                          gofTestGamma,
+                          gof_testGamma,
                           includeObs,
-                          fitMethod,
+                          fit_method,
                           tol,
                           eps,
-                          epsType,
-                          threshMethod,
+                          eps_type,
+                          thresh_method,
                           thresh0,
                           threshPoss,
                           exceed0,
-                          exceedMin,
-                          stepSize,
-                          gofTest,
-                          gofAlpha,
+                          exceed_min,
+                          thresh_step,
+                          gof_test,
+                          gof_alpha,
                           cores,
                           verbose,
                           ...) {
@@ -35,24 +35,24 @@ get_pvals_gpd <- function(tObs,
   }
 
   # Maximum value at which the GPD density must be positive
-  if (constraint == "tObsMax") {
-    tMax <- rep(max(tObs), length(tObs))
+  if (constraint == "obs_statsMax") {
+    tMax <- rep(max(obs_stats), length(obs_stats))
 
   } else {
-    tMax <- tObs
+    tMax <- obs_stats
   }
 
   pvals <- pEmp
 
   # Indices of p-values below threshold (only these are fitted)
-  idxFit <- which(pvals <= fitThresh)
+  idxFit <- which(pvals <= fit_thresh)
   fitted <- rep(FALSE, nTest)
   fitted[idxFit] <- TRUE
 
   # Type of p-value estimation
   approxType <- rep(NA, nTest)
 
-  approxType[!seq_along(tObs) %in% idxFit] <- "empirical"
+  approxType[!seq_along(obs_stats) %in% idxFit] <- "empirical"
 
   #---------------------------------------------------------------------------
   # Initialize parallel stuff
@@ -116,32 +116,32 @@ get_pvals_gpd <- function(tObs,
               out <- list()
 
               if (alternative == "less") {
-                tPermUsed <- tPerm[idxFit[i], ]
-                tPermUsed <- abs(tPermUsed[tPermUsed < 0])
+                perm_statsUsed <- perm_stats[idxFit[i], ]
+                perm_statsUsed <- abs(perm_statsUsed[perm_statsUsed < 0])
 
               } else if (alternative == "greater") {
-                tPermUsed <- tPerm[idxFit[i], ]
-                tPermUsed <- tPermUsed[tPermUsed > 0]
+                perm_statsUsed <- perm_stats[idxFit[i], ]
+                perm_statsUsed <- perm_statsUsed[perm_statsUsed > 0]
 
               } else {
-                tPermUsed <- abs(tPerm[idxFit[i], ])
-                tPermUsed <- tPermUsed[tPermUsed > 0]
+                perm_statsUsed <- abs(perm_stats[idxFit[i], ])
+                perm_statsUsed <- perm_statsUsed[perm_statsUsed > 0]
               }
 
-              out$tPermUsed <- tPermUsed
+              out$perm_statsUsed <- perm_statsUsed
 
-              threshList <- get_gpd_thresh(tPerm = tPermUsed,
-                                           tObs = abs(tObs[idxFit[i]]),
+              threshList <- get_gpd_thresh(perm_stats = perm_statsUsed,
+                                           obs_stats = abs(obs_stats[idxFit[i]]),
                                            tMax = abs(tMax[idxFit[i]]),
                                            tol = tol,
                                            threshPoss = threshPoss,
-                                           threshMethod = threshMethod,
+                                           thresh_method = thresh_method,
                                            thresh0 = thresh0,
                                            exceed0 = exceed0,
-                                           exceedMin = exceedMin,
-                                           stepSize = stepSize,
+                                           exceed_min = exceed_min,
+                                           thresh_step = thresh_step,
                                            includeObs = includeObs,
-                                           fitMethod = fitMethod,
+                                           fit_method = fit_method,
                                            constraint = constraint,
                                            fitInformation = fitInformation,
                                            optimMethod = optimMethod,
@@ -151,8 +151,8 @@ get_pvals_gpd <- function(tObs,
                                            scaleMin = scaleMin,
                                            shapeMax = shapeMax,
                                            scaleMax = scaleMax,
-                                           gofTest = gofTest,
-                                           gofAlpha = gofAlpha,
+                                           gof_test = gof_test,
+                                           gof_alpha = gof_alpha,
                                            gofTailRMMeth = gofTailRMMeth,
                                            gofTailRMPar = gofTailRMPar,
                                            cores = 1,
@@ -179,28 +179,28 @@ get_pvals_gpd <- function(tObs,
 
                 if (gammaOnFail) {
                   # Fit Gamma distribution (warning about NANs is suppressed)
-                  suppressWarnings(gammafit <- fitdistrplus::fitdist(data = tPermUsed,
+                  suppressWarnings(gammafit <- fitdistrplus::fitdist(data = perm_statsUsed,
                                                                      distr = "gamma",
                                                                      method = "mle"))
 
                   shape <- as.numeric(gammafit$estimate["shape"])
                   rate <- as.numeric(gammafit$estimate["rate"])
 
-                  nUsed <- length(tPermUsed)
-                  pval_gamma <- (nUsed / nPerm) * pgamma(q = abs(tObs[idxFit[i]]),
+                  nUsed <- length(perm_statsUsed)
+                  pval_gamma <- (nUsed / nPerm) * pgamma(q = abs(obs_stats[idxFit[i]]),
                                                          shape = shape,
                                                          rate = rate,
                                                          lower.tail = FALSE)
 
                   # Goodness-of-fit test
-                  cvmtest <- goftest::cvm.test(x = tPermUsed,
+                  cvmtest <- gof_test::cvm.test(x = perm_statsUsed,
                                                null = "gamma",
                                                shape = shape,
                                                rate = rate)
 
                   out$gofPval <- cvmtest$p.value
 
-                  if (gofTestGamma && (out$gofPval <= gofAlpha)) {
+                  if (gof_testGamma && (out$gofPval <= gof_alpha)) {
                     if (verbose) {
                       message(" Empirical p-value used.")
                     }
@@ -221,15 +221,15 @@ get_pvals_gpd <- function(tObs,
 
               } else {
                 # Fit and test the GPD distribution
-                fittestres <- fit_gpd(data = tPermUsed,
+                fittestres <- fit_gpd(data = perm_statsUsed,
                                       thresh = thresh,
-                                      fitMethod = fitMethod,
+                                      fit_method = fit_method,
                                       tol = tol,
                                       eps = eps,
-                                      epsType = epsType,
+                                      eps_type = eps_type,
                                       constraint = constraint,
                                       maxVal = abs(tMax[idxFit[i]]),
-                                      gofTest = gofTest,
+                                      gof_test = gof_test,
                                       ...)
 
                 out$shape <- fittestres$shape
@@ -238,7 +238,7 @@ get_pvals_gpd <- function(tObs,
                 out$approxType <- "gpd"
 
                 out$pval <- (out$nExceed / nPerm) *
-                  pgpd_upper_tail(q = tObs[idxFit[i]] - thresh,
+                  pgpd_upper_tail(q = obs_stats[idxFit[i]] - thresh,
                                   loc = 0,
                                   scale = out$scale,
                                   shape = out$shape)
@@ -299,7 +299,7 @@ get_pvals_gpd <- function(tObs,
                  eps = eps,
                  approxType = approxType,
                  zeroRepl = zeroRepl,
-                 tPermUsed = loopres$tPermUsed)
+                 perm_statsUsed = loopres$perm_statsUsed)
 
   return(output)
 }

@@ -1,23 +1,23 @@
-get_thresh_idx <- function(threshMethod, gofPvalVec, gofAlpha){
+get_thresh_idx <- function(thresh_method, gofPvalVec, gof_alpha){
 
-  if(all(gofPvalVec <= gofAlpha)){
+  if(all(gofPvalVec <= gof_alpha)){
 
     idxUse <- NA
 
     return(list(idxUse = idxUse))
   }
 
-  idxH0accept <- which(gofPvalVec > gofAlpha)
-  idxH0reject <- which(gofPvalVec <= gofAlpha)
+  idxH0accept <- which(gofPvalVec > gof_alpha)
+  idxH0reject <- which(gofPvalVec <= gof_alpha)
 
-  if(threshMethod == "PRbelowAlpha"){
+  if(thresh_method == "PRbelowAlpha"){
 
     # Actual number of iterations
     n <- length(gofPvalVec)
 
     # Proportion of rejected GOF tests for all thresholds
     propReject <- sapply(1:n, function(i){
-      sum(gofPvalVec[i:n] <= gofAlpha) / (n - i + 1)
+      sum(gofPvalVec[i:n] <= gof_alpha) / (n - i + 1)
     })
 
     # Ensure that H0 is accepted at the chosen threshold
@@ -25,7 +25,7 @@ get_thresh_idx <- function(threshMethod, gofPvalVec, gofAlpha){
     propReject2[idxH0reject] <- 1
 
     # Select the first threshold with a PR below alpha
-    idxUse <- which(propReject2 <= gofAlpha)[1]
+    idxUse <- which(propReject2 <= gof_alpha)[1]
 
     if (is.na(idxUse)) {
       # Use the minimum if no threshold leads to a PR below alpha
@@ -34,7 +34,7 @@ get_thresh_idx <- function(threshMethod, gofPvalVec, gofAlpha){
 
     out <- list(idxUse = idxUse, propReject = propReject)
 
-  } else if(threshMethod == "fwdStop"){
+  } else if(thresh_method == "fwdStop"){
 
     # Log-transformed p-values
     y <- -log(1 - gofPvalVec)
@@ -44,20 +44,20 @@ get_thresh_idx <- function(threshMethod, gofPvalVec, gofAlpha){
       1 / k * sum(y[1:k])
     })
 
-    if (all(ysum <= gofAlpha)) {
+    if (all(ysum <= gof_alpha)) {
       idxUse <- length(gofPvalVec)
 
-    } else if (all(ysum > gofAlpha)) {
+    } else if (all(ysum > gof_alpha)) {
       idxUse <- 1
 
     } else{
       # Select the first value above alpha
-      idxUse <- which(ysum > gofAlpha)[1]
+      idxUse <- which(ysum > gof_alpha)[1]
     }
 
     out <- list(idxUse = idxUse, ysum = ysum)
 
-  } else if (threshMethod == "gofCP") {
+  } else if (thresh_method == "gofCP") {
 
     # Add 100 fake p-values (sampled from U(0, 0.01)) to ensure a correct
     # estimate if (nearly) all hypotheses are true

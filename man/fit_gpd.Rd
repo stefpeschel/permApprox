@@ -7,13 +7,13 @@
 fit_gpd(
   data,
   thresh = NULL,
-  fitMethod = "MLE1D",
+  fit_method = "MLE1D",
   tol = 1e-08,
   eps = 0.8,
-  epsType = "quantile",
+  eps_type = "quantile",
   constraint = "none",
   maxVal = NULL,
-  gofTest = "ad",
+  gof_test = "ad",
   ...
 )
 }
@@ -23,7 +23,7 @@ fit_gpd(
 \item{thresh}{numeric defining the GPD threshold. Data above this threshold
 are the exceedances.}
 
-\item{fitMethod}{!!! character giving the method used for fitting the GPD
+\item{fit_method}{!!! character giving the method used for fitting the GPD
 distribution.}
 
 \item{maxVal}{maximum value for which the probability density function must

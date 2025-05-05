@@ -2,34 +2,53 @@
 #'
 #' The functions adjusts a vector of p-values for multiple testing
 #'
-#' @param pvals numeric vector with p-values
-#' @param adjust character specifying the method used for adjustment.
-#'   Can be \code{"lfdr"}, \code{"adaptBH"}, or one of the methods provided by
-#'   \code{\link[stats]{p.adjust}}.
-#' @param trueNullMethod character indicating the method used for estimating the
-#'   proportion of true null hypotheses from a vector of p-values. Used for the
-#'   adaptive Benjamini-Hochberg method for multiple testing adjustment (chosen
-#'   by \code{adjust = "adaptBH"}). Accepts the provided options of the
-#'   \code{method} argument of \code{\link[limma]{propTrueNull}}:
-#'   \code{"convest"}(default), \code{"lfdr"}, \code{"mean"}, and \code{"hist"}.
-#'   Can alternatively be \code{"farco"} for
-#'   the "iterative plug-in method" proposed by \cite{Farcomeni (2007)}.
-#' @param pTrueNull proportion of true null hypothesis used for the adaptBH
-#'   method. If \code{NULL}, the proportion is computed using the method
-#'   defined via \code{trueNullMethod}.
+#' @param pvals Numeric. Vector with p-values.
+#'
+#' @param method Character. Method for p-value adjustment. Options include:
+#'   \itemize{
+#'     \item \code{"lfdr"}: local false discovery rates via \code{fdrtool}.
+#'     \item \code{"adaptBH"}: adaptive Benjamini-Hochberg (requires estimation of the proportion of true nulls).
+#'     \item Any method supported by \code{stats::p.adjust} (e.g., "holm", "BH", "BY").
+#'   }
+#'
+#' @param trueNullMethod Character. Method to estimate the proportion of true null hypotheses
+#'   when \code{method = "adaptBH"}. Options (for \code{limma::propTrueNull}):
+#'   \itemize{
+#'     \item \code{"convest"} (default)
+#'     \item \code{"lfdr"}
+#'     \item \code{"mean"}
+#'     \item \code{"hist"}
+#'     \item \code{"farco"}: Farcomeni (2007) iterative plug-in method.
+#'   }
+#'
+#' @param pTrueNull Numeric or NULL. Pre-specified proportion of true nulls for \code{adaptBH}.
+#'   If \code{NULL}, it is estimated using \code{trueNullMethod}. Default: \code{NULL}.
+#'
 #' @param verbose if \code{TRUE}, progress messages are returned.
+#'
+#' @param nseq Integer. Number of grid points when computing FDR curves in \code{"rbFDR"} method.
+#'   Default: \code{100}.
+#'
+#' @param perm_stats ToDo! Permutation test statistics.
+#' @param pPerm ToDo! Permutation p-values.
+#'
+#' @param cores Integer. Number of CPU cores to use for parallel computations (e.g., in \code{"rbFDR"}).
+#'   Must be >=1. Default: \code{1}.
+#'
+#' @param verbose Logical. If \code{TRUE}, progress messages are printed. Default: \code{FALSE}.
+#'
 #'
 #' @importFrom fdrtool fdrtool
 #' @importFrom stats p.adjust
 #' @export
 
 mult_adjust <- function(pvals,
-                        tPerm = NULL,
-                        pPerm = NULL,
-                        adjust = "adaptBH",
+                        method = "adaptBH",
                         trueNullMethod = "convest",
                         pTrueNull = NULL,
                         nseq = 100,
+                        perm_stats = NULL,
+                        pPerm = NULL,
                         cores = 1,
                         verbose = FALSE) {
 
@@ -39,7 +58,7 @@ mult_adjust <- function(pvals,
     stop('Argument "pvals" must be a numeric vector.')
   }
 
-  adjust <- match.arg(adjust, c(p.adjust.methods, "lfdr", "adaptBH", "rbFDR"))
+  method <- match.arg(method, c(p.adjust.methods, "lfdr", "adaptBH", "rbFDR"))
 
   trueNullMethod <- match.arg(trueNullMethod, c("farco", "lfdr", "mean",
                                                 "hist", "convest"))
@@ -50,7 +69,7 @@ mult_adjust <- function(pvals,
 
   #-----------------------------------------------------------------------------
 
-  if (adjust == "lfdr") {
+  if (method == "lfdr") {
 
     if (verbose) {
       message("")
@@ -66,7 +85,7 @@ mult_adjust <- function(pvals,
 
     out <- list(pAdjust = pAdjust, qValues = qValues)
 
-  } else if (adjust == "adaptBH") {
+  } else if (method == "adaptBH") {
 
     m <- length(pvals)
     ind <- m:1
@@ -105,10 +124,10 @@ mult_adjust <- function(pvals,
 
     out <- list(pAdjust = pAdjust, pTrueNull = pTrueNull)
 
-  } else if (adjust == "rbFDR") {
+  } else if (method == "rbFDR") {
 
-    nPerm <- ncol(tPerm)
-    nTest <- nrow(tPerm)
+    nPerm <- ncol(perm_stats)
+    nTest <- nrow(perm_stats)
 
     #---------------------------------------------------------------------------
     # Compute p-values of the permutation test statistics
@@ -160,17 +179,17 @@ mult_adjust <- function(pvals,
 
                   if (verbose) progress(i)
 
-                  pvalsPermRes <- permaprox(tPerm = tPerm[,-i],
-                                          tObs = tPerm[, i],
+                  pvalsPermRes <- permaprox(perm_stats = perm_stats[,-i],
+                                          obs_stats = perm_stats[, i],
                                           tol = 1e-8,
                                           method = "gpd",
                                           eps = "quantile",
                                           epsVal = 0.95,
-                                          constraint = "tObsMax",
-                                          threshMethod = "fix",
-                                          fitMethod = "ZSE",
+                                          constraint = "obs_statsMax",
+                                          thresh_method = "fix",
+                                          fit_method = "ZSE",
                                           exceed0 = 250,
-                                          stepSize = 1,
+                                          thresh_step = 1,
                                           includeObs = FALSE,
                                           cores = 1,
                                           multAdj = "none")
@@ -226,7 +245,7 @@ mult_adjust <- function(pvals,
     out <- list(pAdjust = pAdjust, pPerm = pPerm)
 
   } else {
-    pAdjust <- stats::p.adjust(pvals, adjust)
+    pAdjust <- stats::p.adjust(pvals, method)
 
     out <- list(pAdjust = pAdjust)
   }

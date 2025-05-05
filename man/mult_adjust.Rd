@@ -6,7 +6,7 @@
 \usage{
 mult_adjust(
   pvals,
-  tPerm = NULL,
+  perm_stats = NULL,
   pPerm = NULL,
   adjust = "adaptBH",
   trueNullMethod = "convest",

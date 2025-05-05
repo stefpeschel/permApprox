@@ -15,7 +15,7 @@ Imports:
   fdrtool,
   fitdistrplus,
   foreach,
-  goftest,
+  gof_test,
   limma,
   Rdpack,
   VGAM

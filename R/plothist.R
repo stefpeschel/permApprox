@@ -3,11 +3,11 @@
 
 # if(plotHist){
 #   par(mar = c(5, 5, 7, 4))
-#   xseq <- seq(0, tObs+0.1, 0.01)
+#   xseq <- seq(0, obs_stats+0.1, 0.01)
 #
-#   if(is.null(histXlim)) histXlim <- c(0, tObs+0.1)
+#   if(is.null(histXlim)) histXlim <- c(0, obs_stats+0.1)
 #
-#   h <- hist(tPerm, breaks = histBreaks,
+#   h <- hist(perm_stats, breaks = histBreaks,
 #             probability = TRUE, xlim = histXlim, ylim = histYlim,
 #             main = paste("\n Gamma shape param:", round(shape, 7),
 #                          "\n Gamma rate param:", round(rate, 7),
@@ -19,8 +19,8 @@
 #             cex.main = 2, cex.lab = 2)
 #
 #   lines(xseq, dgamma(xseq, shape = shape, rate = rate), col = "blue")
-#   abline(v = tObs, col = "red")
-#   legend(tObs*0.7, max(h$density)*0.9,
+#   abline(v = obs_stats, col = "red")
+#   legend(obs_stats*0.7, max(h$density)*0.9,
 #          legend = c("fitted Gamma distr.", "obs.teststat"),
 #          col = c("blue", "red"), lty = 1, cex = 2)
 #

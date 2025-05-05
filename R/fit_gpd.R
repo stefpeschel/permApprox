@@ -5,7 +5,7 @@
 #'   are the exceedances.
 #' @param nExceed integer giving the number of exceedances (data above the
 #'   threshold).
-#' @param fitMethod !!! character giving the method used for fitting the GPD
+#' @param fit_method !!! character giving the method used for fitting the GPD
 #'   distribution.
 #' @param maxVal maximum value for which the probability density function must
 #'   be positive. If \code{NULL}, the maximum of the data vector is used.
@@ -19,25 +19,25 @@
 
 fit_gpd <- function(data,
                     thresh = NULL,
-                    fitMethod = "MLE1D",
+                    fit_method = "MLE1D",
                     tol = 1e-8,
                     eps = 0.8,
-                    epsType = "quantile",
+                    eps_type = "quantile",
                     constraint = "none",
                     maxVal = NULL,
-                    gofTest = "ad",
+                    gof_test = "ad",
                     ...) {
 
   stopifnot(is.vector(data) & is.numeric(data))
   stopifnot(is.numeric(thresh) & length(thresh) == 1)
 
-  fitMethod <- match.arg(fitMethod, choices = c("LME", "MLE1D", "MLE2D", "MOM",
+  fit_method <- match.arg(fit_method, choices = c("LME", "MLE1D", "MLE2D", "MOM",
                                                 "NLS2", "WNLLSM", "ZSE"))
 
-  constraint <- match.arg(constraint, choices = c("none", "shapePos", "tObs",
-                                                  "tObsMax"))
+  constraint <- match.arg(constraint, choices = c("none", "shapePos", "obs_stats",
+                                                  "obs_statsMax"))
 
-  gofTest <- match.arg(gofTest, choices = c("ad", "cvm"))
+  gof_test <- match.arg(gof_test, choices = c("ad", "cvm"))
 
   #-----------------------------------------------------------------------------
 
@@ -48,8 +48,8 @@ fit_gpd <- function(data,
                              constraint = constraint,
                              tol = tol,
                              eps = eps,
-                             epsType = epsType,
-                             fitMethod = fitMethod,
+                             eps_type = eps_type,
+                             fit_method = fit_method,
                              ...),
              silent = TRUE)
 
@@ -69,7 +69,7 @@ fit_gpd <- function(data,
     # exceedances (test statistics above the threshold)
     exceedPerm <- tSort[tSort > thresh]
 
-    if (gofTest == "ad") {
+    if (gof_test == "ad") {
       #testres <- try(eva::gpdAd(exceedPerm-thresh), silent = TRUE)
       testres <- try(gpdAd_adapt(exceedPerm-thresh,
                                  scale = scale, shape = shape), silent = TRUE)

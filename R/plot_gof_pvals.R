@@ -1,5 +1,5 @@
-plot_gof_pvals <- function(gofPvalVec, gofAlpha, thresh, 
-                           threshMethod, propReject = NULL,
+plot_gof_pvals <- function(gofPvalVec, gof_alpha, thresh, 
+                           thresh_method, propReject = NULL,
                            xvar = "thresh",
                            idxVec = NULL, threshVec = NULL,
                            title = NULL,
@@ -27,7 +27,7 @@ plot_gof_pvals <- function(gofPvalVec, gofAlpha, thresh,
        cex.axis = cexaxis, 
        cex.main = cexmain, cex.lab = cexlab)
   
-  abline(h = gofAlpha, col = "red")
+  abline(h = gof_alpha, col = "red")
   
   if(xvar == "thresh"){
     abline(v = thresh, col = "green")
@@ -35,7 +35,7 @@ plot_gof_pvals <- function(gofPvalVec, gofAlpha, thresh,
     abline(v = which(threshVec == thresh), col = "green")
   }
   
-  if(plotPropReject && threshMethod %in% c("minPR", "PRbelowAlpha")){
+  if(plotPropReject && thresh_method %in% c("minPR", "PRbelowAlpha")){
     lines(propReject ~ xvar.plot[1:length(propReject)], col = "blue")
   }
   
@@ -43,13 +43,13 @@ plot_gof_pvals <- function(gofPvalVec, gofAlpha, thresh,
   
   if(is.null(cexlegend)) cexlegend <- 1
   
-  if(threshMethod %in% c("minPR", "PRbelowAlpha")){
+  if(thresh_method %in% c("minPR", "PRbelowAlpha")){
     legend("topleft", 
-           legend = c("gofAlpha", "threshold", "prop. of rejections"),
+           legend = c("gof_alpha", "threshold", "prop. of rejections"),
            col = c("red", "green", "blue"), lty = 1, cex = cexlegend)
   } else{
     legend("topleft", 
-           legend = c("gofAlpha", "threshold"),
+           legend = c("gof_alpha", "threshold"),
            col = c("red", "green"), lty = 1, cex = cexlegend)
   }
   
