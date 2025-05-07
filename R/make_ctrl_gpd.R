@@ -61,10 +61,10 @@
 #' @param gof_alpha Numeric. Significance level for GOF test (0 < gof_alpha < 1).
 #'   Default: 0.05.
 #'
-#' @return A named list of class "permAproxGPDControl" containing GPD settings.
+#' @return A named list of class "controlGPD" containing GPD settings.
 #'
 #' @export
-make_control_gpd <- function(
+make_ctrl_gpd <- function(
     fit_method = "MLE1D",
     include_obs = FALSE,
     constraint = "unconstrained",
@@ -77,7 +77,9 @@ make_control_gpd <- function(
     exceed0 = 0.25,
     exceed_min = 10,
     gof_test = "ad",
-    gof_alpha = 0.05
+    gof_alpha = 0.05,
+    cores = 1,
+    verbose = TRUE
 ) {
 
   fit_method <- match.arg(fit_method,
@@ -145,18 +147,21 @@ make_control_gpd <- function(
 
   control <- list(
     fit_method = fit_method,
+    include_obs = include_obs,
     constraint = constraint,
     eps = eps,
     eps_type = eps_type,
+    tol = tol,
     thresh_method = thresh_method,
     thresh0 = thresh0,
+    thresh_step = thresh_step,
+    exceed0 = exceed0,
     exceed_min = exceed_min,
     gof_test = gof_test,
     gof_alpha = gof_alpha,
-    thresh_step = thresh_step,
-    tol = tol,
-    gammaOnFail = gammaOnFail
+    cores = cores,
+    verbose = verbose
   )
-  class(control) <- "permAproxGPDControl"
+  class(control) <- "controlGPD"
   control
 }

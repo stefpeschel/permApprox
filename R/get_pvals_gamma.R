@@ -1,88 +1,104 @@
 #' @title Compute p-values via Gamma approximation
 #' @keywords internal
 
-get_pvals_gamma <- function(pEmp, perm_stats, obs_stats, nTest, fit_thresh, alternative,
-                            gof_testGamma, gof_alpha) {
+get_pvals_gamma <- function(p_empirical, perm_stats, obs_stats, n_test,
+                            fit_thresh, alternative, control) {
+browser()
+  pvals <- p_empirical
+
+  # Assign control arguments
+  include_obs <- control$include_obs
+  gof_test <- control$gof_test
+  gof_alpha <- control$gof_alpha
+
+  # Include observed test statistic
+  if (include_obs) perm_stats <- cbind(obs_stats, perm_stats)
 
   # Number of permutations
-  nPerm <- ncol(perm_stats)
-
-  pvals <- pEmp
+  n_perm <- ncol(perm_stats)
 
   # Initialize vectors for parameter output
-  shape <- rate <- gofPval <- rep(NA, nTest)
+  shape <- rate <- gof_p_value <- rep(NA, n_test)
 
   # Indices of p-values below threshold (only these are fitted)
-  idxFit <- which(pvals <= fit_thresh)
+  idx_fit <- which(pvals <= fit_thresh)
 
-  # Indicates, for which tests a gamma fit is done
-  fitted <- rep(FALSE, nTest)
-  fitted[idxFit] <- TRUE
+  # Tests for which a Gamma fit is performed
+  fitted <- rep(FALSE, n_test)
+  fitted[idx_fit] <- TRUE
 
-  approxType <- rep("empirical", nTest)
-  approxType[idxFit] <- "gamma"
+  # Method that is finally used
+  method_used <- rep("empirical", n_test)
+  method_used[idx_fit] <- "gamma"
 
-  # List to store only the test statistics used for the fit
-  perm_statsUsedList <- list()
+  # List to store the test statistics used for the fit
+  perm_stats_used_list <- vector("list", length = n_test)
 
-  for (i in idxFit) {
+  # Transform test statistics for tail modeling
+  transformed <- lapply(seq_len(n_test), function(i) {
+    transform_stats(perm_stats = perm_stats[i, ],
+                    obs_stats = obs_stats[i],
+                    alternative = alternative)
+  })
 
-    if (alternative == "less") {
-      perm_statsUsed <- perm_stats[i, ]
-      perm_statsUsed <- abs(perm_statsUsed[perm_statsUsed < 0])
+  # Extract transformed obs_stats and perm_stats into vectors/matrices
+  trans_obs <- sapply(transformed, function(x) x$obs_stats)
+  trans_perm <- lapply(transformed, function(x) x$perm_stats)
 
-    } else if (alternative == "greater") {
-      perm_statsUsed <- perm_stats[i, ]
-      perm_statsUsed <- perm_statsUsed[perm_statsUsed > 0]
 
-    } else {
-      perm_statsUsed <- abs(perm_stats[i, ])
-      perm_statsUsed <- perm_statsUsed[perm_statsUsed > 0]
+  for (i in idx_fit) {
+
+    obs <- trans_obs[i]
+    perm <- trans_perm[[i]]
+
+    # Skip if obs is not in the support (Gamma only supports > 0)
+    if (obs <= 0 || length(perm) < control$exceed_min) {
+      method_used <- "empirical"
+      next
     }
 
-    perm_statsUsedList[[i]] <- perm_statsUsed
-
-    nUsed <- length(perm_statsUsed)
+    # Store used permutation stats
+    perm_stats_used_list[[i]] <- perm
 
     # Fit Gamma distribution (warning about NANs is suppressed)
-    suppressWarnings(gammafit <- fitdistrplus::fitdist(data = perm_statsUsed,
-                                                       distr = "gamma",
-                                                       method = "mle"))
+    suppressWarnings(gamma_fit <- fitdistrplus::fitdist(data = perm_stats_used,
+                                                        distr = "gamma",
+                                                        method = "mle"))
 
-    shape[i] <- as.numeric(gammafit$estimate["shape"])
-    rate[i] <- as.numeric(gammafit$estimate["rate"])
+    shape[i] <- as.numeric(gamma_fit$estimate["shape"])
+    rate[i] <- as.numeric(gamma_fit$estimate["rate"])
 
-    pvals[i] <- (nUsed / nPerm) * pgamma(q = abs(obs_stats[i]),
-                       shape = shape[i],
-                       rate = rate[i],
-                       lower.tail = FALSE)
+    pvals[i] <- (n_used / n_perm) * pgamma(q = abs(obs_stats[i]),
+                                           shape = shape[i],
+                                           rate = rate[i],
+                                           lower.tail = FALSE)
 
-    # Goodness-of-fit test
-    cvmtest <- gof_test::cvm.test(x = perm_statsUsed,
-                                 null = "gamma",
-                                 shape = shape[i],
-                                 rate = rate[i])
+    if (gof_test == "cvm") {
+      # Goodness-of-fit test
+      cvmtest <- goftest::cvm.test(x = perm_stats_used,
+                                   null = "gamma",
+                                   shape = shape[i],
+                                   rate = rate[i])
 
-    gofPval[i] <- cvmtest$p.value
+      gof_p_value[i] <- cvmtest$p.value
+    }
   }
 
-  if (gof_testGamma) {
-    idxFailed <- which(gofPval <= gof_alpha)
-    pvals[idxFailed] <- pEmp[idxFailed]
-    approxType[idxFailed] <- "empirical"
+  if (gof_test == "cvm") {
+    gof_rejected <- which(gof_p_value <= gof_alpha)
+    pvals[gof_rejected] <- p_empirical[gof_rejected]
+    method_used[gof_rejected] <- "empirical"
   }
 
-  # Remove NULL entries from perm_statsUsedList
-  perm_statsUsedList <- perm_statsUsedList[!sapply(perm_statsUsedList, is.null)]
-
-  output <- list(pvals = pvals,
+  output <- list(p_values = pvals,
                  fitted = fitted,
                  shape = shape,
                  rate = rate,
-                 gofPval = gofPval,
-                 fitted = fitted,
-                 approxType = approxType,
-                 perm_statsUsedList = perm_statsUsedList)
+                 gof_p_value = gof_p_value,
+                 gof_rejected = gof_rejected,
+                 method_used = method_used,
+                 perm_stats_used = perm_stats_used_list
+  )
 
   return(output)
 }

@@ -1,5 +1,5 @@
 plot_excess_hist <- function(excessPerm, excessObs,
-                             nExceed, shape, scale, gofPval, pval, idx = NULL,
+                             nExceed, shape, scale, gof_p_value, pval, idx = NULL,
                              breaks = 100,
                              maintext = "", main = NULL,
                              mar = NULL, xlim = NULL, ylim = NULL,
@@ -12,7 +12,7 @@ plot_excess_hist <- function(excessPerm, excessObs,
     nExceed <- nExceed[idx]
     shape <- shape[idx]
     scale <- scale[idx]
-    gofPval <- gofPval[idx]
+    gof_p_value <- gof_p_value[idx]
     pval <- pval[idx]
   }
   
@@ -28,7 +28,7 @@ plot_excess_hist <- function(excessPerm, excessObs,
     main <- paste("\n number of exceedances:", nExceed,
                    "\n GPD shape param:", round(shape, 7),
                    "\n GPD scale param:", round(scale, 7),
-                   "\n GOF test p-value:", round(gofPval, 7), 
+                   "\n GOF test p-value:", round(gof_p_value, 7), 
                    "\n permutation p-value:", pval,
                    maintext)
   }

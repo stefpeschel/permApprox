@@ -4,7 +4,7 @@
 \alias{get_pvals_emp}
 \title{Compute empirical permutation p-values}
 \usage{
-get_pvals_emp(obs_stats, perm_stats, nTest, nPerm, alternative)
+get_pvals_emp(obs_stats, perm_stats, n_test, n_perm, alternative)
 }
 \description{
 Compute empirical permutation p-values

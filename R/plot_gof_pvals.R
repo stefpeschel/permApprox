@@ -1,4 +1,4 @@
-plot_gof_pvals <- function(gofPvalVec, gof_alpha, thresh, 
+plot_gof_pvals <- function(gof_p_value_vec, gof_alpha, thresh, 
                            thresh_method, propReject = NULL,
                            xvar = "thresh",
                            idxVec = NULL, threshVec = NULL,
@@ -23,7 +23,7 @@ plot_gof_pvals <- function(gofPvalVec, gof_alpha, thresh,
     xvar.plot <- idxVec
   }
   
-  plot(gofPvalVec ~ xvar.plot, type = "l", ylim = c(0,1), main = title,
+  plot(gof_p_value_vec ~ xvar.plot, type = "l", ylim = c(0,1), main = title,
        cex.axis = cexaxis, 
        cex.main = cexmain, cex.lab = cexlab)
   
@@ -39,7 +39,7 @@ plot_gof_pvals <- function(gofPvalVec, gof_alpha, thresh,
     lines(propReject ~ xvar.plot[1:length(propReject)], col = "blue")
   }
   
-  lines(gofPvalVec ~ xvar.plot)
+  lines(gof_p_value_vec ~ xvar.plot)
   
   if(is.null(cexlegend)) cexlegend <- 1
   

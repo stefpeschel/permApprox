@@ -5,10 +5,10 @@
 \title{Compute p-values via Gamma approximation}
 \usage{
 get_pvals_gamma(
-  pEmp,
+  p_empirical,
   perm_stats,
   obs_stats,
-  nTest,
+  n_test,
   fit_thresh,
   alternative,
   gof_testGamma,

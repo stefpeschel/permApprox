@@ -126,8 +126,8 @@ mult_adjust <- function(pvals,
 
   } else if (method == "rbFDR") {
 
-    nPerm <- ncol(perm_stats)
-    nTest <- nrow(perm_stats)
+    n_perm <- ncol(perm_stats)
+    n_test <- nrow(perm_stats)
 
     #---------------------------------------------------------------------------
     # Compute p-values of the permutation test statistics
@@ -137,7 +137,7 @@ mult_adjust <- function(pvals,
 
       if (verbose) {
         # Create progress bar:
-        pb <- utils::txtProgressBar(0, nPerm, style=3)
+        pb <- utils::txtProgressBar(0, n_perm, style=3)
 
         # Function for progress bar
         progress <- function(n) {
@@ -163,7 +163,7 @@ mult_adjust <- function(pvals,
       }
 
       loopres <-
-        foreach(i = 1:nPerm,
+        foreach(i = 1:n_perm,
                 .export = c("get_gpd_thresh", "fit_gpd", "get_thresh_idx",
                             ".est_gpd_params", "get_pvals_emp",
                             "gpdAd_adapt", "gpdCvm_adapt",
@@ -205,7 +205,7 @@ mult_adjust <- function(pvals,
       # Stop cluster
       if (cores > 1) parallel::stopCluster(cl)
 
-      pPerm <- matrix(unlist(loopres), nrow = nTest, ncol = nPerm)
+      pPerm <- matrix(unlist(loopres), nrow = n_test, ncol = n_perm)
 
     }
     #---------------------------------------------------------------------------

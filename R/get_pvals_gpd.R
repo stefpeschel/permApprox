@@ -1,65 +1,62 @@
 #' @title Compute p-values via GPD approximation
 #' @keywords internal
 
-get_pvals_gpd <- function(obs_stats,
+get_pvals_gpd <- function(p_empirical,
+                          obs_stats,
                           perm_stats,
-                          alternative,
-                          pEmp,
-                          nExtreme,
-                          nTest,
-                          nPerm,
-                          constraint,
+                          n_test,
                           fit_thresh,
-                          gammaOnFail,
-                          gof_testGamma,
-                          includeObs,
-                          fit_method,
-                          tol,
-                          eps,
-                          eps_type,
-                          thresh_method,
-                          thresh0,
-                          threshPoss,
-                          exceed0,
-                          exceed_min,
-                          thresh_step,
-                          gof_test,
-                          gof_alpha,
-                          cores,
-                          verbose,
+                          alternative,
+                          control,
                           ...) {
-  
-  if (is.null(thresh0) & is.null(exceed0)) {
-    message("exceed0 set to used number of permutations.")
-    # Will be set by get_gpd_thresh
-  }
+
+  pvals <- p_empirical
+
+  # Assign control arguments
+  fit_method <- control$fit_method
+  include_obs <- control$include_obs
+  constraint <- control$constraint
+  eps <- control$eps
+  eps_type <- control$eps_type
+  tol <- control$tol
+  thresh_method <- control$thresh_method
+  thresh0 <- control$thresh0
+  thresh_step <- control$thresh_step
+  exceed0 <- control$exceed0
+  exceed_min <- control$exceed_min
+  gof_test <- control$gof_test
+  gof_alpha <- control$gof_alpha
+  cores <- control$cores
+  verbose <- control$verbose
+browser()
+  # Include observed test statistic
+  if (include_obs) perm_stats <- cbind(obs_stats, perm_stats)
 
   # Maximum value at which the GPD density must be positive
-  if (constraint == "obs_statsMax") {
-    tMax <- rep(max(obs_stats), length(obs_stats))
+  if (constraint == "support_at_max") {
+    max_stats <- rep(max(obs_stats), length(obs_stats))
 
   } else {
-    tMax <- obs_stats
+    max_stats <- obs_stats
   }
 
-  pvals <- pEmp
-
   # Indices of p-values below threshold (only these are fitted)
-  idxFit <- which(pvals <= fit_thresh)
-  fitted <- rep(FALSE, nTest)
-  fitted[idxFit] <- TRUE
+  idx_fit <- which(pvals <= fit_thresh)
 
-  # Type of p-value estimation
-  approxType <- rep(NA, nTest)
+  # Tests for which a GPD fit is performed
+  fitted <- rep(FALSE, n_test)
+  fitted[idx_fit] <- TRUE
 
-  approxType[!seq_along(obs_stats) %in% idxFit] <- "empirical"
+  # Method that is finally used
+  method_used <- rep("empirical", n_test)
+  method_used[idx_fit] <- "gpd"
 
   #---------------------------------------------------------------------------
   # Initialize parallel stuff
 
   if (verbose) {
     # Create progress bar:
-    pb <- utils::txtProgressBar(0, length(idxFit), style=3)
+    pb <- utils::txtProgressBar(0, length(idx_fit), style=3)
 
     # Function for progress bar
     progress <- function(n) {
@@ -93,7 +90,7 @@ get_pvals_gpd <- function(obs_stats,
   # Compute p-values
 
   loopres <-
-    foreach(i = seq_along(idxFit),
+    foreach(i = seq_along(idx_fit),
             .export = c("get_gpd_thresh", "fit_gpd", "get_thresh_idx",
                         ".est_gpd_params", "get_pvals_emp",
                         "gpdAd_adapt", "gpdCvm_adapt",
@@ -110,29 +107,20 @@ get_pvals_gpd <- function(obs_stats,
             .init=list(list(), list(), list(), list(), list(), list(),
                        list(), list(), list(), list()),
             .options.snow = opts) %do_or_dopar% {
-              
+
               if (verbose) progress(i)
 
               out <- list()
 
-              if (alternative == "less") {
-                perm_statsUsed <- perm_stats[idxFit[i], ]
-                perm_statsUsed <- abs(perm_statsUsed[perm_statsUsed < 0])
+              perm_stats_row <- perm_stats[i, ]
+              perm_stats_used <- get_perm_stats_used(perm_stats_row, alternative)
 
-              } else if (alternative == "greater") {
-                perm_statsUsed <- perm_stats[idxFit[i], ]
-                perm_statsUsed <- perm_statsUsed[perm_statsUsed > 0]
+              n_used <- length(perm_stats_used)
 
-              } else {
-                perm_statsUsed <- abs(perm_stats[idxFit[i], ])
-                perm_statsUsed <- perm_statsUsed[perm_statsUsed > 0]
-              }
+              out$perm_stats_used <- perm_stats_used
 
-              out$perm_statsUsed <- perm_statsUsed
-
-              threshList <- get_gpd_thresh(perm_stats = perm_statsUsed,
-                                           obs_stats = abs(obs_stats[idxFit[i]]),
-                                           tMax = abs(tMax[idxFit[i]]),
+              threshList <- get_gpd_thresh(perm_stats = perm_stats_used,
+                                           obs_stats = abs(obs_stats[idx_fit[i]]),
                                            tol = tol,
                                            threshPoss = threshPoss,
                                            thresh_method = thresh_method,
@@ -157,7 +145,7 @@ get_pvals_gpd <- function(obs_stats,
                                            gofTailRMPar = gofTailRMPar,
                                            cores = 1,
                                            verbose = F)
-              
+
               thresh <- threshList$thresh
               out$thresh <- thresh
               out$nExceed <- threshList$nExceed
@@ -166,16 +154,16 @@ get_pvals_gpd <- function(obs_stats,
               if (is.na(thresh)) {
 
                 if (verbose) {
-                  message("In test ", idxFit[i],
+                  message("In test ", idx_fit[i],
                           ": No iteration led to a good fit ",
                           "(GOF test rejected for ",
                           "all thresholds).")
                 }
 
-                gofPval <- shape <- scale <- thresh <- excessPerm <- nExceed <-
+                gof_p_value <- shape <- scale <- thresh <- excessPerm <- nExceed <-
                   excessObs <- NA
 
-                out$shape <- out$scale <- out$gofPval <- NA
+                out$shape <- out$scale <- out$gof_p_value <- NA
 
                 if (gammaOnFail) {
                   # Fit Gamma distribution (warning about NANs is suppressed)
@@ -187,7 +175,7 @@ get_pvals_gpd <- function(obs_stats,
                   rate <- as.numeric(gammafit$estimate["rate"])
 
                   nUsed <- length(perm_statsUsed)
-                  pval_gamma <- (nUsed / nPerm) * pgamma(q = abs(obs_stats[idxFit[i]]),
+                  pval_gamma <- (nUsed / n_perm) * pgamma(q = abs(obs_stats[idx_fit[i]]),
                                                          shape = shape,
                                                          rate = rate,
                                                          lower.tail = FALSE)
@@ -198,9 +186,9 @@ get_pvals_gpd <- function(obs_stats,
                                                shape = shape,
                                                rate = rate)
 
-                  out$gofPval <- cvmtest$p.value
+                  out$gof_p_value <- cvmtest$p.value
 
-                  if (gof_testGamma && (out$gofPval <= gof_alpha)) {
+                  if (gof_testGamma && (out$gof_p_value <= gof_alpha)) {
                     if (verbose) {
                       message(" Empirical p-value used.")
                     }
@@ -228,29 +216,29 @@ get_pvals_gpd <- function(obs_stats,
                                       eps = eps,
                                       eps_type = eps_type,
                                       constraint = constraint,
-                                      maxVal = abs(tMax[idxFit[i]]),
+                                      maxVal = abs(max_stats[idx_fit[i]]),
                                       gof_test = gof_test,
                                       ...)
 
                 out$shape <- fittestres$shape
                 out$scale <- fittestres$scale
-                out$gofPval <- fittestres$pval
+                out$gof_p_value <- fittestres$pval
                 out$approxType <- "gpd"
 
-                out$pval <- (out$nExceed / nPerm) *
-                  pgpd_upper_tail(q = obs_stats[idxFit[i]] - thresh,
+                out$pval <- (out$nExceed / n_perm) *
+                  pgpd_upper_tail(q = obs_stats[idx_fit[i]] - thresh,
                                   loc = 0,
                                   scale = out$scale,
                                   shape = out$shape)
 
                 if (out$pval == 0) {
                   if (verbose) {
-                    message("In test ", idxFit[i],
+                    message("In test ", idx_fit[i],
                             ": GPD approximation led to a p-value of zero. ",
                             "Empirical p-value used.")
                   }
 
-                  #out$pval <- (nlarger[idxFit[i]] + 1) / (nPerm + 1)
+                  #out$pval <- (nlarger[idx_fit[i]] + 1) / (n_perm + 1)
                   out$pval <- pvals[i]
                   out$zeroRepl <- TRUE
                 }
@@ -274,19 +262,19 @@ get_pvals_gpd <- function(obs_stats,
   names(loopres) <- loopres[[length(loopres)]][[1]]
   loopres[[length(loopres)]] <- NULL
 
-  threshVec <- nExceedVec <- shapeVec <- scaleVec <- gofPvalVec <-
-    zeroRepl <- rep(NA, nTest)
+  threshVec <- nExceedVec <- shapeVec <- scaleVec <- gof_p_value_vec <-
+    zeroRepl <- rep(NA, n_test)
 
-  approxType <- rep("empirical", nTest)
+  approxType <- rep("empirical", n_test)
 
-  threshVec[idxFit] <- unlist(loopres$thresh)
-  nExceedVec[idxFit] <- unlist(loopres$nExceed)
-  shapeVec[idxFit] <- unlist(loopres$shape)
-  scaleVec[idxFit] <- unlist(loopres$scale)
-  gofPvalVec[idxFit] <- unlist(loopres$gofPval)
-  pvals[idxFit] <- unlist(loopres$pval)
-  approxType[idxFit] <- unlist(loopres$approxType)
-  zeroRepl[idxFit] <- unlist(loopres$zeroRepl)
+  threshVec[idx_fit] <- unlist(loopres$thresh)
+  nExceedVec[idx_fit] <- unlist(loopres$nExceed)
+  shapeVec[idx_fit] <- unlist(loopres$shape)
+  scaleVec[idx_fit] <- unlist(loopres$scale)
+  gof_p_value_vec[idx_fit] <- unlist(loopres$gof_p_value)
+  pvals[idx_fit] <- unlist(loopres$pval)
+  approxType[idx_fit] <- unlist(loopres$approxType)
+  zeroRepl[idx_fit] <- unlist(loopres$zeroRepl)
 
   output <- list(pvals = pvals,
                  fitted = fitted,
@@ -294,8 +282,8 @@ get_pvals_gpd <- function(obs_stats,
                  scale = scaleVec,
                  thresh = threshVec,
                  nExceed = nExceedVec,
-                 gofPval = gofPvalVec,
-                 tMax = tMax,
+                 gof_p_value = gof_p_value_vec,
+                 max_stats = max_stats,
                  eps = eps,
                  approxType = approxType,
                  zeroRepl = zeroRepl,

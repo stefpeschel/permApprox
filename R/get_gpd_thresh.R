@@ -1,7 +1,6 @@
 
 get_gpd_thresh <- function(perm_stats,
                            obs_stats,
-                           tMax,
                            tol,
                            threshPoss = NULL,
                            thresh_method = "PRbelowAlpha",
@@ -24,17 +23,17 @@ get_gpd_thresh <- function(perm_stats,
                            verbose = FALSE,
                            doPlot = FALSE,
                            ...) {
-  
+
   if (!is.null(seed)) set.seed(seed)
 
-  nPerm <- length(perm_stats)
+  n_perm <- length(perm_stats)
 
   # Sort permutation test statistics in increasing order
   tSort <- sort(perm_stats, decreasing = FALSE)
-  nPerm_gpd <- nPerm
+  n_perm_gpd <- n_perm
 
   if (is.null(thresh0) & is.null(exceed0)) {
-    exceed0 <- nPerm
+    exceed0 <- n_perm
   }
 
   if (!is.null(thresh0) && !is.null(exceed0)) {
@@ -42,22 +41,22 @@ get_gpd_thresh <- function(perm_stats,
   }
 
   if (exceed0 <= 1) {
-    exceed0 <- floor(nPerm * exceed0)
+    exceed0 <- floor(n_perm * exceed0)
   }
 
   if (exceed_min < 1) {
-    exceed_min <- floor(nPerm * exceed_min)
+    exceed_min <- floor(n_perm * exceed_min)
   }
-  
+
   #-----------------------------------------------------------------------------
   if (thresh_method == "fix") {
     if (!is.null(thresh0)) {
       thresh <- thresh0
 
     } else if (!is.null(exceed0)) {
-      
-      if (exceed0 > nPerm) {
-        stop("'exceed0' larger than number of permutations in use (", nPerm, ").")
+
+      if (exceed0 > n_perm) {
+        stop("'exceed0' larger than number of permutations in use (", n_perm, ").")
       }
 
       threshTmp <- c(0, tSort)
@@ -121,7 +120,7 @@ get_gpd_thresh <- function(perm_stats,
   niter <- length(threshPoss)
 
   #-----------------------------------------------------------------------------
-  idxVec <- nExceedVec <- shapeVec <- scaleVec <- gofPvalVec <-
+  idxVec <- nExceedVec <- shapeVec <- scaleVec <- gof_p_value_vec <-
     numeric(length(threshPoss))
 
   idxUse <- NA
@@ -152,13 +151,13 @@ get_gpd_thresh <- function(perm_stats,
 
     shapeVec[i] <- fittestres$shape
     scaleVec[i] <- fittestres$scale
-    gofPvalVec[i] <- fittestres$pval
+    gof_p_value_vec[i] <- fittestres$pval
 
     if (thresh_method == "ftr" && is.na(idxUse) && fittestres$pval > gof_alpha) {
       idxUse <- i
       #break
     } else if (thresh_method == "ftrMin5" && i > 5 && is.na(idxUse) &&
-               all(gofPvalVec[(i-5):i] > gof_alpha)) {
+               all(gof_p_value_vec[(i-5):i] > gof_alpha)) {
       #break
       idxUse <- i-5
     }
@@ -170,7 +169,7 @@ get_gpd_thresh <- function(perm_stats,
 
   if (is.na(idxUse)) {
     threshIdxList <- get_thresh_idx(thresh_method = thresh_method,
-                                    gofPvalVec = gofPvalVec,
+                                    gof_p_value_vec = gof_p_value_vec,
                                     gof_alpha = gof_alpha)
 
     idxUse <- threshIdxList$idxUse
@@ -185,17 +184,17 @@ get_gpd_thresh <- function(perm_stats,
   }
 
   if (doPlot) {
-    #tmp <- gofPvalVec[(idxUse-50):(idxUse+100)]
+    #tmp <- gof_p_value_vec[(idxUse-50):(idxUse+100)]
     #thtmp <- threshPoss[(idxUse-50):(idxUse+100)]
     #thtmp <- seq(threshPoss[1], rev(threshPoss)[1], length = 10)
 
-    plot(gofPvalVec ~ threshPoss, pch = 20,
+    plot(gof_p_value_vec ~ threshPoss, pch = 20,
          ylab = "AD pvalue", xlab = "threshold")
     #abline(v = thtmp, col = "lightgray")
     grid(50, NA, lwd = 1, lty = 1)
     abline(h = gof_alpha)
     abline(v = thresh, col = "red")
-    points(gofPvalVec ~ threshPoss, pch = 20)
+    points(gof_p_value_vec ~ threshPoss, pch = 20)
     legend("topleft",
            legend = c("AD p-values", "AD alpha", "selected threshold"),
            col = c(1, 1, 2), pch = c(20, NA, NA), lty = c(NA, 1, 1))

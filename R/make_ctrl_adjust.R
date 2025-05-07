@@ -4,12 +4,12 @@
 #' methods, so that these options are decoupled from the main \code{permaprox()}
 #' function.
 #'
-#' @inheritParams mult_adjust#'
+#' @inheritParams mult_adjust
 #'
-#' @return A named list (class \code{"multAdjustControl"}) with the specified settings.
+#' @return A named list (class \code{"controlMultAdjust"}) with the specified settings.
 #' @export
 #'
-make_control_mult_adjust <- function(
+make_ctrl_adjust <- function(
     method = "adaptBH",
     trueNullMethod = "convest",
     pTrueNull = NULL,
@@ -18,7 +18,7 @@ make_control_mult_adjust <- function(
     verbose = FALSE
 ) {
   # --- Validation ---
-  adjust <- match.arg(adjust)
+  method <- match.arg(method)
   trueNullMethod <- match.arg(trueNullMethod)
 
   if (!is.null(pTrueNull)) {
@@ -44,14 +44,13 @@ make_control_mult_adjust <- function(
 
   # --- Construct control object ---
   ctrl <- list(
-    adjust = adjust,
+    method = method,
     trueNullMethod = trueNullMethod,
     pTrueNull = pTrueNull,
     nseq = nseq,
     cores = cores,
     verbose = verbose
   )
-  class(ctrl) <- "multAdjustControl"
+  class(ctrl) <- "controlMultAdjust"
   return(ctrl)
 }
-s

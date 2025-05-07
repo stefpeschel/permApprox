@@ -11,7 +11,7 @@
 #             probability = TRUE, xlim = histXlim, ylim = histYlim,
 #             main = paste("\n Gamma shape param:", round(shape, 7),
 #                          "\n Gamma rate param:", round(rate, 7),
-#                          "\n CvM test p-value:", round(gofPval, 7),
+#                          "\n CvM test p-value:", round(gof_p_value, 7),
 #                          "\n permutation p-value:", pval,
 #                          maintext),
 #             col = histCol,

@@ -13,10 +13,10 @@
 #' @param gof_alpha Numeric. Significance level for GOF test (0 < gof_alpha < 1).
 #'   Default: 0.05.
 #'
-#' @return A named list of class "permAproxGammaControl" containing Gamma settings.
+#' @return A named list of class "controlGamma" containing Gamma settings.
 #'
 #' @export
-make_control_gamma <- function(
+make_ctrl_gamma <- function(
     include_obs = FALSE,
     gof_test = "cvm",
     gof_alpha = 0.05
@@ -30,14 +30,12 @@ make_control_gamma <- function(
 
 
   control <- list(
-    fitMethod = fitMethod,
-    gofTest   = gofTest,
-    gofAlpha  = gofAlpha,
-    tol       = tol,
-    verbose   = verbose
+    include_obs = include_obs,
+    gof_test   = gof_test,
+    gof_alpha  = gof_alpha
   )
 
-  class(control) <- "permAproxGammaControl"
+  class(control) <- "controlGamma"
 
   control
 }
