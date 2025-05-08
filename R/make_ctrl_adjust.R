@@ -11,27 +11,30 @@
 #'
 make_ctrl_adjust <- function(
     method = "adaptBH",
-    trueNullMethod = "convest",
-    pTrueNull = NULL,
-    nseq = 100,
+    true_null_method = "convest",
+    p_true_null = NULL,
+    seq_length = 100,
     cores = 1,
     verbose = FALSE
 ) {
-  # --- Validation ---
-  method <- match.arg(method)
-  trueNullMethod <- match.arg(trueNullMethod)
 
-  if (!is.null(pTrueNull)) {
-    if (!is.numeric(pTrueNull) || length(pTrueNull) != 1 || is.na(pTrueNull) ||
-        pTrueNull < 0 || pTrueNull > 1) {
-      stop("'pTrueNull' must be a single numeric value between 0 and 1, or NULL.")
+  # Validation
+  method <- match.arg(method, c("none", p.adjust.methods,
+                                "lfdr", "adaptBH", "rbFDR"))
+
+  true_null_method <- match.arg(true_null_method)
+
+  if (!is.null(p_true_null)) {
+    if (!is.numeric(p_true_null) || length(p_true_null) != 1 || is.na(p_true_null) ||
+        p_true_null < 0 || p_true_null > 1) {
+      stop("'p_true_null' must be a single numeric value between 0 and 1, or NULL.")
     }
   }
 
-  if (!is.numeric(nseq) || length(nseq) != 1 || nseq < 1) {
-    stop("'nseq' must be a positive integer.")
+  if (!is.numeric(seq_length) || length(seq_length) != 1 || seq_length < 1) {
+    stop("'seq_length' must be a positive integer.")
   }
-  nseq <- as.integer(nseq)
+  seq_length <- as.integer(seq_length)
 
   if (!is.numeric(cores) || length(cores) != 1 || cores < 1) {
     stop("'cores' must be an integer >= 1.")
@@ -42,12 +45,11 @@ make_ctrl_adjust <- function(
     stop("'verbose' must be a single logical value (TRUE or FALSE)." )
   }
 
-  # --- Construct control object ---
   ctrl <- list(
     method = method,
-    trueNullMethod = trueNullMethod,
-    pTrueNull = pTrueNull,
-    nseq = nseq,
+    true_null_method = true_null_method,
+    p_true_null = p_true_null,
+    seq_length = seq_length,
     cores = cores,
     verbose = verbose
   )

@@ -61,8 +61,8 @@
 #'   \item{p_empirical}{Numeric vector of raw empirical p-values.}
 #'   \item{gpd_fit}{Details of GPD fit (if used), or \code{NULL}.}
 #'   \item{gamma_fit}{Details of Gamma fit (if used), or \code{NULL}.}
-#'   \item{method}{Character. Method used per test.}
-#'   \item{adjustRes}{Full output of \code{mult_adjust()} if adjustment used.}
+#'   \item{method_used}{Character. Method used per test.}
+#'   \item{adjust_result}{Full output of \code{mult_adjust()} if adjustment used.}
 #' }
 #'
 #' @details
@@ -102,6 +102,17 @@
 #' @import foreach
 #' @export
 
+method = "gpd"
+fit_thresh = 0.2
+alternative = "less"
+null_center = 0
+control = list(
+  gpd = make_ctrl_gpd(),
+  gamma = make_ctrl_gamma(),
+  mult_adjust = make_ctrl_adjust()
+)
+
+
 compute_p_values <- function(
     obs_stats,
     perm_stats,
@@ -116,7 +127,6 @@ compute_p_values <- function(
     ),
     ...
 ) {
-  browser()
 
   alternative <- match.arg(alternative,
                            choices = c("greater", "less", "two_sided"))
@@ -227,56 +237,49 @@ compute_p_values <- function(
                              alternative = alternative,
                              control = control$gpd)
 
-    pvals <- gpdFit$pvals
-    approxType <- gpdFit$approxType
-    gamma_fit <- NULL
+    p_values <- gpd_fit$p_values
+    method_used <- gpd_fit$method_used
   }
 
   #-----------------------------------------------------------------------------
   # Multiple testing adjustment
 
-  if (multAdj == "none") {
-    pAdjust <- NULL
-    adjustRes <- NULL
+  # Store unadjusted p-values
+  p_unadjusted <- p_values
+
+  adjust_method <- control$mult_adjust$method
+
+  if (adjust_method == "none") {
+    adjust_result <- NULL
 
   } else {
-    adjustRes <- mult_adjust(pvals,
-                             perm_stats = perm_stats,
-                             pPerm = pPerm,
-                             adjust = multAdj,
-                             trueNullMethod = trueNullMethod,
-                             pTrueNull = pTrueNull,
-                             nseq = nseq,
-                             verbose = verbose)
-    pAdjust <- adjustRes$pAdjust
+
+    adj_ctrl <- control$mult_adjust
+
+    adjust_result <- mult_adjust(p_values = p_values,
+                                 method = adjust_method,
+                                 true_null_method = adj_ctrl$true_null_method,
+                                 p_true_null = adj_ctrl$p_true_null,
+                                 seq_length = adj_ctrl$seq_length,
+                                 perm_stats = adj_ctrl$perm_stats,
+                                 cores = adj_ctrl$cores,
+                                 verbose = adj_ctrl$verbose)
+
+    p_values <- adjust_result$p_adjusted
   }
 
   #-----------------------------------------------------------------------------
   callArgs <- mget(names(formals()),sys.frame(sys.nframe()))
   callArgs$gpdEstimate <- NULL
 
-  output <- list(p_values = pvals,
-                 pAdjust = pAdjust,
+  output <- list(p_values = p_values,
+                 p_unadjusted = p_unadjusted,
                  p_empirical = p_empirical,
+                 gpd_fit = gpd_fit,
                  gamma_fit = gamma_fit,
-                 gpdFit = gpdFit,
-                 approxType = approxType,
-                 adjustRes = adjustRes,
-                 perm_stats = perm_stats,
-                 obs_stats = obs_stats,
-                 n_perm_exceeding = n_perm_exceeding
-                 #fdr.output = fdr.output,
-                 #sp = sp,
-                 #fdr.pa = fdr.pa
+                 method_used = method_used,
+                 adjust_result = adjust_result
   )
-
-  #'   \item{p_values}{Numeric vector of approximated and adjusted p-values.}
-  #'   \item{p_unadjusted}{Numeric vector of approximated but unadjusted p-values.}
-  #'   \item{p_empirical}{Numeric vector of raw empirical p-values.}
-  #'   \item{gpd_fit}{Details of GPD fit (if used), or \code{NULL}.}
-  #'   \item{gamma_fit}{Details of Gamma fit (if used), or \code{NULL}.}
-  #'   \item{method}{Character. Method used per test.}
-  #'   \item{adjustRes}{Full output of \code{mult_adjust()} if adjustment used.}
 
   return(output)
 }

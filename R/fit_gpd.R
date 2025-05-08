@@ -31,13 +31,25 @@ fit_gpd <- function(data,
   stopifnot(is.vector(data) & is.numeric(data))
   stopifnot(is.numeric(thresh) & length(thresh) == 1)
 
-  fit_method <- match.arg(fit_method, choices = c("LME", "MLE1D", "MLE2D", "MOM",
-                                                "NLS2", "WNLLSM", "ZSE"))
+  fit_method <- match.arg(fit_method,
+                          choices = c("LME",
+                                      "MLE1D",
+                                      "MLE2D",
+                                      "MOM",
+                                      "NLS2",
+                                      "WNLLSM",
+                                      "ZSE"))
 
-  constraint <- match.arg(constraint, choices = c("none", "shapePos", "obs_stats",
-                                                  "obs_statsMax"))
+  constraint <- match.arg(constraint,
+                          choices = c("unconstrained",
+                                      "shape_nonneg",
+                                      "support_at_obs",
+                                      "support_at_max"))
 
-  gof_test <- match.arg(gof_test, choices = c("ad", "cvm"))
+  stopifnot(is.numeric(eps))
+  stopifnot(eps_type %in% c("quantile", "fix"))
+
+  gof_test <- match.arg(gof_test, choices = c("ad", "cvm", "none"))
 
   #-----------------------------------------------------------------------------
 
@@ -69,24 +81,22 @@ fit_gpd <- function(data,
     # exceedances (test statistics above the threshold)
     exceedPerm <- tSort[tSort > thresh]
 
-    if (gof_test == "ad") {
-      #testres <- try(eva::gpdAd(exceedPerm-thresh), silent = TRUE)
-      testres <- try(gpdAd_adapt(exceedPerm-thresh,
-                                 scale = scale, shape = shape), silent = TRUE)
+    if (gof_test == "none") {
+      pval <- NULL
+
     } else {
-      #testres <- try(eva::gpdCvm(exceedPerm-thresh), silent = TRUE)
-      testres <- try(gpdCvm_adapt(exceedPerm-thresh,
-                                  scale = scale, shape = shape), silent = TRUE)
+      if (gof_test == "ad") {
+        #testres <- try(eva::gpdAd(exceedPerm-thresh), silent = TRUE)
+        testres <- try(gpdAd_adapt(exceedPerm-thresh,
+                                   scale = scale, shape = shape), silent = TRUE)
+      } else if (gof_test == "cvm") {
+        #testres <- try(eva::gpdCvm(exceedPerm-thresh), silent = TRUE)
+        testres <- try(gpdCvm_adapt(exceedPerm-thresh,
+                                    scale = scale, shape = shape), silent = TRUE)
+      }
+
+      pval <- ifelse("try-error" %in% class(testres), 0, testres$p.value)
     }
-
-    pval <- ifelse("try-error" %in% class(testres), 0, testres$p.value)
-
-    # if ("try-error" %in% class(testres)) {
-    #   pval <- 0
-    #
-    # } else {
-    #   pval <- testres$p.value
-    # }
 
   }
 

@@ -30,9 +30,9 @@
     maxExcess <- maxOrig <- NULL
   }
 
-  if (constraint == "shapePos") {
+  if (constraint == "shape_nonneg") {
     if (!fit_method %in% c("MLE1D", "MLE2D", "NLS2")) {
-      stop("Constraint \"shapePos\" only available for methods ",
+      stop("Constraint \"shape_nonneg\" only available for methods ",
            "MLE1D, MLE2D, and NLS2.")
     }
 

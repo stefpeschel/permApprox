@@ -29,14 +29,14 @@ permaprox(
   gof_testGamma = TRUE,
   multAdj = "adaptBH",
   alpha = 0.05,
-  trueNullMethod = "convest",
-  pTrueNull = NULL,
+  true_null_method = "convest",
+  p_true_null = NULL,
   seed = NULL,
   cores = 1L,
   verbose = FALSE,
   gpdEstimate = NULL,
-  nseq = 100,
-  pPerm = NULL,
+  seq_length = 100,
+  p_perm = NULL,
   ...
 )
 }
@@ -107,10 +107,10 @@ the methods contained in \code{p.adjust.methods}.}
 
 \item{alpha}{significance level.}
 
-\item{trueNullMethod}{method used for identifying the proportion of
+\item{true_null_method}{method used for identifying the proportion of
 true null hypotheses. Only used if \code{multAdj} is set to "adaptBH".}
 
-\item{pTrueNull}{proportion of true null hypotheses.}
+\item{p_true_null}{proportion of true null hypotheses.}
 
 \item{seed}{random seed.}
 
@@ -121,10 +121,10 @@ printed.}
 
 \item{gpdEstimate}{not used.}
 
-\item{nseq}{length of the sequence of possible cut points. Used for
+\item{seq_length}{length of the sequence of possible cut points. Used for
 resampling-based multiple testing adjustment.}
 
-\item{pPerm}{description}
+\item{p_perm}{description}
 }
 \description{
 Approximate p-values of one-tailed permutation hypothesis tests, where the

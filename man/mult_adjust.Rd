@@ -7,11 +7,11 @@
 mult_adjust(
   pvals,
   perm_stats = NULL,
-  pPerm = NULL,
+  p_perm = NULL,
   adjust = "adaptBH",
-  trueNullMethod = "convest",
-  pTrueNull = NULL,
-  nseq = 100,
+  true_null_method = "convest",
+  p_true_null = NULL,
+  seq_length = 100,
   cores = 1,
   verbose = FALSE
 )
@@ -23,7 +23,7 @@ mult_adjust(
 Can be \code{"lfdr"}, \code{"adaptBH"}, or one of the methods provided by
 \code{\link[stats]{p.adjust}}.}
 
-\item{trueNullMethod}{character indicating the method used for estimating the
+\item{true_null_method}{character indicating the method used for estimating the
 proportion of true null hypotheses from a vector of p-values. Used for the
 adaptive Benjamini-Hochberg method for multiple testing adjustment (chosen
 by \code{adjust = "adaptBH"}). Accepts the provided options of the
@@ -32,9 +32,9 @@ by \code{adjust = "adaptBH"}). Accepts the provided options of the
 Can alternatively be \code{"farco"} for
 the "iterative plug-in method" proposed by \cite{Farcomeni (2007)}.}
 
-\item{pTrueNull}{proportion of true null hypothesis used for the adaptBH
+\item{p_true_null}{proportion of true null hypothesis used for the adaptBH
 method. If \code{NULL}, the proportion is computed using the method
-defined via \code{trueNullMethod}.}
+defined via \code{true_null_method}.}
 
 \item{verbose}{if \code{TRUE}, progress messages are returned.}
 }

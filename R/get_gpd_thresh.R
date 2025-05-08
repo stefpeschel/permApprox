@@ -2,25 +2,14 @@
 get_gpd_thresh <- function(perm_stats,
                            obs_stats,
                            tol,
-                           threshPoss = NULL,
                            thresh_method = "PRbelowAlpha",
                            thresh0 = NULL,
                            exceed0 = NULL,
                            exceed_min = 1,
                            thresh_step = 1,
-                           includeObs = FALSE,
-                           fit_method = "MLE",
-                           constraint = "none",
-                           fitInformation = "observed",
-                           optimMethod = NULL,
-                           shape0 = NULL, scale0 = NULL,
-                           shapeMin = -Inf, scaleMin = -Inf,
-                           shapeMax = Inf, scaleMax = Inf,
                            gof_test = "ad",
                            gof_alpha = 0.05,
                            seed = NULL,
-                           cores = 1L,
-                           verbose = FALSE,
                            doPlot = FALSE,
                            ...) {
 
@@ -71,70 +60,68 @@ get_gpd_thresh <- function(perm_stats,
     #   stop("Threshold must be smaller than obs_stats.")
     # }
 
-    nExceed <- sum(perm_stats > thresh)
+    n_exceed <- sum(perm_stats > thresh)
 
-    return(list(thresh = thresh, nExceed = nExceed))
+    return(list(thresh = thresh, n_exceed = n_exceed))
   }
 
-  if (is.null(threshPoss)) {
 
-    # Maximum threshold to ensure the minimum number of exceedances
-    threshMax <- sort(perm_stats, decreasing = TRUE)[exceed_min]
+  # Maximum threshold to ensure the minimum number of exceedances
+  threshMax <- sort(perm_stats, decreasing = TRUE)[exceed_min]
 
-    # Define vector with possible thresholds
-    #  (threshold must be smaller than the observed test statistic and the
-    #  maximum threshold defined before)
-    threshPoss <- tSort[tSort < min(obs_stats, threshMax)]
-    threshPoss <- c(0, threshPoss)
+  # Define vector with possible thresholds
+  #  (threshold must be smaller than the observed test statistic and the
+  #  maximum threshold defined before)
+  thresh_poss <- tSort[tSort < min(obs_stats, threshMax)]
+  thresh_poss <- c(0, thresh_poss)
 
-    # Adapt threshold vector to thresh0 or exceed0
+  # Adapt threshold vector to thresh0 or exceed0
 
-    if (!is.null(thresh0)) {
-      if (max(threshPoss) <= thresh0) {
-        stop("Argument 'thresh0' is larger then the maximum possible threshold: ",
-                    round(max(threshPoss), 3))
-      }
-      threshPoss <- threshPoss[threshPoss > thresh0]
-      threshPoss <- c(thresh0, threshPoss)
+  if (!is.null(thresh0)) {
+    if (max(thresh_poss) <= thresh0) {
+      stop("Argument 'thresh0' is larger then the maximum possible threshold: ",
+           round(max(thresh_poss), 3))
     }
-
-    if (!is.null(exceed0)) {
-      thresh_tmp <- sort(c(perm_stats, 0), decreasing = TRUE)[exceed0 + 1]
-
-      if (max(threshPoss) <= thresh_tmp) {
-        stop("Argument 'exceed0' is too low (minimum number of exceedances is ",
-        sum(perm_stats > max(threshPoss)))
-      }
-
-      threshPoss <- threshPoss[threshPoss >= thresh_tmp]
-    }
-
-    # Adapt threshold vector according to thresh_step
-    threshPoss <- threshPoss[c(TRUE, rep(FALSE, thresh_step - 1))]
-
-    # Make thresholds unique
-    threshPoss <- unique(threshPoss)
+    thresh_poss <- thresh_poss[thresh_poss > thresh0]
+    thresh_poss <- c(thresh0, thresh_poss)
   }
+
+  if (!is.null(exceed0)) {
+    thresh_tmp <- sort(c(perm_stats, 0), decreasing = TRUE)[exceed0 + 1]
+
+    if (max(thresh_poss) <= thresh_tmp) {
+      stop("Argument 'exceed0' is too low (minimum number of exceedances is ",
+           sum(perm_stats > max(thresh_poss)))
+    }
+
+    thresh_poss <- thresh_poss[thresh_poss >= thresh_tmp]
+  }
+
+  # Adapt threshold vector according to thresh_step
+  thresh_poss <- thresh_poss[c(TRUE, rep(FALSE, thresh_step - 1))]
+
+  # Make thresholds unique
+  thresh_poss <- unique(thresh_poss)
 
   # Number of iterations
-  niter <- length(threshPoss)
+  niter <- length(thresh_poss)
 
   #-----------------------------------------------------------------------------
-  idxVec <- nExceedVec <- shapeVec <- scaleVec <- gof_p_value_vec <-
-    numeric(length(threshPoss))
+  idxVec <- n_exceed_vec <- shapeVec <- scaleVec <- gof_p_value_vec <-
+    numeric(length(thresh_poss))
 
   idxUse <- NA
 
-  for (i in seq_along(threshPoss)) {
+  for (i in seq_along(thresh_poss)) {
     idxVec[i] <- i
 
-    thresh <- threshPoss[i]
+    thresh <- thresh_poss[i]
 
     # exceedPerm are the exceedances (test statistics above the threshold)
     exceedPerm.tmp <- tSort[tSort > thresh]
 
     # number of exceedances
-    nExceedVec[i] <- length(exceedPerm.tmp)
+    n_exceed_vec[i] <- length(exceedPerm.tmp)
 
     # Fit and test the GPD distribution
     fittestres <- fit_gpd(data = tSort,
@@ -176,29 +163,29 @@ get_gpd_thresh <- function(perm_stats,
   }
 
   if (is.null(idxUse) || is.na(idxUse)) {
-    thresh <- nExceed <- NA
+    thresh <- n_exceed <- NA
 
   } else {
-    thresh <- threshPoss[idxUse]
-    nExceed <- nExceedVec[idxUse]
+    thresh <- thresh_poss[idxUse]
+    n_exceed <- n_exceed_vec[idxUse]
   }
 
   if (doPlot) {
     #tmp <- gof_p_value_vec[(idxUse-50):(idxUse+100)]
-    #thtmp <- threshPoss[(idxUse-50):(idxUse+100)]
-    #thtmp <- seq(threshPoss[1], rev(threshPoss)[1], length = 10)
+    #thtmp <- thresh_poss[(idxUse-50):(idxUse+100)]
+    #thtmp <- seq(thresh_poss[1], rev(thresh_poss)[1], length = 10)
 
-    plot(gof_p_value_vec ~ threshPoss, pch = 20,
+    plot(gof_p_value_vec ~ thresh_poss, pch = 20,
          ylab = "AD pvalue", xlab = "threshold")
     #abline(v = thtmp, col = "lightgray")
     grid(50, NA, lwd = 1, lty = 1)
     abline(h = gof_alpha)
     abline(v = thresh, col = "red")
-    points(gof_p_value_vec ~ threshPoss, pch = 20)
+    points(gof_p_value_vec ~ thresh_poss, pch = 20)
     legend("topleft",
            legend = c("AD p-values", "AD alpha", "selected threshold"),
            col = c(1, 1, 2), pch = c(20, NA, NA), lty = c(NA, 1, 1))
   }
 
-  return(list(thresh = thresh, nExceed = nExceed))
+  return(list(thresh = thresh, n_exceed = n_exceed))
 }
