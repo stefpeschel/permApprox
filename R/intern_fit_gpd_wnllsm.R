@@ -32,9 +32,9 @@
 #'   \insertRef{Zhao2019new}{permAprox}
 #'
 #' @importFrom Rdpack reprompt
-#' @export
+#' @keywords internal
 
-gpd_WNLLSM <- function(x,
+.fit_gpd_wnllsm <- function(x,
                        maxX = NULL,
                        maxXOrig = NULL,
                        method = "WNLLSM",
@@ -290,16 +290,16 @@ gpd_WNLLSM <- function(x,
 # set.seed(123456)
 # x <- eva::rgpd(n = 1000, scale = scale, shape = shape)
 #
-# gpdfit <- gpd_WNLLSM(x = x, maxX = NULL, method = "WNLLSM")
+# gpdfit <- .fit_gpd_wnllsm(x = x, maxX = NULL, method = "WNLLSM")
 # gpdfit$shape
 #
-# gpdfit <- gpd_WNLLSM(x = x, maxX = 8,  method = "WNLLSM")
+# gpdfit <- .fit_gpd_wnllsm(x = x, maxX = 8,  method = "WNLLSM")
 # gpdfit$shape
 #
-# gpdfit <- gpd_WNLLSM(x = x, maxX = NULL, method = "WNLSM")
+# gpdfit <- .fit_gpd_wnllsm(x = x, maxX = NULL, method = "WNLSM")
 # gpdfit$shape
 #
-# gpdfit <- gpd_WNLLSM(x = x, maxX = 8,  method = "WNLSM")
+# gpdfit <- .fit_gpd_wnllsm(x = x, maxX = 8,  method = "WNLSM")
 # gpdfit$shape
 #
 # # -> fit is not effected for positive shapes
@@ -311,28 +311,28 @@ gpd_WNLLSM <- function(x,
 # set.seed(123456)
 # x <- eva::rgpd(n = 1000, scale = scale, shape = shape)
 #
-# gpdfit <- gpd_WNLLSM(x = x, maxX = NULL, method = "WNLLSM")
+# gpdfit <- .fit_gpd_wnllsm(x = x, maxX = NULL, method = "WNLLSM")
 # gpdfit$shape
 # gpdfit$densMax
 #
-# gpdfit <- gpd_WNLLSM(x = x, maxX = 8,  method = "WNLLSM")
+# gpdfit <- .fit_gpd_wnllsm(x = x, maxX = 8,  method = "WNLLSM")
 # gpdfit$shape
 # gpdfit$densMax
 #
-# gpdfit <- gpd_WNLLSM(x = x, maxX = 8, eps = 1e-5,  method = "WNLLSM")
+# gpdfit <- .fit_gpd_wnllsm(x = x, maxX = 8, eps = 1e-5,  method = "WNLLSM")
 # gpdfit$shape
 # gpdfit$densMax
 # # density depends on eps
 #
-# gpdfit <- gpd_WNLLSM(x = x, maxX = NULL, method = "WNLSM")
+# gpdfit <- .fit_gpd_wnllsm(x = x, maxX = NULL, method = "WNLSM")
 # gpdfit$shape
 # gpdfit$densMax
 #
-# gpdfit <- gpd_WNLLSM(x = x, maxX = 8, eps = 1e-8, method = "WNLSM")
+# gpdfit <- .fit_gpd_wnllsm(x = x, maxX = 8, eps = 1e-8, method = "WNLSM")
 # gpdfit$shape
 # gpdfit$densMax
 #
-# gpdfit <- gpd_WNLLSM(x = x, maxX = 8, eps = 1e-5, method = "WNLSM")
+# gpdfit <- .fit_gpd_wnllsm(x = x, maxX = 8, eps = 1e-5, method = "WNLSM")
 # gpdfit$shape
 # gpdfit$densMax
 #

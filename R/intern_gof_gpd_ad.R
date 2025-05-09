@@ -1,4 +1,8 @@
-gpdAd_adapt <- function(data, scale, shape, bootstrap = FALSE, bootnum = NULL,
+#' @title Adapted version of gpdAd from eva package
+#'
+#' @keywords internal
+
+.gof_gpd_ad <- function(data, scale, shape, bootstrap = FALSE, bootnum = NULL,
                         allowParallel = FALSE, numCores = 1){
 
   if (bootstrap == TRUE & is.null(bootnum))

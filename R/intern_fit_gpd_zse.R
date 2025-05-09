@@ -24,10 +24,10 @@
 #'   \insertRef{Zhang2009new}{permAprox}
 #'
 #' @importFrom Rdpack reprompt
-#' @export
+#' @keywords internal
 
 
-gpd_ZSE <- function(x, maxX = NULL, maxXOrig = NULL, m = NULL) {
+.fit_gpd_zse <- function(x, maxX = NULL, maxXOrig = NULL, m = NULL) {
 
   # constr: "none", "shapePos", "maxX"
   # shapePos doesn't work

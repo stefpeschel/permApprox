@@ -19,9 +19,9 @@
 #'   \insertRef{Castillo2015likelihood}{permAprox}
 #'
 #' @importFrom Rdpack reprompt
-#' @export
+#' @keywords internal
 
-gpd_MLE1D <- function(x,
+.fit_gpd_mle1d <- function(x,
                       maxX = NULL,
                       maxXOrig = NULL,
                       shapePos = FALSE,
@@ -95,13 +95,13 @@ gpd_MLE1D <- function(x,
 # set.seed(123456)
 # x <- eva::rgpd(n = 1000, scale = scale, shape = shape)
 #
-# gpdfit <- gpd_MLE1D(x, maxX = NULL, shapePos = FALSE)
+# gpdfit <- .fit_gpd_mle1d(x, maxX = NULL, shapePos = FALSE)
 # gpdfit$shape
 #
-# gpdfit <- gpd_MLE1D(x, maxX = 5, shapePos = FALSE)
+# gpdfit <- .fit_gpd_mle1d(x, maxX = 5, shapePos = FALSE)
 # gpdfit$shape
 #
-# gpdfit <- gpd_MLE1D(x, maxX = 5, shapePos = TRUE)
+# gpdfit <- .fit_gpd_mle1d(x, maxX = 5, shapePos = TRUE)
 # gpdfit$shape
 #
 # # -> fit is independent of xobs and shapePos constraint for positive shape
@@ -113,14 +113,14 @@ gpd_MLE1D <- function(x,
 # set.seed(123456)
 # x <- eva::rgpd(n = 1000, scale = scale, shape = shape)
 #
-# gpdfit <- gpd_MLE1D(x, maxX = NULL, shapePos = FALSE)
+# gpdfit <- .fit_gpd_mle1d(x, maxX = NULL, shapePos = FALSE)
 # gpdfit
 #
-# gpdfit <- gpd_MLE1D(x, maxX = 5, shapePos = FALSE)
+# gpdfit <- .fit_gpd_mle1d(x, maxX = 5, shapePos = FALSE)
 # gpdfit
 # -gpdfit$scale / gpdfit$shape
 #
-# gpdfit <- gpd_MLE1D(x, maxX = 5, shapePos = TRUE)
+# gpdfit <- .fit_gpd_mle1d(x, maxX = 5, shapePos = TRUE)
 # gpdfit
 #
 # # -> works perfectly

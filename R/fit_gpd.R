@@ -87,11 +87,11 @@ fit_gpd <- function(data,
     } else {
       if (gof_test == "ad") {
         #testres <- try(eva::gpdAd(exceedPerm-thresh), silent = TRUE)
-        testres <- try(gpdAd_adapt(exceedPerm-thresh,
+        testres <- try(.gof_gpd_ad(exceedPerm-thresh,
                                    scale = scale, shape = shape), silent = TRUE)
       } else if (gof_test == "cvm") {
         #testres <- try(eva::gpdCvm(exceedPerm-thresh), silent = TRUE)
-        testres <- try(gpdCvm_adapt(exceedPerm-thresh,
+        testres <- try(.gof_gpd_cvm(exceedPerm-thresh,
                                     scale = scale, shape = shape), silent = TRUE)
       }
 

@@ -45,30 +45,30 @@
 
   # GPD fit
   if (fit_method == "MLE2D") {
-    gpdfit <- gpd_MLE2D(x = excess, maxX = maxExcess, maxXOrig = maxOrig,
+    gpdfit <- .fit_gpd_mle2d(x = excess, maxX = maxExcess, maxXOrig = maxOrig,
                         tol = tol, shapeMin = shapeMin)
 
   } else if (fit_method == "MLE1D") {
-    gpdfit <- gpd_MLE1D(x = excess, maxX = maxExcess, maxXOrig = maxOrig,
+    gpdfit <- .fit_gpd_mle1d(x = excess, maxX = maxExcess, maxXOrig = maxOrig,
                         tol = tol, shapePos = shapePos)
 
   } else if (fit_method == "LME") {
-    gpdfit <- gpd_LME(x = excess, maxX = maxExcess, maxXOrig = maxOrig,
+    gpdfit <- .fit_gpd_lme(x = excess, maxX = maxExcess, maxXOrig = maxOrig,
                       tol = tol)
 
   } else if (fit_method == "NLS2") {
-    gpdfit <- gpd_NLS2(x = excess, maxX = maxExcess, maxXOrig = maxOrig,
+    gpdfit <- .fit_gpd_nls2(x = excess, maxX = maxExcess, maxXOrig = maxOrig,
                        tol = tol, shapeMin = shapeMin)
 
   } else if (fit_method == "WNLLSM") {
-    gpdfit <- gpd_WNLLSM(x = excess, maxX = maxExcess, maxXOrig = maxOrig,
+    gpdfit <- .fit_gpd_wnllsm(x = excess, maxX = maxExcess, maxXOrig = maxOrig,
                          tol = tol)
 
   } else if (fit_method == "ZSE") {
-    gpdfit <- gpd_ZSE(x = excess, maxX = maxExcess, maxXOrig = maxOrig)
+    gpdfit <- .fit_gpd_zse(x = excess, maxX = maxExcess, maxXOrig = maxOrig)
 
   } else if (fit_method == "MOM") {
-    gpdfit <- gpd_MOM(x = excess)
+    gpdfit <- .fit_gpd_mom(x = excess)
   }
 
   return(gpdfit)

@@ -107,7 +107,7 @@ fit_thresh = 0.2
 alternative = "less"
 null_center = 0
 control = list(
-  gpd = make_ctrl_gpd(),
+  gpd = make_ctrl_gpd(cores = 4),
   gamma = make_ctrl_gamma(),
   mult_adjust = make_ctrl_adjust()
 )

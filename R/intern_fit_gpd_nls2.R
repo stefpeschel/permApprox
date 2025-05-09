@@ -25,9 +25,9 @@
 #'   \insertRef{Song2012quantile}{permAprox}
 #'
 #' @importFrom Rdpack reprompt
-#' @export
+#' @keywords internal
 
-gpd_NLS2 <- function(x,
+.fit_gpd_nls2 <- function(x,
                      q = 0,
                      maxX = NULL,
                      maxXOrig = NULL,
@@ -225,19 +225,19 @@ gpd_NLS2 <- function(x,
 # set.seed(123456)
 # x <- eva::rgpd(n = 1000, scale = scale, shape = shape)
 #
-# gpdfit <- gpd_NLS2(x = x, q = 0,
+# gpdfit <- .fit_gpd_nls2(x = x, q = 0,
 #                maxX = NULL, twosteps = TRUE,
 #                shapeMin = -Inf, scaleMin = -Inf,
 #                shapeMax = Inf, scaleMax = Inf)
 # gpdfit
 #
-# gpdfit <- gpd_NLS2(x = x, q = 0,
+# gpdfit <- .fit_gpd_nls2(x = x, q = 0,
 #                maxX = NULL, twosteps = TRUE,
 #                shapeMin = 0, scaleMin = -Inf,
 #                shapeMax = Inf, scaleMax = Inf)
 # gpdfit
 #
-# gpdfit <- gpd_NLS2(x = x, q = 0,
+# gpdfit <- .fit_gpd_nls2(x = x, q = 0,
 #                maxX = 8, twosteps = TRUE,
 #                shapeMin = -Inf, scaleMin = -Inf,
 #                shapeMax = Inf, scaleMax = Inf)
@@ -251,19 +251,19 @@ gpd_NLS2 <- function(x,
 # set.seed(123456)
 # x <- eva::rgpd(n = 1000, scale = scale, shape = shape)
 #
-# gpdfit <- gpd_NLS2(x = x, q = 0,
+# gpdfit <- .fit_gpd_nls2(x = x, q = 0,
 #                maxX = NULL, twosteps = TRUE,
 #                shapeMin = -Inf, scaleMin = -Inf,
 #                shapeMax = Inf, scaleMax = Inf)
 # gpdfit
 #
-# gpdfit <- gpd_NLS2(x = x, q = 0,
+# gpdfit <- .fit_gpd_nls2(x = x, q = 0,
 #                maxX = NULL, twosteps = TRUE,
 #                shapeMin = 0, scaleMin = -Inf,
 #                shapeMax = Inf, scaleMax = Inf)
 # gpdfit
 #
-# gpdfit <- gpd_NLS2(x = x, q = 0,
+# gpdfit <- .fit_gpd_nls2(x = x, q = 0,
 #                maxX = 8, twosteps = TRUE,
 #                shapeMin = -Inf, scaleMin = -Inf,
 #                shapeMax = Inf, scaleMax = Inf)

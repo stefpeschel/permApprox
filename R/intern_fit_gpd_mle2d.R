@@ -21,9 +21,9 @@
 #'   If != Inf, \code{optimMethod} is set to "L-BFGS-B".
 #' @param ... Further arguments passed to \code{optim()}.
 #'
-#' @export
+#' @keywords internal
 
-gpd_MLE2D <- function(x,
+.fit_gpd_mle2d <- function(x,
                       maxX = NULL,
                       maxXOrig = NULL,
                       optimMethod = "Nelder-Mead",
@@ -52,7 +52,7 @@ gpd_MLE2D <- function(x,
   }
 
   # Method of moments estimator
-  momEst <- gpd_MOM(x)
+  momEst <- .fit_gpd_mom(x)
 
   # Set start values for shape and scale (use method of moments)
   if (is.null(shapeIni)) {
@@ -132,13 +132,13 @@ gpd_MLE2D <- function(x,
 # set.seed(123456)
 # x <- eva::rgpd(n = 1000, scale = scale, shape = shape)
 #
-# gpdfit <- gpd_MLE2D(x, maxX = NULL)
+# gpdfit <- .fit_gpd_mle2d(x, maxX = NULL)
 # gpdfit$shape
 #
-# gpdfit <- gpd_MLE2D(x, maxX = 5)
+# gpdfit <- .fit_gpd_mle2d(x, maxX = 5)
 # gpdfit$shape
 #
-# gpdfit <- gpd_MLE2D(x, maxX = 5, shapeMin = 0)
+# gpdfit <- .fit_gpd_mle2d(x, maxX = 5, shapeMin = 0)
 # gpdfit$shape
 #
 # # -> fit is nearly independent of maxX and shapePos constraint for positive shape
@@ -150,14 +150,14 @@ gpd_MLE2D <- function(x,
 # set.seed(123456)
 # x <- eva::rgpd(n = 1000, scale = scale, shape = shape)
 #
-# gpdfit <- gpd_MLE2D(x, maxX = NULL)
+# gpdfit <- .fit_gpd_mle2d(x, maxX = NULL)
 # gpdfit
 #
-# gpdfit <- gpd_MLE2D(x, maxX = 5)
+# gpdfit <- .fit_gpd_mle2d(x, maxX = 5)
 # gpdfit
 # -gpdfit$scale / gpdfit$shape
 #
-# gpdfit <- gpd_MLE2D(x, maxX = 5, shapeMin = 0)
+# gpdfit <- .fit_gpd_mle2d(x, maxX = 5, shapeMin = 0)
 # gpdfit
 #
 # # -> works perfectly

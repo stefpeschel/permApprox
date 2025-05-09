@@ -27,9 +27,9 @@
 #'   \insertRef{Zhang2007lme}{permAprox}
 #'
 #' @importFrom Rdpack reprompt
-#' @export
+#' @keywords internal
 
-gpd_LME <- function(x, maxX = NULL, maxXOrig = NULL, r = -1/2, tol = 1e-8) {
+.fit_gpd_lme <- function(x, maxX = NULL, maxXOrig = NULL, r = -1/2, tol = 1e-8) {
 
   # Starting value for b
   b <- -1
@@ -102,10 +102,10 @@ gpd_LME <- function(x, maxX = NULL, maxXOrig = NULL, r = -1/2, tol = 1e-8) {
 # set.seed(123456)
 # x <- eva::rgpd(n = 1000, scale = scale, shape = shape)
 #
-# gpdfit <- gpd_LME(x, maxX = NULL)
+# gpdfit <- .fit_gpd_lme(x, maxX = NULL)
 # gpdfit
 #
-# gpdfit <- gpd_LME(x, maxX = 8)
+# gpdfit <- .fit_gpd_lme(x, maxX = 8)
 # gpdfit
 #
 # # -> fit is independent of maxX for positive shape
@@ -117,10 +117,10 @@ gpd_LME <- function(x, maxX = NULL, maxXOrig = NULL, r = -1/2, tol = 1e-8) {
 # set.seed(123456)
 # x <- eva::rgpd(n = 1000, scale = scale, shape = shape)
 #
-# gpdfit <- gpd_LME(x, maxX = NULL, r = 0.25)
+# gpdfit <- .fit_gpd_lme(x, maxX = NULL, r = 0.25)
 # gpdfit
 #
-# gpdfit <- gpd_LME(x, maxX = 8)
+# gpdfit <- .fit_gpd_lme(x, maxX = 8)
 # gpdfit
 #
 # -gpdfit$scale / gpdfit$shape

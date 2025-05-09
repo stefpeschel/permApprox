@@ -12,9 +12,9 @@
 #'   \insertRef{Hosking1987parameter}{permAprox}
 #'
 #' @importFrom Rdpack reprompt
-#' @export
+#' @keywords internal
 
-gpd_MOM <- function(x) {
+.fit_gpd_mom <- function(x) {
 
   # x must be numeric
   x <- as.numeric(x)
