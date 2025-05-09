@@ -42,7 +42,7 @@ get_pvals_gpd <- function(p_empirical,
   trans_perm <- lapply(transformed, function(x) x$perm_stats)
 
   # Determine which tests to fit
-  idx_fit <- which(pvals <= fit_thresh & trans_obs > 0)
+  idx_fit <- which(pvals < fit_thresh & trans_obs > 0)
 
   # Tests for which a Gamma fit is performed
   fitted <- logical(n_test)
@@ -225,7 +225,7 @@ get_pvals_gpd <- function(p_empirical,
     zero_replaced <- rep(NA, n_test)
 
   # List to store the test statistics used for the fit
-  perm_stats_used_list <- vector("list", length = n_test)
+  perm_stats_fitted <- vector("list", length = n_test)
 
   method_used <- rep("empirical", n_test)
 
@@ -237,7 +237,7 @@ get_pvals_gpd <- function(p_empirical,
   pvals[idx_fit] <- unlist(loopres$p_value)
   method_used[idx_fit] <- unlist(loopres$method_used)
   zero_replaced[idx_fit] <- unlist(loopres$zero_replaced)
-  perm_stats_used_list[idx_fit] <- loopres$perm_stat_used
+  perm_stats_fitted[idx_fit] <- loopres$perm_stat_used
 
   output <- list(p_values = pvals,
                  fitted = fitted,
@@ -250,7 +250,7 @@ get_pvals_gpd <- function(p_empirical,
                  eps = eps,
                  method_used = method_used,
                  zero_replaced = zero_replaced,
-                 perm_stats_used = perm_stats_used_list)
+                 perm_stats_used = perm_stats_fitted)
 
   return(output)
 }
