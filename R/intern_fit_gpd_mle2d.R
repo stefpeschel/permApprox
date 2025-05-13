@@ -8,8 +8,6 @@
 #' @param maxX numeric. Maximum value at which the GPD probability density
 #'   function must be positive. If \code{NULL}, the maximum of the data vector
 #'   \code{x} is used.
-#' @param eps numeric. Optional small epsilon, which is added to \code{maxX}
-#'   so that the GPD density is non-zero at maxX + eps.
 #' @param optimMethod character defining the optimization method.
 #' @param tol numeric giving the desired accuracy of the optimization
 #'   process.

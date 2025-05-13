@@ -10,8 +10,6 @@
 #' @param r numeric defining the r constant as part of the algorithm that must
 #'   be smaller than 1/2 and different from zero. Default is -1/2.
 #'   See details.
-#' @param eps numeric. Optional small epsilon, which is added to \code{maxX}
-#'   so that the GPD density is non-zero at maxX + eps.
 #' @param tol tolerance used as convergence criterion. The iteration stops if
 #'   |f(b)/f'(b)/b| < tol. Defaults to 1e-8.
 #'
