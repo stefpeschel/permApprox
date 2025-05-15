@@ -1,6 +1,6 @@
 #' Multiple testing adjustment
 #'
-#' The functions adjusts a vector of p-values for multiple testing
+#' The functions adjusts a vector of p-values for multiple testing.
 #'
 #' @param p_values Numeric. Vector with p-values.
 #'
@@ -165,7 +165,7 @@ mult_adjust <- function(p_values,
 
       loopres <-
         foreach(i = 1:n_perm,
-                .export = c("get_gpd_thresh", "fit_gpd", "get_thresh_idx",
+                .export = c(".find_gpd_thresh", "fit_gpd", ".find_gpd_thresh_idx",
                             ".est_gpd_params", "get_p_values_emp",
                             ".gof_gpd_ad", ".gof_gpd_cvm",
                             ".fit_gpd_lme", ".fit_gpd_mle1d", ".MLE1D_fk", ".MLE1D_fp",

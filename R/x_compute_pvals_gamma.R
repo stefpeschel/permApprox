@@ -1,7 +1,7 @@
 #' @title Compute p-values via Gamma approximation
 #' @keywords internal
 
-get_pvals_gamma <- function(p_empirical, perm_stats, obs_stats, n_test,
+.compute_pvals_gamma <- function(p_empirical, perm_stats, obs_stats, n_test,
                             fit_thresh, alternative, control) {
 
   pvals <- p_empirical
@@ -22,7 +22,7 @@ get_pvals_gamma <- function(p_empirical, perm_stats, obs_stats, n_test,
 
   # Transform test statistics for tail modeling
   transformed <- lapply(seq_len(n_test), function(i) {
-    transform_stats(perm_stats = perm_stats[i, ],
+    .transform_stats(perm_stats = perm_stats[i, ],
                     obs_stats = obs_stats[i],
                     alternative = alternative)
   })

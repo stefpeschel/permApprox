@@ -2,7 +2,7 @@
 #'
 #' @import progressr
 #' @keywords internal
-get_pvals_gpd <- function(p_empirical,
+.compute_pvals_gpd <- function(p_empirical,
                           obs_stats,
                           perm_stats,
                           n_test,
@@ -33,7 +33,7 @@ get_pvals_gpd <- function(p_empirical,
 
   # Transform test statistics for tail modeling
   transformed <- lapply(seq_len(n_test), function(i) {
-    transform_stats(perm_stats = perm_stats[i, ],
+    .transform_stats(perm_stats = perm_stats[i, ],
                     obs_stats  = obs_stats[i],
                     alternative = alternative)
   })
@@ -50,7 +50,7 @@ get_pvals_gpd <- function(p_empirical,
   } else {
     future::plan(future::sequential)
   }
-
+browser()
   # Define the fit function for one test
   fit_one <- function(i) {
     out <- list()
@@ -62,7 +62,7 @@ get_pvals_gpd <- function(p_empirical,
     if (include_obs) perm_i <- c(obs_i, perm_i)
 
     # Compute threshold
-    thresh_res <- get_gpd_thresh(
+    thresh_res <- .find_gpd_thresh(
       perm_stats    = perm_i,
       obs_stats     = obs_i,
       tol           = tol,
@@ -96,7 +96,7 @@ get_pvals_gpd <- function(p_empirical,
 
     } else {
       # Possibly constrain support
-      maxVal <- switch(constraint,
+      support_limit <- switch(constraint,
                        support_at_max = max(obs_stats),
                        support_at_obs = obs_stats[i],
                        NULL)
@@ -110,7 +110,7 @@ get_pvals_gpd <- function(p_empirical,
         eps         = eps,
         eps_type    = eps_type,
         constraint  = constraint,
-        maxVal      = maxVal,
+        support_limit      = support_limit,
         gof_test    = gof_test,
         gof_alpha   = gof_alpha,
         ...
@@ -118,12 +118,12 @@ get_pvals_gpd <- function(p_empirical,
 
       out$shape       <- fit_res$shape
       out$scale       <- fit_res$scale
-      out$gof_p_value <- fit_res$pval
+      out$gof_p_value <- fit_res$p_value
       out$method_used <- "gpd"
 
       # Compute upper‐tail probability (p-value)
       p_gpd <- (n_exceed / n_perm) *
-        pgpd_upper_tail(q     = obs_i - thresh,
+        .pgpd_upper_tail(q     = obs_i - thresh,
                         loc   = 0,
                         scale = out$scale,
                         shape = out$shape)

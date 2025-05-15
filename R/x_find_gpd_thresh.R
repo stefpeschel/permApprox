@@ -1,17 +1,20 @@
-
-get_gpd_thresh <- function(perm_stats,
-                           obs_stats,
-                           tol,
-                           thresh_method = "PRbelowAlpha",
-                           thresh0 = NULL,
-                           exceed0 = NULL,
-                           exceed_min = 1,
-                           thresh_step = 1,
-                           gof_test = "ad",
-                           gof_alpha = 0.05,
-                           seed = NULL,
-                           doPlot = FALSE,
-                           ...) {
+#' @title Adapted version of gpdAd from eva package
+#'
+#' @keywords internal
+#'
+.find_gpd_thresh <- function(perm_stats,
+                                obs_stats,
+                                tol,
+                                thresh_method = "PRbelowAlpha",
+                                thresh0 = NULL,
+                                exceed0 = NULL,
+                                exceed_min = 1,
+                                thresh_step = 1,
+                                gof_test = "ad",
+                                gof_alpha = 0.05,
+                                seed = NULL,
+                                doPlot = FALSE,
+                                ...) {
 
   if (!is.null(seed)) set.seed(seed)
 
@@ -132,9 +135,9 @@ get_gpd_thresh <- function(perm_stats,
                           eps_type = "fix",
                           factor = 1,
                           constraint = "none",
-                          maxVal = NULL,
+                          support_limit = NULL,
                           gof_test = gof_test)#,
-                          #...)
+    #...)
 
     shapeVec[i] <- fittestres$shape
     scaleVec[i] <- fittestres$scale
@@ -155,11 +158,75 @@ get_gpd_thresh <- function(perm_stats,
   # }
 
   if (is.na(idxUse)) {
-    threshIdxList <- get_thresh_idx(thresh_method = thresh_method,
-                                    gof_p_value_vec = gof_p_value_vec,
-                                    gof_alpha = gof_alpha)
 
-    idxUse <- threshIdxList$idxUse
+    # Find threshold index
+    if(all(gof_p_value_vec <= gof_alpha)){
+
+      idxUse <- NA
+    }
+
+    idxH0accept <- which(gof_p_value_vec > gof_alpha)
+    idxH0reject <- which(gof_p_value_vec <= gof_alpha)
+
+    if(thresh_method == "PRbelowAlpha"){
+
+      # Actual number of iterations
+      n <- length(gof_p_value_vec)
+
+      # Proportion of rejected GOF tests for all thresholds
+      propReject <- sapply(1:n, function(i){
+        sum(gof_p_value_vec[i:n] <= gof_alpha) / (n - i + 1)
+      })
+
+      # Ensure that H0 is accepted at the chosen threshold
+      propReject2 <- propReject
+      propReject2[idxH0reject] <- 1
+
+      # Select the first threshold with a PR below alpha
+      idxUse <- which(propReject2 <= gof_alpha)[1]
+
+      if (is.na(idxUse)) {
+        # Use the minimum if no threshold leads to a PR below alpha
+        idxUse <- which.min(propReject2)
+      }
+
+    } else if(thresh_method == "fwdStop"){
+
+      # Log-transformed p-values
+      y <- -log(1 - gof_p_value_vec)
+
+      # Transform log-p-values as described in Barder et. al 2018
+      ysum <- sapply(1:length(gof_p_value_vec), function(k) {
+        1 / k * sum(y[1:k])
+      })
+
+      if (all(ysum <= gof_alpha)) {
+        idxUse <- length(gof_p_value_vec)
+
+      } else if (all(ysum > gof_alpha)) {
+        idxUse <- 1
+
+      } else{
+        # Select the first value above alpha
+        idxUse <- which(ysum > gof_alpha)[1]
+      }
+
+    } else if (thresh_method == "gofCP") {
+
+      # Add 100 fake p-values (sampled from U(0, 0.01)) to ensure a correct
+      # estimate if (nearly) all hypotheses are true
+      gof_p_value_tmp <- c(runif(100, min = 0, max = 0.01), gof_p_value_vec)
+
+      # Changepoint detection
+      cp <- changepoint::cpt.meanvar(gof_p_value_tmp)
+      idxSel <- cp@cpts[1] - 100
+
+      # Find the next larger index for which the AD test is accepted
+      idxUse <- idxH0accept[idxH0accept >= idxSel][1]
+
+    } else {
+      stop("Threshold method not supported.")
+    }
   }
 
   if (is.null(idxUse) || is.na(idxUse)) {

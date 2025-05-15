@@ -1,21 +1,57 @@
-#' @title Fit and test the GPD
+#' @title Fit and test the Generalized Pareto Distribution (GPD)
 #'
-#' @param data data vector
-#' @param thresh numeric defining the GPD threshold. Data above this threshold
-#'   are the exceedances.
-#' @param nExceed integer giving the number of exceedances (data above the
-#'   threshold).
-#' @param fit_method !!! character giving the method used for fitting the GPD
-#'   distribution.
-#' @param maxVal maximum value for which the probability density function must
-#'   be positive. If \code{NULL}, the maximum of the data vector is used.
-#' @param ... arguments passed to the function for GPD parameter estimation.
+#' @description
+#' Fits the Generalized Pareto Distribution (GPD) to exceedances over a given threshold
+#' using one of several available estimation methods. Optionally applies a goodness-of-fit test
+#' to assess the adequacy of the fitted model.
+#'
+#' @param data Numeric vector. Input data to which the GPD is fitted.
+#'
+#' @param thresh Numeric scalar. Threshold above which the data are considered exceedances.
+#'
+#' @param fit_method Character string specifying the fitting method to be used.
+#'   Must be one of \code{"LME"}, \code{"MLE1D"}, \code{"MLE2D"}, \code{"MOM"},
+#'   \code{"NLS2"}, \code{"WNLLSM"}, or \code{"ZSE"}.
+#'
+#' @param tol Numeric. Convergence tolerance for iterative fitting procedures.
+#'   Default is \code{1e-8}.
+#'
+#' @param eps Numeric. A small value used in support-related constraints (e.g., added to
+#'   the upper support limit). Default is \code{0.8}.
+#'
+#' @param eps_type Character. Type of epsilon adjustment to apply. Can be
+#'   \code{"quantile"} or \code{"fix"}.
+#'
+#' @param constraint Character. Type of constraint to enforce during GPD fitting.
+#'   Options are \code{"unconstrained"}, \code{"shape_nonneg"},
+#'   \code{"support_at_obs"}, and \code{"support_at_max"}.
+#'
+#' @param support_boundary Numeric or NULL. Upper boundary of the GPD support,
+#'   used in constrained fitting when the shape parameter is negative. If NULL,
+#'   the maximum of the data vector is used.
+#'
+#' @param gof_test Character. Specifies the goodness-of-fit test to apply.
+#'   Options are \code{"ad"} (Anderson-Darling), \code{"cvm"} (Cramér-von Mises),
+#'   or \code{"none"}. Default is \code{"ad"}.
+#'
+#' @param ... Additional arguments passed to internal fitting functions.
 #'
 #' @details
-#' The maximum value (\code{maxVal}) is only relevant for light-tailed
-#' distributions, i.e. if the shape parameter is negative.
+#' If the shape parameter is negative (indicating a bounded tail), a constraint
+#' may be imposed to ensure that the support of the GPD does not exceed a specified
+#' maximum value. The \code{support_boundary} argument defines this bound and is
+#' only relevant for such constrained fitting. The default behavior uses the
+#' maximum observed data value unless otherwise specified.
+#'
+#' @return A named list with components:
+#'   \describe{
+#'     \item{\code{shape}}{Estimated shape parameter of the GPD.}
+#'     \item{\code{scale}}{Estimated scale parameter of the GPD.}
+#'     \item{\code{p_value}}{P-value from the goodness-of-fit test, if applicable.}
+#'   }
 #'
 #' @export
+
 
 fit_gpd <- function(data,
                     thresh = NULL,
@@ -24,7 +60,7 @@ fit_gpd <- function(data,
                     eps = 0.8,
                     eps_type = "quantile",
                     constraint = "none",
-                    maxVal = NULL,
+                    support_boundary = NULL,
                     gof_test = "ad",
                     ...) {
 
@@ -60,18 +96,19 @@ fit_gpd <- function(data,
   excess <- exceedances - thresh
 
   # Consider maximum value at which the GPD density must be positive
-  if (!is.null(maxVal)) {
-    maxExcess <- maxVal - thresh
-    maxOrig <- maxExcess
+  if (!is.null(support_boundary)) {
+    # Point at which the support is checked/evaluated
+    eval_point <- support_boundary - thresh
+    excess_boundary <- eval_point
 
     if (eps_type == "quantile") {
       eps <- quantile(data, eps)
     }
 
-    maxExcess <- maxExcess + eps
+    excess_boundary <- eval_point + eps
 
   } else {
-    maxExcess <- maxOrig <- NULL
+    eval_point <- excess_boundary <- NULL
   }
 
   # Contraint of a positive shape parameter
@@ -90,32 +127,38 @@ fit_gpd <- function(data,
 
   # GPD fit
   if (fit_method == "MLE2D") {
-    fit <- try(.fit_gpd_mle2d(x = excess, maxX = maxExcess, maxXOrig = maxOrig,
+    fit <- try(.fit_gpd_mle2d(x = excess, boundary = excess_boundary,
+                              eval_point = eval_point,
                              tol = tol, shapeMin = shapeMin),
                   silent = TRUE)
 
   } else if (fit_method == "MLE1D") {
-    fit <- try(.fit_gpd_mle1d(x = excess, maxX = maxExcess, maxXOrig = maxOrig,
+    fit <- try(.fit_gpd_mle1d(x = excess, boundary = excess_boundary,
+                              eval_point = eval_point,
                              tol = tol, shapePos = shapePos),
                   silent = TRUE)
 
   } else if (fit_method == "LME") {
-    fit <- try(.fit_gpd_lme(x = excess, maxX = maxExcess, maxXOrig = maxOrig,
+    fit <- try(.fit_gpd_lme(x = excess, boundary = excess_boundary,
+                            eval_point = eval_point,
                            tol = tol),
                   silent = TRUE)
 
   } else if (fit_method == "NLS2") {
-    fit <- try(.fit_gpd_nls2(x = excess, maxX = maxExcess, maxXOrig = maxOrig,
+    fit <- try(.fit_gpd_nls2(x = excess, boundary = excess_boundary,
+                             eval_point = eval_point,
                             tol = tol, shapeMin = shapeMin),
                   silent = TRUE)
 
   } else if (fit_method == "WNLLSM") {
-    fit <- try(.fit_gpd_wnllsm(x = excess, maxX = maxExcess, maxXOrig = maxOrig,
+    fit <- try(.fit_gpd_wnllsm(x = excess, boundary = excess_boundary,
+                               eval_point = eval_point,
                               tol = tol),
                   silent = TRUE)
 
   } else if (fit_method == "ZSE") {
-    fit <- try(.fit_gpd_zse(x = excess, maxX = maxExcess, maxXOrig = maxOrig),
+    fit <- try(.fit_gpd_zse(x = excess, boundary = excess_boundary,
+                            eval_point = eval_point),
                   silent = TRUE)
 
   } else if (fit_method == "MOM") {

@@ -1,7 +1,7 @@
 #' @title Compute empirical permutation p-values
 #' @keywords internal
 
-get_pvals_emp <- function(obs_stats, perm_stats, n_test, n_perm, alternative) {
+.compute_pvals_emp <- function(obs_stats, perm_stats, n_test, n_perm, alternative) {
 
   # Compute the number of permutation statistics at least as extreme as obs_stats
   if (alternative == "less") {

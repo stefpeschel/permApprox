@@ -12,7 +12,7 @@ fit_gpd(
   eps = 0.8,
   eps_type = "quantile",
   constraint = "none",
-  maxVal = NULL,
+  support_limit = NULL,
   gof_test = "ad",
   ...
 )
@@ -26,7 +26,7 @@ are the exceedances.}
 \item{fit_method}{!!! character giving the method used for fitting the GPD
 distribution.}
 
-\item{maxVal}{maximum value for which the probability density function must
+\item{support_limit}{maximum value for which the probability density function must
 be positive. If \code{NULL}, the maximum of the data vector is used.}
 
 \item{...}{arguments passed to the function for GPD parameter estimation.}
@@ -38,6 +38,6 @@ threshold).}
 Fit and test the GPD
 }
 \details{
-The maximum value (\code{maxVal}) is only relevant for light-tailed
+The maximum value (\code{support_limit}) is only relevant for light-tailed
 distributions, i.e. if the shape parameter is negative.
 }

@@ -102,17 +102,6 @@
 #' @import foreach
 #' @export
 
-method = "gpd"
-fit_thresh = 0.2
-alternative = "less"
-null_center = 0
-control = list(
-  gpd = control_gpd(cores = 4),
-  gamma = control_gamma(),
-  mult_adjust = control_adjust()
-)
-
-
 compute_p_values <- function(
     obs_stats,
     perm_stats,
@@ -194,11 +183,11 @@ compute_p_values <- function(
   obs_stats <- obs_stats - center_vec
 
   # Empirical p-values
-  pvals_emp_list <- get_pvals_emp(obs_stats = obs_stats,
-                                  perm_stats = perm_stats,
-                                  n_test = n_test,
-                                  n_perm = n_perm,
-                                  alternative = alternative)
+  pvals_emp_list <- .compute_pvals_emp(obs_stats = obs_stats,
+                                       perm_stats = perm_stats,
+                                       n_test = n_test,
+                                       n_perm = n_perm,
+                                       alternative = alternative)
 
   p_empirical <- pvals_emp_list$pvals
   n_perm_exceeding <- pvals_emp_list$n_perm_exceeding
@@ -216,26 +205,26 @@ compute_p_values <- function(
     method_used <- rep("empirical", n_test)
 
   } else if (method == "gamma") { # Gamma approximation
-    gamma_fit <- get_pvals_gamma(p_empirical = p_empirical,
-                                 perm_stats = perm_stats,
-                                 obs_stats = obs_stats,
-                                 n_test = n_test,
-                                 fit_thresh = fit_thresh,
-                                 alternative = alternative,
-                                 control = control$gamma)
+    gamma_fit <- .compute_pvals_gamma(p_empirical = p_empirical,
+                                      perm_stats = perm_stats,
+                                      obs_stats = obs_stats,
+                                      n_test = n_test,
+                                      fit_thresh = fit_thresh,
+                                      alternative = alternative,
+                                      control = control$gamma)
 
     p_values <- gamma_fit$p_values
     method_used <- gamma_fit$method_used
 
   } else if (method == "gpd") { # Tail approximation using the GPD
 
-    gpd_fit <- get_pvals_gpd(p_empirical = p_empirical,
-                             perm_stats = perm_stats,
-                             obs_stats = obs_stats,
-                             n_test = n_test,
-                             fit_thresh = fit_thresh,
-                             alternative = alternative,
-                             control = control$gpd)
+    gpd_fit <- .compute_pvals_gpd(p_empirical = p_empirical,
+                                  perm_stats = perm_stats,
+                                  obs_stats = obs_stats,
+                                  n_test = n_test,
+                                  fit_thresh = fit_thresh,
+                                  alternative = alternative,
+                                  control = control$gpd)
 
     p_values <- gpd_fit$p_values
     method_used <- gpd_fit$method_used
@@ -278,7 +267,8 @@ compute_p_values <- function(
                  gpd_fit = gpd_fit,
                  gamma_fit = gamma_fit,
                  method_used = method_used,
-                 adjust_result = adjust_result
+                 adjust_result = adjust_result,
+                 control = control
   )
 
   return(output)
