@@ -64,7 +64,7 @@
 #' @return A named list of class "controlGPD" containing GPD settings.
 #'
 #' @export
-make_ctrl_gpd <- function(
+control_gpd <- function(
     fit_method = "MLE1D",
     include_obs = FALSE,
     constraint = "unconstrained",

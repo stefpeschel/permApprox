@@ -16,7 +16,7 @@
 #' @return A named list of class "controlGamma" containing Gamma settings.
 #'
 #' @export
-make_ctrl_gamma <- function(
+control_gamma <- function(
     include_obs = FALSE,
     gof_test = "cvm",
     gof_alpha = 0.05

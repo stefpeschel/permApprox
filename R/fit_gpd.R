@@ -52,22 +52,80 @@ fit_gpd <- function(data,
   gof_test <- match.arg(gof_test, choices = c("ad", "cvm", "none"))
 
   #-----------------------------------------------------------------------------
+  # Fit GPD to the data
+  #-----------------------------------------------------------------------------
 
-  # Estimate GPD parameters
-  fit <- try(.est_gpd_params(data = data,
-                             thresh = thresh,
-                             maxVal = maxVal,
-                             constraint = constraint,
-                             tol = tol,
-                             eps = eps,
-                             eps_type = eps_type,
-                             fit_method = fit_method,
-                             ...),
-             silent = TRUE)
+  # Exceedances (test statistics above threshold)
+  exceedances <- data[data > thresh]
+  excess <- exceedances - thresh
+
+  # Consider maximum value at which the GPD density must be positive
+  if (!is.null(maxVal)) {
+    maxExcess <- maxVal - thresh
+    maxOrig <- maxExcess
+
+    if (eps_type == "quantile") {
+      eps <- quantile(data, eps)
+    }
+
+    maxExcess <- maxExcess + eps
+
+  } else {
+    maxExcess <- maxOrig <- NULL
+  }
+
+  # Contraint of a positive shape parameter
+  if (constraint == "shape_nonneg") {
+    if (!fit_method %in% c("MLE1D", "MLE2D", "NLS2")) {
+      stop("Constraint \"shape_nonneg\" only available for methods ",
+           "MLE1D, MLE2D, and NLS2.")
+    }
+
+    shapeMin <- 0
+    shapePos <- TRUE
+  } else {
+    shapeMin <- -Inf
+    shapePos <- FALSE
+  }
+
+  # GPD fit
+  if (fit_method == "MLE2D") {
+    fit <- try(.fit_gpd_mle2d(x = excess, maxX = maxExcess, maxXOrig = maxOrig,
+                             tol = tol, shapeMin = shapeMin),
+                  silent = TRUE)
+
+  } else if (fit_method == "MLE1D") {
+    fit <- try(.fit_gpd_mle1d(x = excess, maxX = maxExcess, maxXOrig = maxOrig,
+                             tol = tol, shapePos = shapePos),
+                  silent = TRUE)
+
+  } else if (fit_method == "LME") {
+    fit <- try(.fit_gpd_lme(x = excess, maxX = maxExcess, maxXOrig = maxOrig,
+                           tol = tol),
+                  silent = TRUE)
+
+  } else if (fit_method == "NLS2") {
+    fit <- try(.fit_gpd_nls2(x = excess, maxX = maxExcess, maxXOrig = maxOrig,
+                            tol = tol, shapeMin = shapeMin),
+                  silent = TRUE)
+
+  } else if (fit_method == "WNLLSM") {
+    fit <- try(.fit_gpd_wnllsm(x = excess, maxX = maxExcess, maxXOrig = maxOrig,
+                              tol = tol),
+                  silent = TRUE)
+
+  } else if (fit_method == "ZSE") {
+    fit <- try(.fit_gpd_zse(x = excess, maxX = maxExcess, maxXOrig = maxOrig),
+                  silent = TRUE)
+
+  } else if (fit_method == "MOM") {
+    fit <- try(.fit_gpd_mom(x = excess),
+                  silent = TRUE)
+  }
 
   if ("try-error" %in% class(fit)) {
     shape <- scale <- negLogLik <- NA
-    pval <- 0
+    p_value <- 0
 
   } else {
     shape <- fit$shape
@@ -76,30 +134,23 @@ fit_gpd <- function(data,
 
     #negLogLik <- fit$negLogLik
 
-    tSort <- sort(data, decreasing = FALSE)
-
-    # exceedances (test statistics above the threshold)
-    exceedPerm <- tSort[tSort > thresh]
-
     if (gof_test == "none") {
-      pval <- NULL
+      p_value <- NULL
 
     } else {
       if (gof_test == "ad") {
-        #testres <- try(eva::gpdAd(exceedPerm-thresh), silent = TRUE)
-        testres <- try(.gof_gpd_ad(exceedPerm-thresh,
+        testres <- try(.gof_gpd_ad(excess,
                                    scale = scale, shape = shape), silent = TRUE)
       } else if (gof_test == "cvm") {
-        #testres <- try(eva::gpdCvm(exceedPerm-thresh), silent = TRUE)
-        testres <- try(.gof_gpd_cvm(exceedPerm-thresh,
+        testres <- try(.gof_gpd_cvm(excess,
                                     scale = scale, shape = shape), silent = TRUE)
       }
 
-      pval <- ifelse("try-error" %in% class(testres), 0, testres$p.value)
+      p_value <- ifelse("try-error" %in% class(testres), 0, testres$p.value)
     }
 
   }
 
-  return(list(shape = shape, scale = scale, pval = pval))#, negLogLik = negLogLik))
+  return(list(shape = shape, scale = scale, p_value = p_value))#, negLogLik = negLogLik))
 }
 

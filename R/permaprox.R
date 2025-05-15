@@ -41,11 +41,11 @@
 #' @param control List. Unified control list with sub-lists:
 #'   \itemize{
 #'     \item \code{control$gpd}: GPD fitting settings
-#'     (see \link{make_ctrl_gpd}).
+#'     (see \link{control_gpd}).
 #'     \item \code{control$gamma}: Gamma fitting settings
-#'     (see \link{make_ctrl_gamma}).
+#'     (see \link{control_gamma}).
 #'     \item \code{control$adjust}: Multiple testing settings
-#'     (see \link{make_ctrl_adjust}).
+#'     (see \link{control_adjust}).
 #'   }
 #'   By default, all sub-lists are created with their respective \code{make_}
 #'   functions. If not all of the subcomponents (gpd, gamma, or adjust) are
@@ -89,9 +89,9 @@
 #' obs <- c(2.5, 3.0)
 #' perm <- matrix(rnorm(2000), nrow = 2)
 #' ctrl <- list(
-#'   gpd = make_ctrl_gpd(fit_method = "LME", eps = 0.9),
-#'   gamma = make_ctrl_gamma(gof_test = "cvm"),
-#'   mult_adjust = make_ctrl_adjust(adjust = "adaptBH")
+#'   gpd = control_gpd(fit_method = "LME", eps = 0.9),
+#'   gamma = control_gamma(gof_test = "cvm"),
+#'   mult_adjust = control_adjust(adjust = "adaptBH")
 #' )
 #' res <- permaprox(obs_stats = obs,
 #'                  perm_stats = perm,
@@ -107,9 +107,9 @@ fit_thresh = 0.2
 alternative = "less"
 null_center = 0
 control = list(
-  gpd = make_ctrl_gpd(cores = 4),
-  gamma = make_ctrl_gamma(),
-  mult_adjust = make_ctrl_adjust()
+  gpd = control_gpd(cores = 4),
+  gamma = control_gamma(),
+  mult_adjust = control_adjust()
 )
 
 
@@ -121,9 +121,9 @@ compute_p_values <- function(
     alternative = "two_sided",
     null_center = 0,
     control = list(
-      gpd = make_ctrl_gpd(),
-      gamma = make_ctrl_gamma(),
-      mult_adjust = make_ctrl_adjust()
+      gpd = control_gpd(),
+      gamma = control_gamma(),
+      mult_adjust = control_adjust()
     ),
     ...
 ) {
@@ -145,9 +145,9 @@ compute_p_values <- function(
 
   # Set default control values
   default_control <- list(
-    gpd = make_ctrl_gpd(),
-    gamma = make_ctrl_gamma(),
-    mult_adjust = make_ctrl_adjust()
+    gpd = control_gpd(),
+    gamma = control_gamma(),
+    mult_adjust = control_adjust()
   )
 
   # Fill missing components with defaults
@@ -162,13 +162,13 @@ compute_p_values <- function(
     stop("'control' must be a list with elements 'gpd', 'gamma', and 'mult_adjust'.")
   }
   if (!inherits(control$gpd, "controlGPD")) {
-    stop("'control$gpd' must be a controlGPD object (use make_ctrl_gpd()).")
+    stop("'control$gpd' must be a controlGPD object (use control_gpd()).")
   }
   if (!inherits(control$gamma, "controlGamma")) {
-    stop("'control$gamma' must be a controlGamma object (use make_ctrl_gamma()).")
+    stop("'control$gamma' must be a controlGamma object (use control_gamma()).")
   }
   if (!inherits(control$mult_adjust, "controlMultAdjust")) {
-    stop("'control$mult_adjust' must be a controlMultAdjust object (use make_ctrl_adjust()).")
+    stop("'control$mult_adjust' must be a controlMultAdjust object (use control_adjust()).")
   }
 
   # Determine centering vector

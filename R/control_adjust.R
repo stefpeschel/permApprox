@@ -9,7 +9,7 @@
 #' @return A named list (class \code{"controlMultAdjust"}) with the specified settings.
 #' @export
 #'
-make_ctrl_adjust <- function(
+control_adjust <- function(
     method = "adaptBH",
     true_null_method = "convest",
     p_true_null = NULL,
@@ -45,7 +45,7 @@ make_ctrl_adjust <- function(
     stop("'verbose' must be a single logical value (TRUE or FALSE)." )
   }
 
-  ctrl <- list(
+  control <- list(
     method = method,
     true_null_method = true_null_method,
     p_true_null = p_true_null,
@@ -53,6 +53,6 @@ make_ctrl_adjust <- function(
     cores = cores,
     verbose = verbose
   )
-  class(ctrl) <- "controlMultAdjust"
-  return(ctrl)
+  class(control) <- "controlMultAdjust"
+  return(control)
 }
