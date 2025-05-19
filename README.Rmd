@@ -1,16 +1,18 @@
+---
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
 
 # permAprox
 
-permAprox is an R package to compute empirical and approximated p-values
-from permutation tests, especially useful when the number of
-permutations is small and zero p-values should be strictly avoided. It
-offers approximation using the Gamma distribution or the Generalized
-Pareto Distribution (GPD) fitted to the tail of the permutation
-distribution.
+permAprox is an R package to compute empirical and approximated p-values from permutation tests, especially useful when the number of permutations is small and zero p-values should be strictly avoided. It offers approximation using the Gamma distribution or the Generalized Pareto Distribution (GPD) fitted to the tail of the permutation distribution.
 
 ## Installation
 
-``` r
+```{r, eval=FALSE}
 install.packages("devtools")
 devtools::install_github("stefpeschel/permAprox")
 ```
@@ -25,7 +27,7 @@ devtools::install_github("stefpeschel/permAprox")
 
 ## Usage
 
-``` r
+```{r}
 library(permAprox)
 
 # Simulated example
@@ -66,11 +68,6 @@ p_values <- data.frame(empirical = res_emp$p_unadjusted,
 print(p_values)
 ```
 
-    ##     empirical        gamma         gpd   gpd_constr
-    ## 1 0.047952048 0.0596524811 0.043929958 4.392996e-02
-    ## 2 0.005994006 0.0112178961 0.002959802 2.959802e-03
-    ## 3 0.000999001 0.0023100226 0.000999001 7.244486e-05
-    ## 4 0.000999001 0.0005513698 0.000999001 1.432400e-06
 
 ## Documentation
 
@@ -80,8 +77,7 @@ print(p_values)
   - `make_gamma_ctrl()` for Gamma fitting
   - `make_adjust_ctrl()` for multiple testing correction
 
-Use `?compute_p_values` in R to see the full documentation and available
-options.
+Use `?compute_p_values` in R to see the full documentation and available options.
 
 ## License
 
