@@ -40,7 +40,9 @@
 #'   Default: \code{FALSE}.
 #'
 #' @importFrom fdrtool fdrtool
+#' @importFrom limma propTrueNull
 #' @importFrom stats p.adjust
+#' @import progressr future future.apply
 #' @export
 
 mult_adjust <- function(p_values,
@@ -131,83 +133,9 @@ mult_adjust <- function(p_values,
     n_test <- nrow(perm_stats)
 
     #---------------------------------------------------------------------------
-    # Compute p-values of the permutation test statistics
+    # Check p-values of the permutation test statistics
     if (is.null(p_perm)) {
-
-      # Initialize parallel stuff
-
-      if (verbose) {
-        # Create progress bar:
-        pb <- utils::txtProgressBar(0, n_perm, style=3)
-
-        # Function for progress bar
-        progress <- function(n) {
-          utils::setTxtProgressBar(pb, n)
-        }
-      }
-
-      if (cores > 1) {
-        if (parallel::detectCores() < cores) cores <- parallel::detectCores()
-
-        cl <- parallel::makeCluster(cores, outfile = "")
-        doSNOW::registerDoSNOW(cl)
-        '%do_or_dopar%' <- get('%dopar%')
-
-      } else {
-        '%do_or_dopar%' <- get('%do%')
-      }
-
-      if (verbose) {
-        opts <- list(progress = progress)
-      } else {
-        opts <- list()
-      }
-
-      loopres <-
-        foreach(i = 1:n_perm,
-                .export = c(".find_gpd_thresh", "fit_gpd", ".find_gpd_thresh_idx",
-                            ".est_gpd_params", "get_p_values_emp",
-                            ".gof_gpd_ad", ".gof_gpd_cvm",
-                            ".fit_gpd_lme", ".fit_gpd_mle1d", ".MLE1D_fk", ".MLE1D_fp",
-                            ".fit_gpd_mle2d", ".MLE2D_negloglik", ".fit_gpd_mom",
-                            ".fit_gpd_nls2", ".NLS2_gpdf", ".NLS2_ecdf", ".NLS2_gpdf2",
-                            ".NLS2_ecdf2", ".NLS2_rss1", ".NLS2_rss2",
-                            ".fit_gpd_wnllsm", ".WNLLSM_sum_i", ".WNLLSM_WLLS1",
-                            ".WNLLSM_WLLS", ".WNLSM_WLS1", ".WNLSM_WLS",
-                            ".fit_gpd_zse", ".ZSE_lx"),
-                .packages = "permAprox",
-                .options.snow = opts) %do_or_dopar% {
-
-                  if (verbose) progress(i)
-
-                  p_valuesPermRes <- permaprox(perm_stats = perm_stats[,-i],
-                                          obs_stats = perm_stats[, i],
-                                          tol = 1e-8,
-                                          method = "gpd",
-                                          eps = "quantile",
-                                          epsVal = 0.95,
-                                          constraint = "obs_statsMax",
-                                          thresh_method = "fix",
-                                          fit_method = "ZSE",
-                                          exceed0 = 250,
-                                          thresh_step = 1,
-                                          includeObs = FALSE,
-                                          cores = 1,
-                                          multAdj = "none")
-
-                  p_valuesPermRes$p
-                }
-
-      if (verbose) {
-        # Close progress bar
-        close(pb)
-      }
-
-      # Stop cluster
-      if (cores > 1) parallel::stopCluster(cl)
-
-      p_perm <- matrix(unlist(loopres), nrow = n_test, ncol = n_perm)
-
+      stop("Permutation p-values 'p_perm' are missing.")
     }
     #---------------------------------------------------------------------------
     # True possible cut-points

@@ -1,2 +1,81 @@
-# permAprox
-Permutation p-value approximation
+permAprox
+=========
+
+permAprox is an R package to compute empirical and approximated p-values from permutation tests, especially useful when the number of permutations is small and zero p-values should be strictly avoided. It offers approximation using the Gamma distribution or the Generalized Pareto Distribution (GPD) fitted to the tail of the permutation distribution.
+
+Installation
+------------
+
+# Install from GitHub (requires devtools)
+install.packages("devtools")
+devtools::install_github("your-username/permAprox")
+
+(Replace "your-username/permAprox" with the actual GitHub path to your repository.)
+
+Features
+--------
+
+- Computes empirical p-values for permutation tests
+- Approximates small p-values using the Gamma or GPD distributions
+- Strictly avoids zero p-values
+- Includes multiple testing correction support
+- Control objects allow fine-tuning of each fitting method
+
+Usage
+-----
+
+library(permAprox)
+
+# Simulated example
+set.seed(12345)
+obs <- c(2.0, 3.0, 4.0, 5.0)
+perm <- matrix(rnorm(4000), nrow = 4)
+
+# Empirical p-values
+res_emp <- compute_p_values(obs_stats = obs,
+                            perm_stats = perm,
+                            method = "empirical")
+
+# Gamma approximation
+gamma_ctrl <- make_gamma_ctrl(gof_test = "none")
+res_gamma <- compute_p_values(obs_stats = obs,
+                              perm_stats = perm,
+                              method = "gamma",
+                              gamma_ctrl = gamma_ctrl)
+
+# GPD approximation
+res_gpd <- compute_p_values(obs_stats = obs,
+                            perm_stats = perm,
+                            method = "gpd")
+
+# GPD with constraint
+gpd_ctrl <- make_gpd_ctrl(constraint = "support_at_obs")
+res_gpd_constr <- compute_p_values(obs_stats = obs,
+                                   perm_stats = perm,
+                                   method = "gpd",
+                                   gpd_ctrl = gpd_ctrl)
+
+# Compare unadjusted p-values
+p_values <- data.frame(empirical = res_emp$p_unadjusted,
+                       gamma = res_gamma$p_unadjusted,
+                       gpd = res_gpd$p_unadjusted,
+                       gpd_constr = res_gpd_constr$p_unadjusted)
+
+print(p_values)
+
+Documentation
+-------------
+
+- The main function is compute_p_values()
+- Control objects can be created using:
+  - make_gpd_ctrl() for GPD fitting
+  - make_gamma_ctrl() for Gamma fitting
+  - make_adjust_ctrl() for multiple testing correction
+
+Use ?compute_p_values in R to see the full documentation and available options.
+
+License
+-------
+
+This package is licensed under GPL-3.
+

@@ -1,5 +1,7 @@
 #' @title Adapted version of gpdAd from eva package
 #'
+#' @import stats graphics
+#'
 #' @keywords internal
 #'
 .find_gpd_thresh <- function(perm_stats,
@@ -135,7 +137,7 @@
                           eps_type = "fix",
                           factor = 1,
                           constraint = "none",
-                          support_limit = NULL,
+                          support_boundary = NULL,
                           gof_test = gof_test)#,
     #...)
 
@@ -215,7 +217,8 @@
 
       # Add 100 fake p-values (sampled from U(0, 0.01)) to ensure a correct
       # estimate if (nearly) all hypotheses are true
-      gof_p_value_tmp <- c(runif(100, min = 0, max = 0.01), gof_p_value_vec)
+      gof_p_value_tmp <- c(stats::runif(100, min = 0, max = 0.01),
+                           gof_p_value_vec)
 
       # Changepoint detection
       cp <- changepoint::cpt.meanvar(gof_p_value_tmp)
@@ -245,13 +248,13 @@
     plot(gof_p_value_vec ~ thresh_poss, pch = 20,
          ylab = "AD pvalue", xlab = "threshold")
     #abline(v = thtmp, col = "lightgray")
-    grid(50, NA, lwd = 1, lty = 1)
-    abline(h = gof_alpha)
-    abline(v = thresh, col = "red")
-    points(gof_p_value_vec ~ thresh_poss, pch = 20)
-    legend("topleft",
-           legend = c("AD p-values", "AD alpha", "selected threshold"),
-           col = c(1, 1, 2), pch = c(20, NA, NA), lty = c(NA, 1, 1))
+    graphics::grid(50, NA, lwd = 1, lty = 1)
+    graphics::abline(h = gof_alpha)
+    graphics::abline(v = thresh, col = "red")
+    graphics::points(gof_p_value_vec ~ thresh_poss, pch = 20)
+    graphics::legend("topleft",
+                     legend = c("AD p-values", "AD alpha", "selected threshold"),
+                     col = c(1, 1, 2), pch = c(20, NA, NA), lty = c(NA, 1, 1))
   }
 
   return(list(thresh = thresh, n_exceed = n_exceed))

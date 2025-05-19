@@ -8,17 +8,20 @@ Description: Approximate p-values in permutation tests
   while strictly avoiding p-values of zero.
 License: GPL-3 + file LICENSE
 Imports:
-  changepoint,
-  doSNOW,
-  eva,
-  evir,
-  fdrtool,
-  fitdistrplus,
-  foreach,
-  gof_test,
-  limma,
-  Rdpack,
-  VGAM
+    changepoint,
+    eva,
+    fdrtool,
+    fitdistrplus,
+    future,
+    future.apply,
+    goftest,
+    limma,
+    progressr,
+    Rdpack,
+    stats
 RdMacros: Rdpack
 Encoding: UTF-8
 RoxygenNote: 7.3.2
+Suggests: 
+    testthat (>= 3.0.0)
+Config/testthat/edition: 3

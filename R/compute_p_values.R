@@ -38,18 +38,20 @@
 #'   This allows testing against a null hypothesis other than zero or centering
 #'   based on the empirical distribution.
 
-#' @param control List. Unified control list with sub-lists:
-#'   \itemize{
-#'     \item \code{control$gpd}: GPD fitting settings
-#'     (see \link{control_gpd}).
-#'     \item \code{control$gamma}: Gamma fitting settings
-#'     (see \link{control_gamma}).
-#'     \item \code{control$adjust}: Multiple testing settings
-#'     (see \link{control_adjust}).
-#'   }
-#'   By default, all sub-lists are created with their respective \code{make_}
-#'   functions. If not all of the subcomponents (gpd, gamma, or adjust) are
-#'   specified, the others are automatically filled with their default settings.
+#' @param gpd_ctrl A control object created by \code{\link{make_gpd_ctrl}}.
+#'   Contains settings for the GPD approximation, such as the fitting method,
+#'   constraints, and thresholding strategy. Defaults to \code{make_gpd_ctrl()}.
+#'
+#' @param gamma_ctrl A control object created by \code{\link{make_gamma_ctrl}}.
+#'   Contains settings for the Gamma approximation, including goodness-of-fit
+#'   test and inclusion of the observed statistic. Defaults to
+#'   \code{make_gamma_ctrl()}.
+#'
+#' @param adjust_ctrl A control object created by \code{\link{make_adjust_ctrl}}.
+#'   Contains settings for multiple testing correction, such as the adjustment
+#'   method and estimation of the proportion of true null hypotheses.
+#'   Defaults to \code{make_adjust_ctrl()}.
+#'
 #' @param ... Additional arguments (currently unused).
 #'
 #' @return A list containing:
@@ -63,6 +65,7 @@
 #'   \item{gamma_fit}{Details of Gamma fit (if used), or \code{NULL}.}
 #'   \item{method_used}{Character. Method used per test.}
 #'   \item{adjust_result}{Full output of \code{mult_adjust()} if adjustment used.}
+#'   \item{control}{List with the used control arguments.}
 #' }
 #'
 #' @details
@@ -85,21 +88,44 @@
 #' If \code{method = "none"}, only empirical p-values are returned.
 #'
 #' @examples
+#' # Generate observed and permuted test statistics
 #' set.seed(12345)
-#' obs <- c(2.5, 3.0)
-#' perm <- matrix(rnorm(2000), nrow = 2)
-#' ctrl <- list(
-#'   gpd = control_gpd(fit_method = "LME", eps = 0.9),
-#'   gamma = control_gamma(gof_test = "cvm"),
-#'   mult_adjust = control_adjust(adjust = "adaptBH")
-#' )
-#' res <- permaprox(obs_stats = obs,
-#'                  perm_stats = perm,
-#'                  method = "gpd",
-#'                  control = ctrl)
-#' res$p
+#' obs <- c(2.0, 3.0, 4.0, 5.0)
+#' perm <- matrix(rnorm(4000), nrow = 4)
 #'
-#' @import foreach
+#' # Empirical p-values
+#' res_emp <- compute_p_values(obs_stats = obs,
+#'                             perm_stats = perm,
+#'                             method = "empirical")
+#'
+#' # Gamma approximation
+#' gamma_ctrl <- make_gamma_ctrl(gof_test = "none")
+#' res_gamma <- compute_p_values(obs_stats = obs,
+#'                               perm_stats = perm,
+#'                               method = "gamma",
+#'                               gamma_ctrl = gamma_ctrl)
+#'
+#' # GPD approximation
+#' res_gpd <- compute_p_values(obs_stats = obs,
+#'                             perm_stats = perm,
+#'                             method = "gpd")
+#'
+#' # GPD approximation with constraint
+#' gpd_ctrl <- make_gpd_ctrl(constraint = "support_at_obs")
+#'
+#' res_gpd_constr <- compute_p_values(obs_stats = obs,
+#'                                    perm_stats = perm,
+#'                                    method = "gpd",
+#'                                    gpd_ctrl = gpd_ctrl)
+#'
+#' # Data frame with (unadjusted) p-values
+#' p_values <- data.frame(empirical = res_emp$p_unadjusted,
+#'                        gamma = res_gamma$p_unadjusted,
+#'                        gpd = res_gpd$p_unadjusted,
+#'                        gpd_constr = res_gpd_constr$p_unadjusted)
+#'
+#' p_values
+#'
 #' @export
 
 compute_p_values <- function(
@@ -109,11 +135,9 @@ compute_p_values <- function(
     fit_thresh = 0.2,
     alternative = "two_sided",
     null_center = 0,
-    control = list(
-      gpd = control_gpd(),
-      gamma = control_gamma(),
-      mult_adjust = control_adjust()
-    ),
+    gpd_ctrl = make_gpd_ctrl(),
+    gamma_ctrl = make_gamma_ctrl(),
+    adjust_ctrl = make_adjust_ctrl(),
     ...
 ) {
 
@@ -123,6 +147,19 @@ compute_p_values <- function(
   method <- match.arg(method,
                       choices = c("gpd", "gamma", "empirical"))
 
+  # Validate control arguments
+  if (!inherits(gpd_ctrl, "gpd_ctrl")) {
+    stop("'gpd_ctrl' must be created with make_gpd_ctrl().")
+  }
+
+  if (!inherits(gamma_ctrl, "gamma_ctrl")) {
+    stop("'gamma_ctrl' must be created with make_gamma_ctrl().")
+  }
+
+  if (!inherits(adjust_ctrl, "adjust_ctrl")) {
+    stop("'adjust_ctrl' must be created with make_adjust_ctrl().")
+  }
+
   # Number of permutations and tests
   n_perm <- ncol(perm_stats)
   n_test <- length(obs_stats)
@@ -130,34 +167,6 @@ compute_p_values <- function(
   # Ensure matrix format for multiple tests
   if (length(obs_stats) == 1) {
     perm_stats <- matrix(perm_stats, nrow = 1)
-  }
-
-  # Set default control values
-  default_control <- list(
-    gpd = control_gpd(),
-    gamma = control_gamma(),
-    mult_adjust = control_adjust()
-  )
-
-  # Fill missing components with defaults
-  for (name in names(default_control)) {
-    if (is.null(control[[name]])) {
-      control[[name]] <- default_control[[name]]
-    }
-  }
-
-  # Validate control arguments
-  if (!is.list(control) || !all(c("gpd", "gamma", "mult_adjust") %in% names(control))) {
-    stop("'control' must be a list with elements 'gpd', 'gamma', and 'mult_adjust'.")
-  }
-  if (!inherits(control$gpd, "controlGPD")) {
-    stop("'control$gpd' must be a controlGPD object (use control_gpd()).")
-  }
-  if (!inherits(control$gamma, "controlGamma")) {
-    stop("'control$gamma' must be a controlGamma object (use control_gamma()).")
-  }
-  if (!inherits(control$mult_adjust, "controlMultAdjust")) {
-    stop("'control$mult_adjust' must be a controlMultAdjust object (use control_adjust()).")
   }
 
   # Determine centering vector
@@ -211,7 +220,7 @@ compute_p_values <- function(
                                       n_test = n_test,
                                       fit_thresh = fit_thresh,
                                       alternative = alternative,
-                                      control = control$gamma)
+                                      control = gamma_ctrl)
 
     p_values <- gamma_fit$p_values
     method_used <- gamma_fit$method_used
@@ -224,7 +233,7 @@ compute_p_values <- function(
                                   n_test = n_test,
                                   fit_thresh = fit_thresh,
                                   alternative = alternative,
-                                  control = control$gpd)
+                                  control = gpd_ctrl)
 
     p_values <- gpd_fit$p_values
     method_used <- gpd_fit$method_used
@@ -236,23 +245,21 @@ compute_p_values <- function(
   # Store unadjusted p-values
   p_unadjusted <- p_values
 
-  adjust_method <- control$mult_adjust$method
+  adjust_method <- adjust_ctrl$method
 
   if (adjust_method == "none") {
     adjust_result <- NULL
 
   } else {
 
-    adj_ctrl <- control$mult_adjust
-
     adjust_result <- mult_adjust(p_values = p_values,
                                  method = adjust_method,
-                                 true_null_method = adj_ctrl$true_null_method,
-                                 p_true_null = adj_ctrl$p_true_null,
-                                 seq_length = adj_ctrl$seq_length,
-                                 perm_stats = adj_ctrl$perm_stats,
-                                 cores = adj_ctrl$cores,
-                                 verbose = adj_ctrl$verbose)
+                                 true_null_method = adjust_ctrl$true_null_method,
+                                 p_true_null = adjust_ctrl$p_true_null,
+                                 seq_length = adjust_ctrl$seq_length,
+                                 perm_stats = adjust_ctrl$perm_stats,
+                                 cores = adjust_ctrl$cores,
+                                 verbose = adjust_ctrl$verbose)
 
     p_values <- adjust_result$p_adjusted
   }
@@ -268,7 +275,11 @@ compute_p_values <- function(
                  gamma_fit = gamma_fit,
                  method_used = method_used,
                  adjust_result = adjust_result,
-                 control = control
+                 control = list(
+                   gpd = gpd_ctrl,
+                   gamma = gamma_ctrl,
+                   adjust = adjust_ctrl
+                 )
   )
 
   return(output)

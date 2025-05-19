@@ -4,6 +4,8 @@
 
 #' @title Adapted version of gpdAd from eva package
 #'
+#' @import parallel eva
+#'
 #' @keywords internal
 
 .gof_gpd_ad <- function(data, scale, shape, bootstrap = FALSE, bootnum = NULL,
@@ -25,7 +27,7 @@
   theta <- c(scale, shape)
   if (bootstrap == FALSE & shape > 1)
     stop("Estimated parameters are outside the table range, please use the bootstrap version")
-  thresh <- eva:::findthresh(data, n)
+  thresh <- findthresh(data, n)
   newdata <- eva::pgpd(data, loc = thresh, scale = scale, shape = shape)
   newdata <- sort(newdata)
 
@@ -122,7 +124,7 @@
   theta <- c(scale, shape)
   if (bootstrap == FALSE & shape > 1)
     stop("Estimated parameters are outside the table range, please use the bootstrap version")
-  thresh <- eva:::findthresh(data, n)
+  thresh <- findthresh(data, n)
   newdata <- eva::pgpd(data, loc = thresh, scale = scale, shape = shape)
   newdata <- sort(newdata)
   i <- seq(1, n, 1)
@@ -187,3 +189,69 @@
   }
   out
 }
+
+################################################################################
+# Helper functions from eva package
+################################################################################
+
+#' @title Copied helper function from the eva package
+#' @description Copied from the eva package (GPL-2 | GPL-3), originally
+#'   authored by [Brian Bader [aut, cre], Jun Yan [ctb]].
+#' See: https://cran.r-project.org/web/packages/eva/index.html
+#' @keywords internal
+#'
+gpdAdGen <- function(n, theta) {
+  data1 <- rgpd(n, loc = 0, scale = theta[1], shape = theta[2])
+  fit1 <- tryCatch(gpdFit(data1, nextremes = n, method = "mle"), error = function(w) {return(NULL)}, warning = function(w) {return(NULL)})
+  if(is.null(fit1)) {
+    teststat <- NA
+  } else {
+    scale1 <- fit1$par.ests[1]
+    shape1 <- fit1$par.ests[2]
+    thresh1 <- findthresh(data1, n)
+    newdata1 <- pgpd(data1, loc = thresh1, scale = scale1, shape = shape1)
+    newdata1 <- sort(newdata1)
+    i <- seq(1, n, 1)
+    teststat <- -n - (1/n)*sum((2*i - 1)*(log(newdata1) + log1p(-rev(newdata1))))
+  }
+  teststat
+}
+
+#' @title Copied helper function from the eva package
+#' @description Copied from the eva package (GPL-2 | GPL-3), originally
+#'   authored by [Brian Bader [aut, cre], Jun Yan [ctb]].
+#' See: https://cran.r-project.org/web/packages/eva/index.html
+#' @keywords internal
+#'
+gpdCvmGen <- function(n, theta) {
+  data1 <- rgpd(n, loc = 0, scale = theta[1], shape = theta[2])
+  fit1 <- tryCatch(gpdFit(data1, nextremes = n, method = "mle"), error = function(w) {return(NULL)}, warning = function(w) {return(NULL)})
+  if(is.null(fit1)) {
+    teststat <- NA
+  } else {
+    scale1 <- fit1$par.ests[1]
+    shape1 <- fit1$par.ests[2]
+    thresh1 <- findthresh(data1, n)
+    newdata1 <- pgpd(data1, loc = thresh1, scale = scale1, shape = shape1)
+    newdata1 <- sort(newdata1)
+    i <- seq(1, n, 1)
+    teststat <- sum((newdata1 - (2*i - 1)/(2*n))^2) + (1/(12*n))
+  }
+  teststat
+}
+
+#' @title Copied helper function from the eva package
+#' @description Copied from the eva package (GPL-2 | GPL-3), originally
+#'   authored by [Brian Bader [aut, cre], Jun Yan [ctb]].
+#' See: https://cran.r-project.org/web/packages/eva/index.html
+#' @keywords internal
+#'
+findthresh <- function(data, ne) {
+  data <- rev(sort(as.numeric(data)))
+  data[ne] - min(min(abs(diff(data))[abs(diff(data)) > 0]), 1e-6)
+}
+
+
+
+
+

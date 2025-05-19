@@ -1,4 +1,9 @@
 #' @title Compute p-values via Gamma approximation
+#'
+#' @importFrom fitdistrplus fitdist
+#' @importFrom stats pgamma
+#' @import goftest
+#'
 #' @keywords internal
 
 .compute_pvals_gamma <- function(p_empirical, perm_stats, obs_stats, n_test,
@@ -19,6 +24,7 @@
 
   # Initialize vectors for parameter output
   shape <- rate <- gof_p_value <- rep(NA, n_test)
+  gof_rejected <- rep(FALSE, n_test)
 
   # Transform test statistics for tail modeling
   transformed <- lapply(seq_len(n_test), function(i) {
@@ -61,7 +67,7 @@
     shape[i] <- as.numeric(gamma_fit$estimate["shape"])
     rate[i] <- as.numeric(gamma_fit$estimate["rate"])
 
-    pvals[i] <- (length(perm) / n_perm) * pgamma(q = abs(obs_stats[i]),
+    pvals[i] <- (length(perm) / n_perm) * stats::pgamma(q = abs(obs_stats[i]),
                                                  shape = shape[i],
                                                  rate = rate[i],
                                                  lower.tail = FALSE)
@@ -74,11 +80,14 @@
                                    rate = rate[i])
 
       gof_p_value[i] <- cvmtest$p.value
+
+      if (cvmtest$p.value <= gof_alpha) {
+        gof_rejected[i] <- TRUE
+      }
     }
   }
 
   if (gof_test == "cvm") {
-    gof_rejected <- which(gof_p_value <= gof_alpha)
     pvals[gof_rejected] <- p_empirical[gof_rejected]
     method_used[gof_rejected] <- "empirical"
   }

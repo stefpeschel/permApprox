@@ -13,10 +13,10 @@
 #' @param gof_alpha Numeric. Significance level for GOF test (0 < gof_alpha < 1).
 #'   Default: 0.05.
 #'
-#' @return A named list of class "controlGamma" containing Gamma settings.
+#' @return A named list of class "gamma_ctrl" containing Gamma settings.
 #'
 #' @export
-control_gamma <- function(
+make_gamma_ctrl <- function(
     include_obs = FALSE,
     gof_test = "cvm",
     gof_alpha = 0.05
@@ -35,7 +35,7 @@ control_gamma <- function(
     gof_alpha  = gof_alpha
   )
 
-  class(control) <- "controlGamma"
+  class(control) <- "gamma_ctrl"
 
   control
 }

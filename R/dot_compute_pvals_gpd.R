@@ -1,15 +1,15 @@
 #' @title Compute p-values via GPD tail approximation
 #'
-#' @import progressr
+#' @import progressr future future.apply goftest
 #' @keywords internal
 .compute_pvals_gpd <- function(p_empirical,
-                          obs_stats,
-                          perm_stats,
-                          n_test,
-                          fit_thresh,
-                          alternative,
-                          control,
-                          ...) {
+                               obs_stats,
+                               perm_stats,
+                               n_test,
+                               fit_thresh,
+                               alternative,
+                               control,
+                               ...) {
 
   # Unpack control arguments
   fit_method    <- control$fit_method
@@ -34,8 +34,8 @@
   # Transform test statistics for tail modeling
   transformed <- lapply(seq_len(n_test), function(i) {
     .transform_stats(perm_stats = perm_stats[i, ],
-                    obs_stats  = obs_stats[i],
-                    alternative = alternative)
+                     obs_stats  = obs_stats[i],
+                     alternative = alternative)
   })
   trans_obs  <- vapply(transformed, `[[`, numeric(1), "obs_stats")
   trans_perm <- lapply(transformed, `[[`, "perm_stats")
@@ -50,7 +50,7 @@
   } else {
     future::plan(future::sequential)
   }
-browser()
+
   # Define the fit function for one test
   fit_one <- function(i) {
     out <- list()
@@ -96,23 +96,23 @@ browser()
 
     } else {
       # Possibly constrain support
-      support_limit <- switch(constraint,
-                       support_at_max = max(obs_stats),
-                       support_at_obs = obs_stats[i],
-                       NULL)
+      support_boundary <- switch(constraint,
+                                 support_at_max = max(obs_stats),
+                                 support_at_obs = obs_stats[i],
+                                 NULL)
 
       # Fit GPD
       fit_res <- fit_gpd(
-        data        = perm_i[perm_i > thresh],
-        thresh      = thresh,
-        fit_method  = fit_method,
-        tol         = tol,
-        eps         = eps,
-        eps_type    = eps_type,
-        constraint  = constraint,
-        support_limit      = support_limit,
-        gof_test    = gof_test,
-        gof_alpha   = gof_alpha,
+        data             = perm_i[perm_i > thresh],
+        thresh           = thresh,
+        fit_method       = fit_method,
+        tol              = tol,
+        eps              = eps,
+        eps_type         = eps_type,
+        constraint       = constraint,
+        support_boundary = support_boundary,
+        gof_test         = gof_test,
+        gof_alpha        = gof_alpha,
         ...
       )
 
@@ -123,10 +123,10 @@ browser()
 
       # Compute upper‐tail probability (p-value)
       p_gpd <- (n_exceed / n_perm) *
-        .pgpd_upper_tail(q     = obs_i - thresh,
-                        loc   = 0,
-                        scale = out$scale,
-                        shape = out$shape)
+        .pgpd_upper_tail(q        = obs_i - thresh,
+                         location = 0,
+                         scale    = out$scale,
+                         shape    = out$shape)
 
       if (p_gpd == 0) {
         out$p_value       <- p_empirical[i]
@@ -178,6 +178,7 @@ browser()
     i <- idx_fit[j]
     res <- results_list[[j]]
 
+    p_values[i]      <- res$p_value
     fitted[i]        <- TRUE
     method_used[i]   <- res$method_used
     thresh_vec[i]    <- res$thresh

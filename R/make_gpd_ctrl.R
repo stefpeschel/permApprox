@@ -16,7 +16,7 @@
 #'     \item{\code{"unconstrained"}}{No constraint.}
 #'     \item{\code{"shape_nonneg"}}{Shape parameter must be non-negative.}
 #'     \item{\code{"support_at_obs"}}{Positive density for observed test statistic.}
-#'     \item{\code{"support_at_max}}{Positive density for maximum of all
+#'     \item{\code{"support_at_max"}}{Positive density for maximum of all
 #'     observed test statistics (in the multiple testing case).}
 #'   }
 #' @param eps Numeric. Small value or proportion (used for constraint)
@@ -61,10 +61,16 @@
 #' @param gof_alpha Numeric. Significance level for GOF test (0 < gof_alpha < 1).
 #'   Default: 0.05.
 #'
-#' @return A named list of class "controlGPD" containing GPD settings.
+#' @param cores Integer. Number of CPU cores to use for parallel computations.
+#'   Must be >=1. Default: \code{1}.
+#'
+#' @param verbose Logical. If \code{TRUE}, progress messages are printed.
+#'   Default: \code{TRUE}.
+#'
+#' @return A named list of class "gpd_ctrl" containing GPD settings.
 #'
 #' @export
-control_gpd <- function(
+make_gpd_ctrl <- function(
     fit_method = "MLE1D",
     include_obs = FALSE,
     constraint = "unconstrained",
@@ -162,6 +168,6 @@ control_gpd <- function(
     cores = cores,
     verbose = verbose
   )
-  class(control) <- "controlGPD"
+  class(control) <- "gpd_ctrl"
   control
 }

@@ -1,15 +1,15 @@
 #' Create a control object for multiple testing adjustment in permAprox
 #'
 #' Constructs a list of parameters controlling multiple testing correction
-#' methods, so that these options are decoupled from the main \code{permaprox()}
-#' function.
+#' methods, so that these options are decoupled from the main
+#' \code{compute_p_values()} function.
 #'
 #' @inheritParams mult_adjust
 #'
-#' @return A named list (class \code{"controlMultAdjust"}) with the specified settings.
+#' @return A named list (class \code{"adjust_ctrl"}) with the specified settings.
 #' @export
 #'
-control_adjust <- function(
+make_adjust_ctrl <- function(
     method = "adaptBH",
     true_null_method = "convest",
     p_true_null = NULL,
@@ -53,6 +53,6 @@ control_adjust <- function(
     cores = cores,
     verbose = verbose
   )
-  class(control) <- "controlMultAdjust"
+  class(control) <- "adjust_ctrl"
   return(control)
 }

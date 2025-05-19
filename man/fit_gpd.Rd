@@ -2,7 +2,7 @@
 % Please edit documentation in R/fit_gpd.R
 \name{fit_gpd}
 \alias{fit_gpd}
-\title{Fit and test the GPD}
+\title{Fit and test the Generalized Pareto Distribution (GPD)}
 \usage{
 fit_gpd(
   data,
@@ -12,32 +12,60 @@ fit_gpd(
   eps = 0.8,
   eps_type = "quantile",
   constraint = "none",
-  support_limit = NULL,
+  support_boundary = NULL,
   gof_test = "ad",
   ...
 )
 }
 \arguments{
-\item{data}{data vector}
+\item{data}{Numeric vector. Input data to which the GPD is fitted.}
 
-\item{thresh}{numeric defining the GPD threshold. Data above this threshold
-are the exceedances.}
+\item{thresh}{Numeric scalar. Threshold above which the data are considered exceedances.}
 
-\item{fit_method}{!!! character giving the method used for fitting the GPD
-distribution.}
+\item{fit_method}{Character string specifying the fitting method to be used.
+Must be one of \code{"LME"}, \code{"MLE1D"}, \code{"MLE2D"}, \code{"MOM"},
+\code{"NLS2"}, \code{"WNLLSM"}, or \code{"ZSE"}.}
 
-\item{support_limit}{maximum value for which the probability density function must
-be positive. If \code{NULL}, the maximum of the data vector is used.}
+\item{tol}{Numeric. Convergence tolerance for iterative fitting procedures.
+Default is \code{1e-8}.}
 
-\item{...}{arguments passed to the function for GPD parameter estimation.}
+\item{eps}{Numeric. A small value used in support-related constraints (e.g., added to
+the upper support limit). Default is \code{0.8}.}
 
-\item{nExceed}{integer giving the number of exceedances (data above the
-threshold).}
+\item{eps_type}{Character. Type of epsilon adjustment to apply. Can be
+\code{"quantile"} or \code{"fix"}.}
+
+\item{constraint}{Character. Type of constraint to enforce during GPD fitting.
+Options are \code{"unconstrained"}, \code{"shape_nonneg"},
+\code{"support_at_obs"}, and \code{"support_at_max"}.}
+
+\item{support_boundary}{Numeric or NULL. Upper boundary of the GPD support,
+used in constrained fitting when the shape parameter is negative. If NULL,
+the maximum of the data vector is used.}
+
+\item{gof_test}{Character. Specifies the goodness-of-fit test to apply.
+Options are \code{"ad"} (Anderson-Darling), \code{"cvm"} (Cramér-von Mises),
+or \code{"none"}. Default is \code{"ad"}.}
+
+\item{...}{Additional arguments passed to internal fitting functions.}
+}
+\value{
+A named list with components:
+  \describe{
+    \item{\code{shape}}{Estimated shape parameter of the GPD.}
+    \item{\code{scale}}{Estimated scale parameter of the GPD.}
+    \item{\code{p_value}}{P-value from the goodness-of-fit test, if applicable.}
+  }
 }
 \description{
-Fit and test the GPD
+Fits the Generalized Pareto Distribution (GPD) to exceedances over a given threshold
+using one of several available estimation methods. Optionally applies a goodness-of-fit test
+to assess the adequacy of the fitted model.
 }
 \details{
-The maximum value (\code{support_limit}) is only relevant for light-tailed
-distributions, i.e. if the shape parameter is negative.
+If the shape parameter is negative (indicating a bounded tail), a constraint
+may be imposed to ensure that the support of the GPD does not exceed a specified
+maximum value. The \code{support_boundary} argument defines this bound and is
+only relevant for such constrained fitting. The default behavior uses the
+maximum observed data value unless otherwise specified.
 }

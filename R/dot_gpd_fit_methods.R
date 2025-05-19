@@ -65,6 +65,7 @@
 #'   \insertRef{Zhang2007lme}{permAprox}
 #'
 #' @importFrom Rdpack reprompt
+#' @importFrom eva dgpd
 #' @keywords internal
 
 .fit_gpd_lme <- function(x, boundary = NULL, eval_point = NULL, r = -1/2, tol = 1e-8) {
@@ -118,7 +119,7 @@
   bound <- -scale / shape
 
   # GPD density at boundary
-  densMax <- VGAM::dgpd(eval_point, scale = scale, shape = shape)
+  densMax <- eva::dgpd(eval_point, scale = scale, shape = shape)
 
   out <- list(shape = shape,
               scale = scale,
@@ -218,7 +219,7 @@
   scale <- -shape * sigma
 
   # GPD density at boundary
-  densMax <- VGAM::dgpd(eval_point, scale = scale, shape = shape)
+  densMax <- eva::dgpd(eval_point, scale = scale, shape = shape)
 
   out <- list(shape = shape,
               scale = scale,
@@ -388,7 +389,7 @@
   scale <- fit$par[2]
   bound <- - scale / shape
 
-  densMax <- VGAM::dgpd(eval_point, scale = scale, shape = shape)
+  densMax <- eva::dgpd(eval_point, scale = scale, shape = shape)
 
   out <- list(shape = shape,
               scale = scale,
@@ -597,7 +598,7 @@
 
   bound <- - scale / shape
 
-  densMax <- VGAM::dgpd(eval_point, scale = scale, shape = shape)
+  densMax <- eva::dgpd(eval_point, scale = scale, shape = shape)
 
   out <- list(shape = shape,
               scale = scale,
@@ -651,10 +652,10 @@
 .NLS2_rss1 <- function(params, n, q, x.u, boundary) {
   scale <- params[1]
   shape <- params[2]
-  support_limit <- max(c(x.u, boundary))
+  support_boundary <- max(c(x.u, boundary))
 
   cond1 <- scale <= 0
-  cond2 <- (shape <= 0) && (support_limit > (-scale/shape))
+  cond2 <- (shape <= 0) && (support_boundary > (-scale/shape))
 
   if (cond1 || cond2) {
     temp1 <- 1e+6
@@ -748,8 +749,6 @@
 #'   Pareto Distribution (GPD) proposed by \cite{Zhao et al. (2019)}.
 #'
 #' @param x data vector
-#' @param q threshold value. E.g., set to q=0.9 to use the 90% percentile.
-#'   Default is 0, i.e., all data are used.
 #' @param boundary numeric. Maximum value at which the GPD probability density
 #'   function must be positive. If \code{NULL}, the maximum of the data vector
 #'   \code{x} is used.
@@ -757,15 +756,10 @@
 #'   process.
 #' @param shapeIni,scaleIni initial values for the shape and scale parameters,
 #'   i.e., values where the optimization starts.
-#' @param shapeMin,scaleMin lower bound on the shape and scale parameters.
-#'   If != -Inf, \code{optimMethod} is set to "L-BFGS-B".
-#' @param shapeMax,scaleMax upper bound on the shape and scale parameters.
-#'   If != Inf, \code{optimMethod} is set to "L-BFGS-B".
 #'
 #' @details A simplified version of the R code has been provided by
-#'   \cite{Zhao et al. (2019)}. The function has been extended by the arguments:
-#'   \code{boundary}, \code{eps}, and \code{tol} to ensure that the GPD
-#'   density is non-zero at boundary + eps or max(x) + eps.
+#'   \cite{Zhao et al. (2019)}. The function has been adapted to ensure that
+#'   the GPD density is non-zero at boundary + eps or max(x) + eps.
 #'
 #' @references
 #'   \insertRef{Zhao2019new}{permAprox}
@@ -889,8 +883,7 @@
     }
 
     # increase lower limit because b must be larger than lower
-    #bMin <- bMin + sqrt(.Machine$double.eps)
-    bMin <- bMin + eps
+    bMin <- bMin + sqrt(.Machine$double.eps)
 
     # Set upper limit for b and shape
     bMax <- 10
@@ -934,7 +927,7 @@
 
   bound <- - scale / shape
 
-  densMax <- VGAM::dgpd(eval_point, scale = scale, shape = shape)
+  densMax <- eva::dgpd(eval_point, scale = scale, shape = shape)
 
   out <- list(shape = shape,
               scale = scale,
@@ -1088,19 +1081,9 @@
 #'   (GPD) proposed by \cite{Zhang & Stephens (2009)}.
 #'
 #' @param x data vector
-#' @param q threshold value. E.g., set to q=0.9 to use the 90% percentile.
-#'   Default is 0, i.e., all data are used.
 #' @param boundary numeric. Maximum value at which the GPD probability density
 #'   function must be positive. If \code{NULL}, the maximum of the data vector
 #'   \code{x} is used.
-#' @param optimTol numeric giving the desired accuracy of the optimization
-#'   process.
-#' @param shapeIni,scaleIni initial values for the shape and scale parameters,
-#'   i.e., values where the optimization starts.
-#' @param shapeMin,scaleMin lower bound on the shape and scale parameters.
-#'   If != -Inf, \code{optimMethod} is set to "L-BFGS-B".
-#' @param shapeMax,scaleMax upper bound on the shape and scale parameters.
-#'   If != Inf, \code{optimMethod} is set to "L-BFGS-B".
 #' @references
 #'   \insertRef{Zhang2009new}{permAprox}
 #'
@@ -1150,7 +1133,7 @@
   scale <- sigma
   bound <- - scale / shape
 
-  densMax <- VGAM::dgpd(eval_point, scale = scale, shape = shape)
+  densMax <- eva::dgpd(eval_point, scale = scale, shape = shape)
 
   out <- list(shape = shape,
               scale = scale,
