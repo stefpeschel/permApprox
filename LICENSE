@@ -672,3 +672,14 @@ may consider it more useful to permit linking proprietary applications with
 the library.  If this is what you want to do, use the GNU Lesser General
 Public License instead of this License.  But first, please read
 <https://www.gnu.org/licenses/why-not-lgpl.html>.
+
+
+Third-party code notice
+-----------------------
+
+This package includes adapted internal functions from the R package `eva`,
+which is licensed under GPL (≥ 2). The included code was copied and modified
+in compliance with the GPL-3 license used in this package.
+
+Original source:
+  - eva: https://cran.r-project.org/package=eva
