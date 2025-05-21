@@ -11,7 +11,7 @@ fit_gpd(
   tol = 1e-08,
   eps = 0.8,
   eps_type = "quantile",
-  constraint = "none",
+  constraint = "unconstrained",
   support_boundary = NULL,
   gof_test = "ad",
   ...

@@ -59,7 +59,7 @@ fit_gpd <- function(data,
                     tol = 1e-8,
                     eps = 0.8,
                     eps_type = "quantile",
-                    constraint = "none",
+                    constraint = "unconstrained",
                     support_boundary = NULL,
                     gof_test = "ad",
                     ...) {
