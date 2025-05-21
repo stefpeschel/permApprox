@@ -6,9 +6,9 @@ output: github_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-# permAprox
+# permAprox - Permutation p-value approximation
 
-permAprox ("**perm**utation p-value **ap**p**rox**imation") is an R package to compute empirical and approximated p-values from permutation tests, especially useful when the number of permutations is small and zero p-values should be strictly avoided. It offers approximation using the Gamma distribution or the Generalized Pareto Distribution (GPD) fitted to the tail of the permutation distribution.
+permAprox is an R package to compute empirical and approximated p-values from permutation tests, especially useful when the number of permutations is small and zero p-values should be strictly avoided. It offers approximation using the Gamma distribution or the Generalized Pareto Distribution (GPD) fitted to the tail of the permutation distribution.
 
 ## Early version disclaimer
 
