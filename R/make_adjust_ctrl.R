@@ -10,7 +10,6 @@
 #' @export
 #'
 make_adjust_ctrl <- function(
-    method = "adaptBH",
     true_null_method = "convest",
     p_true_null = NULL,
     seq_length = 100,
@@ -18,11 +17,8 @@ make_adjust_ctrl <- function(
     verbose = FALSE
 ) {
 
-  # Validation
-  method <- match.arg(method, c("none", p.adjust.methods,
-                                "lfdr", "adaptBH", "rbFDR"))
-
-  true_null_method <- match.arg(true_null_method)
+  true_null_method <- match.arg(true_null_method, c("farco", "lfdr", "mean",
+                                                    "hist", "convest"))
 
   if (!is.null(p_true_null)) {
     if (!is.numeric(p_true_null) || length(p_true_null) != 1 || is.na(p_true_null) ||
@@ -46,7 +42,6 @@ make_adjust_ctrl <- function(
   }
 
   control <- list(
-    method = method,
     true_null_method = true_null_method,
     p_true_null = p_true_null,
     seq_length = seq_length,

@@ -7,12 +7,15 @@
 #' @param method Character. Method for p-value adjustment. Options include:
 #'   \itemize{
 #'     \item \code{"lfdr"}: local false discovery rates via \code{fdrtool}.
-#'     \item \code{"adaptBH"}: adaptive Benjamini-Hochberg (requires estimation of the proportion of true nulls).
-#'     \item Any method supported by \code{stats::p.adjust} (e.g., "holm", "BH", "BY").
+#'     \item \code{"adaptBH"}: adaptive Benjamini-Hochberg (requires estimation
+#'     of the proportion of true nulls).
+#'     \item Any method supported by \code{stats::p.adjust} (e.g., "holm",
+#'     "BH", "BY").
 #'   }
 #'
-#' @param true_null_method Character. Method to estimate the proportion of true null hypotheses
-#'   when \code{method = "adaptBH"}. Options (for \code{limma::propTrueNull}):
+#' @param true_null_method Character. Method to estimate the proportion of true
+#'   null hypotheses when \code{method = "adaptBH"}. Options (for
+#'   \code{limma::propTrueNull}):
 #'   \itemize{
 #'     \item \code{"convest"} (default)
 #'     \item \code{"lfdr"}
@@ -21,8 +24,9 @@
 #'     \item \code{"farco"}: Farcomeni (2007) iterative plug-in method.
 #'   }
 #'
-#' @param p_true_null Numeric or NULL. Pre-specified proportion of true nulls for \code{adaptBH}.
-#'   If \code{NULL}, it is estimated using \code{true_null_method}. Default: \code{NULL}.
+#' @param p_true_null Numeric or NULL. Pre-specified proportion of true nulls
+#'   for \code{adaptBH}. If \code{NULL}, it is estimated using
+#'   \code{true_null_method}. Default: \code{NULL}.
 #'
 #' @param verbose if \code{TRUE}, progress messages are returned.
 #'
@@ -46,7 +50,7 @@
 #' @export
 
 mult_adjust <- function(p_values,
-                        method = "adaptBH",
+                        method = "BH",
                         true_null_method = "convest",
                         p_true_null = NULL,
                         seq_length = 100,

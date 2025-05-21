@@ -5,7 +5,6 @@
 \title{Create a control object for multiple testing adjustment in permAprox}
 \usage{
 make_adjust_ctrl(
-  method = "adaptBH",
   true_null_method = "convest",
   p_true_null = NULL,
   seq_length = 100,
@@ -14,15 +13,9 @@ make_adjust_ctrl(
 )
 }
 \arguments{
-\item{method}{Character. Method for p-value adjustment. Options include:
-\itemize{
-  \item \code{"lfdr"}: local false discovery rates via \code{fdrtool}.
-  \item \code{"adaptBH"}: adaptive Benjamini-Hochberg (requires estimation of the proportion of true nulls).
-  \item Any method supported by \code{stats::p.adjust} (e.g., "holm", "BH", "BY").
-}}
-
-\item{true_null_method}{Character. Method to estimate the proportion of true null hypotheses
-when \code{method = "adaptBH"}. Options (for \code{limma::propTrueNull}):
+\item{true_null_method}{Character. Method to estimate the proportion of true
+null hypotheses when \code{method = "adaptBH"}. Options (for
+\code{limma::propTrueNull}):
 \itemize{
   \item \code{"convest"} (default)
   \item \code{"lfdr"}
@@ -31,8 +24,9 @@ when \code{method = "adaptBH"}. Options (for \code{limma::propTrueNull}):
   \item \code{"farco"}: Farcomeni (2007) iterative plug-in method.
 }}
 
-\item{p_true_null}{Numeric or NULL. Pre-specified proportion of true nulls for \code{adaptBH}.
-If \code{NULL}, it is estimated using \code{true_null_method}. Default: \code{NULL}.}
+\item{p_true_null}{Numeric or NULL. Pre-specified proportion of true nulls
+for \code{adaptBH}. If \code{NULL}, it is estimated using
+\code{true_null_method}. Default: \code{NULL}.}
 
 \item{seq_length}{Integer. Number of grid points when computing FDR curves in
 \code{"rbFDR"} method. Default: \code{100}.}

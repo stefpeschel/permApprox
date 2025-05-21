@@ -12,8 +12,8 @@
 #'   For a single test, supply a vector; for multiple tests, supply a matrix
 #'   with one row per test.
 #'
-#' @param method Character. Method used to compute p-values. Default is \code{"gpd"}.
-#'   Options are:
+#' @param method Character. Method used to compute p-values. Default is
+#'   \code{"gpd"}. Options are:
 #'   \itemize{
 #'     \item \code{"empirical"}: Empirical p-values are returned directly,
 #'     based on the number of permutation test statistics that are as or
@@ -37,7 +37,18 @@
 #'   the per-row mean or median of \code{perm_stats} is used instead.
 #'   This allows testing against a null hypothesis other than zero or centering
 #'   based on the empirical distribution.
-
+#'
+#' @param adjust_method Character. Method for multiple testing adjustment.
+#'   Options include:
+#'   \itemize{
+#'     \item \code{"none"}: No adjustment.
+#'     \item \code{"lfdr"}: Local false discovery rates via \code{fdrtool}.
+#'     \item \code{"adaptBH"}: Adaptive Benjamini-Hochberg (requires estimation
+#'     of the proportion of true nulls).
+#'     \item Any method supported by \code{stats::p.adjust} (e.g., "holm", "BH",
+#'     "BY").
+#'   }
+#'
 #' @param gpd_ctrl A control object created by \code{\link{make_gpd_ctrl}}.
 #'   Contains settings for the GPD approximation, such as the fitting method,
 #'   constraints, and thresholding strategy. Defaults to \code{make_gpd_ctrl()}.
@@ -135,6 +146,7 @@ compute_p_values <- function(
     fit_thresh = 0.2,
     alternative = "two_sided",
     null_center = 0,
+    adjust_method = "BH",
     gpd_ctrl = make_gpd_ctrl(),
     gamma_ctrl = make_gamma_ctrl(),
     adjust_ctrl = make_adjust_ctrl(),
@@ -159,6 +171,10 @@ compute_p_values <- function(
   if (!inherits(adjust_ctrl, "adjust_ctrl")) {
     stop("'adjust_ctrl' must be created with make_adjust_ctrl().")
   }
+
+  # Validate multiple testing adjustment method
+  adjust_method <- match.arg(adjust_method, c("none", p.adjust.methods,
+                                              "lfdr", "adaptBH", "rbFDR"))
 
   # Number of permutations and tests
   n_perm <- ncol(perm_stats)
@@ -244,8 +260,6 @@ compute_p_values <- function(
 
   # Store unadjusted p-values
   p_unadjusted <- p_values
-
-  adjust_method <- adjust_ctrl$method
 
   if (adjust_method == "none") {
     adjust_result <- NULL
