@@ -1,4 +1,4 @@
-#' permAprox: Permutation p-value approximation
+#' permApprox: Permutation p-value approximation
 #'
 #' Approximate p-values in permutation tests using the Generalized Pareto
 #' Distribution (GPD) while strictly avoiding p-values of zero.\cr\cr
@@ -12,7 +12,7 @@
 #'    \item Christian L. Müller, Anne-Laure Boulesteix
 #'   }
 #'
-#' @name permAprox-package
+#' @name permApprox-package
 #' @keywords internal
 "_PACKAGE"
 NULL

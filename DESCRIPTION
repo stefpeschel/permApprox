@@ -1,4 +1,4 @@
-Package: permAprox
+Package: permApprox
 Type: Package
 Title: Permutation p-value approximation
 Version: 0.1.0

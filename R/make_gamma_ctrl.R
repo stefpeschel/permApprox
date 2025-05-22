@@ -1,7 +1,7 @@
-#' Create a control list for Gamma approximation in permAprox
+#' Create a control list for Gamma approximation in permApprox
 #'
 #' Constructs a list of control parameters for the Gamma distribution
-#' approximation method used in permAprox.
+#' approximation method used in permApprox.
 #'
 #' @param include_obs Logical. If \code{TRUE}, the observed test statistic is
 #'   included into the tail approximation (considered as permutation test

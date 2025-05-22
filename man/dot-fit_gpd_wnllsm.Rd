@@ -41,6 +41,6 @@ A simplified version of the R code has been provided by
   the GPD density is non-zero at boundary + eps or max(x) + eps.
 }
 \references{
-\insertRef{Zhao2019new}{permAprox}
+\insertRef{Zhao2019new}{permApprox}
 }
 \keyword{internal}

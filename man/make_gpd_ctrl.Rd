@@ -93,5 +93,5 @@ A named list of class "gpd_ctrl" containing GPD settings.
 }
 \description{
 Constructs a list of control parameters for the Generalized Pareto
-Distribution (GPD) tail approximation method used in permAprox.
+Distribution (GPD) tail approximation method used in permApprox.
 }

@@ -13,7 +13,7 @@
 #' @param x data vector
 #'
 #' @references
-#'   \insertRef{Hosking1987parameter}{permAprox}
+#'   \insertRef{Hosking1987parameter}{permApprox}
 #'
 #' @importFrom Rdpack reprompt
 #' @keywords internal
@@ -62,7 +62,7 @@
 #'   \cr\cr
 #'
 #' @references
-#'   \insertRef{Zhang2007lme}{permAprox}
+#'   \insertRef{Zhang2007lme}{permApprox}
 #'
 #' @importFrom Rdpack reprompt
 #' @importFrom eva dgpd
@@ -186,7 +186,7 @@
 #' @param tol numeric giving the desired accuracy of the optimization
 #'   process.
 #' @references
-#'   \insertRef{Castillo2015likelihood}{permAprox}
+#'   \insertRef{Castillo2015likelihood}{permApprox}
 #'
 #' @importFrom Rdpack reprompt
 #' @keywords internal
@@ -487,7 +487,7 @@
 #' @param shapeMax,scaleMax upper bound on the shape and scale parameters.
 #'   If != Inf, \code{optimMethod} is set to "L-BFGS-B".
 #' @references
-#'   \insertRef{Song2012quantile}{permAprox}
+#'   \insertRef{Song2012quantile}{permApprox}
 #'
 #' @importFrom Rdpack reprompt
 #' @keywords internal
@@ -762,7 +762,7 @@
 #'   the GPD density is non-zero at boundary + eps or max(x) + eps.
 #'
 #' @references
-#'   \insertRef{Zhao2019new}{permAprox}
+#'   \insertRef{Zhao2019new}{permApprox}
 #'
 #' @importFrom Rdpack reprompt
 #' @keywords internal
@@ -1085,7 +1085,7 @@
 #'   function must be positive. If \code{NULL}, the maximum of the data vector
 #'   \code{x} is used.
 #' @references
-#'   \insertRef{Zhang2009new}{permAprox}
+#'   \insertRef{Zhang2009new}{permApprox}
 #'
 #' @importFrom Rdpack reprompt
 #' @keywords internal

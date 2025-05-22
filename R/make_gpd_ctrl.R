@@ -1,7 +1,7 @@
 #' Create a control list for GPD approximation
 #'
 #' Constructs a list of control parameters for the Generalized Pareto
-#' Distribution (GPD) tail approximation method used in permAprox.
+#' Distribution (GPD) tail approximation method used in permApprox.
 #'
 #' @param fit_method Character. Method for GPD fitting. Options: "LME", "MLE1D",
 #'   "MLE2D", "MOM", "NLS2", "WNLLSM", "ZSE". Default: "MLE1D".

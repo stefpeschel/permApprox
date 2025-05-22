@@ -18,6 +18,6 @@ Parameter estimation for the two-parameter Generalized Pareto Distribution
   (GPD) proposed by \cite{Zhang & Stephens (2009)}.
 }
 \references{
-\insertRef{Zhang2009new}{permAprox}
+\insertRef{Zhang2009new}{permApprox}
 }
 \keyword{internal}

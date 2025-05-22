@@ -1,7 +1,7 @@
 
-# permAprox - Permutation p-value approximation
+# permApprox - Permutation p-value approximation
 
-permAprox is an R package to compute empirical and approximated p-values
+permApprox is an R package to compute empirical and approximated p-values
 from permutation tests, especially useful when the number of
 permutations is small and zero p-values should be strictly avoided. It
 offers approximation using the Gamma distribution or the Generalized
@@ -10,7 +10,7 @@ distribution.
 
 ## Early version disclaimer
 
-**Note:** This is an early version of the permAprox package and is still
+**Note:** This is an early version of the permApprox package and is still
 under active development. While the core functionality is in place, the
 interface, parameter settings, and behavior of certain functions may
 change in future versions. Users are encouraged to use the package with
@@ -21,7 +21,7 @@ workflows.
 
 ``` r
 install.packages("devtools")
-devtools::install_github("stefpeschel/permAprox")
+devtools::install_github("stefpeschel/permApprox")
 ```
 
 ## Features
@@ -35,7 +35,7 @@ devtools::install_github("stefpeschel/permAprox")
 ## Usage
 
 ``` r
-library(permAprox)
+library(permApprox)
 
 # Simulated example
 set.seed(12345)

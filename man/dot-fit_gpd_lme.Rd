@@ -33,6 +33,6 @@ According to \cite{Zhang (2007)}, the constant r must be smaller than 1/2
   \cr\cr
 }
 \references{
-\insertRef{Zhang2007lme}{permAprox}
+\insertRef{Zhang2007lme}{permApprox}
 }
 \keyword{internal}

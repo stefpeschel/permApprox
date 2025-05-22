@@ -2,7 +2,7 @@
 % Please edit documentation in R/make_gamma_ctrl.R
 \name{make_gamma_ctrl}
 \alias{make_gamma_ctrl}
-\title{Create a control list for Gamma approximation in permAprox}
+\title{Create a control list for Gamma approximation in permApprox}
 \usage{
 make_gamma_ctrl(include_obs = FALSE, gof_test = "cvm", gof_alpha = 0.05)
 }
@@ -22,5 +22,5 @@ A named list of class "gamma_ctrl" containing Gamma settings.
 }
 \description{
 Constructs a list of control parameters for the Gamma distribution
-approximation method used in permAprox.
+approximation method used in permApprox.
 }

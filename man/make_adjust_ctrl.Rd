@@ -2,7 +2,7 @@
 % Please edit documentation in R/make_adjust_ctrl.R
 \name{make_adjust_ctrl}
 \alias{make_adjust_ctrl}
-\title{Create a control object for multiple testing adjustment in permAprox}
+\title{Create a control object for multiple testing adjustment in permApprox}
 \usage{
 make_adjust_ctrl(
   true_null_method = "convest",

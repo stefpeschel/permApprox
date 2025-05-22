@@ -154,7 +154,7 @@
         p()  # update progress bar
         res
       },
-      future.packages = "permAprox",
+      future.packages = "permApprox",
       future.seed = TRUE
     )
   })

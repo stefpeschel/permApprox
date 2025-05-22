@@ -1,4 +1,4 @@
-#' Create a control object for multiple testing adjustment in permAprox
+#' Create a control object for multiple testing adjustment in permApprox
 #'
 #' Constructs a list of parameters controlling multiple testing correction
 #' methods, so that these options are decoupled from the main

@@ -19,7 +19,7 @@
 
 # RStudio files
 .Rproj.user/
-permAprox.Rproj
+permApprox.Rproj
 .Rbuildignore
 
 # produced vignettes
