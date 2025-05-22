@@ -2,7 +2,7 @@ Package: permApprox
 Type: Package
 Title: Permutation p-value approximation
 Version: 0.1.0
-Date: 2025-05-21
+Date: 2025-05-22
 Authors@R: c(
     person("Stefanie", "Peschel", email = "stefpeschel@gmail.com", 
     role = c("aut", "cre"), comment = c(ORCID = "0000-0002-7936-7627")),
@@ -11,6 +11,7 @@ Authors@R: c(
 Maintainer: Stefanie Peschel <stefpeschel@gmail.com>
 Description: Approximate p-values in permutation tests while strictly avoiding p-values of zero.
 License: GPL-3 + file LICENSE
+biocViews:
 Imports:
     changepoint,
     eva,
