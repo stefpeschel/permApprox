@@ -8,8 +8,8 @@ make_gpd_ctrl(
   fit_method = "MLE1D",
   include_obs = FALSE,
   constraint = "unconstrained",
-  eps = 0.8,
-  eps_type = "quantile",
+  eps = 0.05,
+  eps_type = "factor",
   tol = 1e-08,
   thresh_method = "fix",
   thresh0 = NULL,
@@ -40,11 +40,11 @@ Default: "unconstrained". Options:
   observed test statistics (in the multiple testing case).}
 }}
 
-\item{eps}{Numeric. Small value or proportion (used for constraint).
+\item{eps}{Numeric. Small value or factor (used for constraint).
 Can also be a vector with one value for each test.}
 
-\item{eps_type}{Character. Defines the type of epsilon. Options: "quantile",
-"fix". Default: "quantile".}
+\item{eps_type}{Character. Defines the type of epsilon. Options: "factor",
+"fix". Default: "factor", which means epsilon = \code{eps} * obs_stat.}
 
 \item{tol}{Numeric. Convergence tolerance for fitting GPD parameters.
 Default: 1e-8.}

@@ -9,8 +9,8 @@ fit_gpd(
   thresh = NULL,
   fit_method = "MLE1D",
   tol = 1e-08,
-  eps = 0.8,
-  eps_type = "quantile",
+  eps = 0.05,
+  eps_type = "factor",
   constraint = "unconstrained",
   support_boundary = NULL,
   gof_test = "ad",
@@ -30,10 +30,10 @@ Must be one of \code{"LME"}, \code{"MLE1D"}, \code{"MLE2D"}, \code{"MOM"},
 Default is \code{1e-8}.}
 
 \item{eps}{Numeric. A small value used in support-related constraints (e.g., added to
-the upper support limit). Default is \code{0.8}.}
+the upper support limit). Default is \code{0.05}.}
 
 \item{eps_type}{Character. Type of epsilon adjustment to apply. Can be
-\code{"quantile"} or \code{"fix"}.}
+\code{"factor"} (default) or \code{"fix"}.}
 
 \item{constraint}{Character. Type of constraint to enforce during GPD fitting.
 Options are \code{"unconstrained"}, \code{"shape_nonneg"},

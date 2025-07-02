@@ -5,18 +5,18 @@
 #' @keywords internal
 #'
 .find_gpd_thresh <- function(perm_stats,
-                                obs_stats,
-                                tol,
-                                thresh_method = "PRbelowAlpha",
-                                thresh0 = NULL,
-                                exceed0 = NULL,
-                                exceed_min = 1,
-                                thresh_step = 1,
-                                gof_test = "ad",
-                                gof_alpha = 0.05,
-                                seed = NULL,
-                                doPlot = FALSE,
-                                ...) {
+                             obs_stats,
+                             tol,
+                             thresh_method = "PRbelowAlpha",
+                             thresh0 = NULL,
+                             exceed0 = NULL,
+                             exceed_min = 1,
+                             thresh_step = 1,
+                             gof_test = "ad",
+                             gof_alpha = 0.05,
+                             seed = NULL,
+                             doPlot = FALSE,
+                             ...) {
 
   if (!is.null(seed)) set.seed(seed)
 
@@ -131,11 +131,10 @@
     # Fit and test the GPD distribution
     fittestres <- fit_gpd(data = tSort,
                           thresh = thresh,
-                          fit_method = "ZSE",
+                          fit_method = "MLE1D",
                           tol = 1e-8,
                           eps = 0,
                           eps_type = "fix",
-                          factor = 1,
                           constraint = "none",
                           support_boundary = NULL,
                           gof_test = gof_test)#,

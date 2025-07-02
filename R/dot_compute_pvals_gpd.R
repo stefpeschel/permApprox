@@ -65,10 +65,6 @@
       exceed0       = control$exceed0,
       exceed_min    = control$exceed_min,
       thresh_step   = control$thresh_step,
-      fit_method    = control$fit_method,
-      constraint    = control$constraint,
-      eps           = eps,
-      eps_type      = control$eps_type,
       gof_test      = control$gof_test,
       gof_alpha     = control$gof_alpha,
       ...

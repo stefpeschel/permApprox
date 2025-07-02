@@ -17,10 +17,10 @@
 #'   Default is \code{1e-8}.
 #'
 #' @param eps Numeric. A small value used in support-related constraints (e.g., added to
-#'   the upper support limit). Default is \code{0.8}.
+#'   the upper support limit). Default is \code{0.05}.
 #'
 #' @param eps_type Character. Type of epsilon adjustment to apply. Can be
-#'   \code{"quantile"} or \code{"fix"}.
+#'   \code{"factor"} (default) or \code{"fix"}.
 #'
 #' @param constraint Character. Type of constraint to enforce during GPD fitting.
 #'   Options are \code{"unconstrained"}, \code{"shape_nonneg"},
@@ -57,8 +57,8 @@ fit_gpd <- function(data,
                     thresh = NULL,
                     fit_method = "MLE1D",
                     tol = 1e-8,
-                    eps = 0.8,
-                    eps_type = "quantile",
+                    eps = 0.05,
+                    eps_type = "factor",
                     constraint = "unconstrained",
                     support_boundary = NULL,
                     gof_test = "ad",
@@ -83,7 +83,7 @@ fit_gpd <- function(data,
                                       "support_at_max"))
 
   stopifnot(is.numeric(eps))
-  stopifnot(eps_type %in% c("quantile", "fix"))
+  stopifnot(eps_type %in% c("factor", "fix"))
 
   gof_test <- match.arg(gof_test, choices = c("ad", "cvm", "none"))
 
@@ -100,11 +100,11 @@ fit_gpd <- function(data,
     # Point at which the support is checked/evaluated
     eval_point <- support_boundary - thresh
     excess_boundary <- eval_point
-
-    if (eps_type == "quantile") {
-      eps <- quantile(data, eps)
+    
+    if (eps_type == "factor") {
+      eps <- support_boundary * eps
     }
-
+    
     excess_boundary <- eval_point + eps
 
   } else {

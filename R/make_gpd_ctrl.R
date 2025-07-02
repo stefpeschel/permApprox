@@ -19,11 +19,11 @@
 #'     \item{\code{"support_at_max"}}{Positive density for maximum of all
 #'     observed test statistics (in the multiple testing case).}
 #'   }
-#' @param eps Numeric. Small value or proportion (used for constraint).
+#' @param eps Numeric. Small value or factor (used for constraint).
 #'   Can also be a vector with one value for each test.
 #'
-#' @param eps_type Character. Defines the type of epsilon. Options: "quantile",
-#'   "fix". Default: "quantile".
+#' @param eps_type Character. Defines the type of epsilon. Options: "factor",
+#'   "fix". Default: "factor", which means epsilon = \code{eps} * obs_stat.
 #'
 #' @param tol Numeric. Convergence tolerance for fitting GPD parameters.
 #'   Default: 1e-8.
@@ -75,8 +75,8 @@ make_gpd_ctrl <- function(
     fit_method = "MLE1D",
     include_obs = FALSE,
     constraint = "unconstrained",
-    eps = 0.8,
-    eps_type = "quantile",
+    eps = 0.05,
+    eps_type = "factor",
     tol = 1e-8,
     thresh_method = "fix",
     thresh0 = NULL,
@@ -112,7 +112,7 @@ make_gpd_ctrl <- function(
   }
 
   stopifnot(is.numeric(eps))
-  stopifnot(eps_type %in% c("quantile", "fix"))
+  stopifnot(eps_type %in% c("factor", "fix"))
 
   thresh_method <- match.arg(thresh_method,
                              choices = c("fix",
