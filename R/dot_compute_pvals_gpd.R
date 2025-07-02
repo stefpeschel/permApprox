@@ -109,8 +109,8 @@
       out$shape       <- fit_res$shape
       out$scale       <- fit_res$scale
       out$gof_p_value <- fit_res$p_value
+      out$epsilon     <- fit_res$epsilon
       out$method_used <- "gpd"
-      out$epsilon <- eps
 
       # Compute upper‐tail probability (p-value)
       p_gpd <- (n_exceed / n_perm) *
@@ -185,7 +185,7 @@
     scale_vec[i]     <- res$scale
     gof_pval_vec[i]  <- res$gof_p_value
     zero_replaced[i] <- res$zero_replaced
-    epsilon_vec[i]   <- res$eps
+    epsilon_vec[i]   <- res$epsilon
 
     # store the permuted stats used for fitting
     # (those > threshold, or NULL if no fit)

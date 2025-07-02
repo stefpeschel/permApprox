@@ -194,6 +194,6 @@ fit_gpd <- function(data,
 
   }
 
-  return(list(shape = shape, scale = scale, p_value = p_value))#, negLogLik = negLogLik))
+  return(list(shape = shape, scale = scale, p_value = p_value, epsilon = eps))#, negLogLik = negLogLik))
 }
 
