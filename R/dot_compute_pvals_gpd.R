@@ -134,26 +134,32 @@
 
     out
   }
-
-  # Set progress bar handler
-  handlers("progress")
-
+  
+  if (control$verbose) {
+    # Set progress bar handler
+    handlers("progress")
+  }
+  
   # Run fits in parallel
   results_list <- with_progress({
-    p <- progressor(along = idx_fit)
-
+    if (control$verbose) {
+      p <- progressor(along = idx_fit)
+    }
+    
     future.apply::future_lapply(
       idx_fit,
       FUN = function(i) {
         res <- fit_one(i, control)
-        p()  # update progress bar
+        if (control$verbose) {
+          p()  # update progress bar
+        }
         res
       },
       future.packages = "permApprox",
       future.seed = TRUE
     )
   })
-
+  
   # Shut down the future plan (back to sequential)
   future::plan(future::sequential)
   
