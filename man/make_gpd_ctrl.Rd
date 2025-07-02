@@ -40,7 +40,8 @@ Default: "unconstrained". Options:
   observed test statistics (in the multiple testing case).}
 }}
 
-\item{eps}{Numeric. Small value or proportion (used for constraint)}
+\item{eps}{Numeric. Small value or proportion (used for constraint).
+Can also be a vector with one value for each test.}
 
 \item{eps_type}{Character. Defines the type of epsilon. Options: "quantile",
 "fix". Default: "quantile".}

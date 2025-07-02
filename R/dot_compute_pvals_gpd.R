@@ -10,24 +10,11 @@
                                alternative,
                                control,
                                ...) {
-
+  
   # Unpack control arguments
-  fit_method    <- control$fit_method
-  include_obs   <- control$include_obs
-  constraint    <- control$constraint
-  eps           <- control$eps
-  eps_type      <- control$eps_type
-  tol           <- control$tol
-  thresh_method <- control$thresh_method
-  thresh0       <- control$thresh0
-  thresh_step   <- control$thresh_step
-  exceed0       <- control$exceed0
-  exceed_min    <- control$exceed_min
-  gof_test      <- control$gof_test
-  gof_alpha     <- control$gof_alpha
-  cores         <- control$cores
-  verbose       <- control$verbose
+  cores <- control$cores
 
+  # Empirical p-values and number of permutations
   p_values  <- p_empirical
   n_perm <- ncol(perm_stats)
 
@@ -50,33 +37,40 @@
   } else {
     future::plan(future::sequential)
   }
-
+  
   # Define the fit function for one test
-  fit_one <- function(i) {
+  fit_one <- function(i, control) {
     out <- list()
 
     obs_i  <- trans_obs[i]
     perm_i <- trans_perm[[i]]
 
     # Include observed stat if requested
-    if (include_obs) perm_i <- c(obs_i, perm_i)
+    if (control$include_obs) perm_i <- c(obs_i, perm_i)
+    
+    # Define epsilon
+    if (length(control$eps) > 1) {
+      eps <- control$eps[i]
+    } else {
+      eps <- control$eps
+    }
 
     # Compute threshold
     thresh_res <- .find_gpd_thresh(
       perm_stats    = perm_i,
       obs_stats     = obs_i,
-      tol           = tol,
-      thresh_method = thresh_method,
-      thresh0       = thresh0,
-      exceed0       = exceed0,
-      exceed_min    = exceed_min,
-      thresh_step   = thresh_step,
-      fit_method    = fit_method,
-      constraint    = constraint,
+      tol           = control$tol,
+      thresh_method = control$thresh_method,
+      thresh0       = control$thresh0,
+      exceed0       = control$exceed0,
+      exceed_min    = control$exceed_min,
+      thresh_step   = control$thresh_step,
+      fit_method    = control$fit_method,
+      constraint    = control$constraint,
       eps           = eps,
-      eps_type      = eps_type,
-      gof_test      = gof_test,
-      gof_alpha     = gof_alpha,
+      eps_type      = control$eps_type,
+      gof_test      = control$gof_test,
+      gof_alpha     = control$gof_alpha,
       ...
     )
 
@@ -96,7 +90,7 @@
 
     } else {
       # Possibly constrain support
-      support_boundary <- switch(constraint,
+      support_boundary <- switch(control$constraint,
                                  support_at_max = max(obs_stats),
                                  support_at_obs = obs_stats[i],
                                  NULL)
@@ -105,14 +99,14 @@
       fit_res <- fit_gpd(
         data             = perm_i[perm_i > thresh],
         thresh           = thresh,
-        fit_method       = fit_method,
-        tol              = tol,
+        fit_method       = control$fit_method,
+        tol              = control$tol,
         eps              = eps,
-        eps_type         = eps_type,
-        constraint       = constraint,
+        eps_type         = control$eps_type,
+        constraint       = control$constraint,
         support_boundary = support_boundary,
-        gof_test         = gof_test,
-        gof_alpha        = gof_alpha,
+        gof_test         = control$gof_test,
+        gof_alpha        = control$gof_alpha,
         ...
       )
 
@@ -120,6 +114,7 @@
       out$scale       <- fit_res$scale
       out$gof_p_value <- fit_res$p_value
       out$method_used <- "gpd"
+      out$epsilon <- eps
 
       # Compute upper‐tail probability (p-value)
       p_gpd <- (n_exceed / n_perm) *
@@ -150,7 +145,7 @@
     future.apply::future_lapply(
       idx_fit,
       FUN = function(i) {
-        res <- fit_one(i)
+        res <- fit_one(i, control)
         p()  # update progress bar
         res
       },
@@ -161,7 +156,7 @@
 
   # Shut down the future plan (back to sequential)
   future::plan(future::sequential)
-
+  
   # Assemble outputs
   # prepare vectors
   fitted         <- logical(n_test)
@@ -172,6 +167,7 @@
   scale_vec      <- numeric(n_test)
   gof_pval_vec   <- numeric(n_test)
   zero_replaced  <- logical(n_test)
+  epsilon_vec    <- numeric(n_test)
   perm_stats_fit <- vector("list", n_test)
 
   for (j in seq_along(idx_fit)) {
@@ -187,6 +183,7 @@
     scale_vec[i]     <- res$scale
     gof_pval_vec[i]  <- res$gof_p_value
     zero_replaced[i] <- res$zero_replaced
+    epsilon_vec[i]   <- res$eps
 
     # store the permuted stats used for fitting
     # (those > threshold, or NULL if no fit)
@@ -205,6 +202,7 @@
     n_exceed       = n_exceed_vec,
     shape          = shape_vec,
     scale          = scale_vec,
+    epsilon        = epsilon_vec,
     gof_p_value    = gof_pval_vec,
     zero_replaced  = zero_replaced,
     perm_stats_fit = perm_stats_fit

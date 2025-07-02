@@ -19,7 +19,8 @@
 #'     \item{\code{"support_at_max"}}{Positive density for maximum of all
 #'     observed test statistics (in the multiple testing case).}
 #'   }
-#' @param eps Numeric. Small value or proportion (used for constraint)
+#' @param eps Numeric. Small value or proportion (used for constraint).
+#'   Can also be a vector with one value for each test.
 #'
 #' @param eps_type Character. Defines the type of epsilon. Options: "quantile",
 #'   "fix". Default: "quantile".
