@@ -54,77 +54,95 @@
     } else {
       eps <- control$eps
     }
-
-    # Compute threshold
-    thresh_res <- .find_gpd_thresh(
-      perm_stats    = perm_i,
-      obs_stats     = obs_i,
-      tol           = control$tol,
-      thresh_method = control$thresh_method,
-      thresh0       = control$thresh0,
-      exceed0       = control$exceed0,
-      exceed_min    = control$exceed_min,
-      thresh_step   = control$thresh_step,
-      gof_test      = control$gof_test,
-      gof_alpha     = control$gof_alpha,
-      ...
-    )
-
-    thresh    <- thresh_res$thresh
-    n_exceed  <- thresh_res$n_exceed
-    out$thresh       <- thresh
-    out$n_exceed     <- n_exceed
-    out$zero_replaced <- FALSE
-
-    # No valid threshold → fallback to empirical
-    if (is.na(thresh)) {
+    
+    if (length(unique(perm_i)) < n_perm * 0.02) { # Check for discreteness
+      if (control$verbose) {
+        message(paste0("In test ", i, ": Data too discrete to fit a GPD. ", 
+                       "Empirical p-value used."))
+      }
+      
+      out$thresh       <- NA
+      out$n_exceed     <- NA
+      out$zero_replaced <- FALSE
       out$method_used   <- "empirical"
       out$p_value       <- p_empirical[i]
       out$shape         <- NA
       out$scale         <- NA
       out$gof_p_value   <- NA
-
+      out$epsilon       <- NA
+      
     } else {
-      # Possibly constrain support
-      support_boundary <- switch(control$constraint,
-                                 support_at_max = max(obs_stats),
-                                 support_at_obs = obs_stats[i],
-                                 NULL)
-
-      # Fit GPD
-      fit_res <- fit_gpd(
-        data             = perm_i[perm_i > thresh],
-        thresh           = thresh,
-        fit_method       = control$fit_method,
-        tol              = control$tol,
-        eps              = eps,
-        eps_type         = control$eps_type,
-        constraint       = control$constraint,
-        support_boundary = support_boundary,
-        gof_test         = control$gof_test,
-        gof_alpha        = control$gof_alpha,
+      # Compute threshold
+      thresh_res <- .find_gpd_thresh(
+        perm_stats    = perm_i,
+        obs_stats     = obs_i,
+        tol           = control$tol,
+        thresh_method = control$thresh_method,
+        thresh0       = control$thresh0,
+        exceed0       = control$exceed0,
+        exceed_min    = control$exceed_min,
+        thresh_step   = control$thresh_step,
+        gof_test      = control$gof_test,
+        gof_alpha     = control$gof_alpha,
         ...
       )
-
-      out$shape       <- fit_res$shape
-      out$scale       <- fit_res$scale
-      out$gof_p_value <- fit_res$p_value
-      out$epsilon     <- fit_res$epsilon
-      out$method_used <- "gpd"
-
-      # Compute upper‐tail probability (p-value)
-      p_gpd <- (n_exceed / n_perm) *
-        .pgpd_upper_tail(q        = obs_i - thresh,
-                         location = 0,
-                         scale    = out$scale,
-                         shape    = out$shape)
-
-      if (p_gpd == 0) {
-        out$p_value       <- p_empirical[i]
-        out$zero_replaced <- TRUE
+      
+      thresh    <- thresh_res$thresh
+      n_exceed  <- thresh_res$n_exceed
+      out$thresh       <- thresh
+      out$n_exceed     <- n_exceed
+      out$zero_replaced <- FALSE
+      
+      # No valid threshold → fallback to empirical
+      if (is.na(thresh)) {
         out$method_used   <- "empirical"
+        out$p_value       <- p_empirical[i]
+        out$shape         <- NA
+        out$scale         <- NA
+        out$gof_p_value   <- NA
+        
       } else {
-        out$p_value <- p_gpd
+        # Possibly constrain support
+        support_boundary <- switch(control$constraint,
+                                   support_at_max = max(obs_stats),
+                                   support_at_obs = obs_stats[i],
+                                   NULL)
+        
+        # Fit GPD
+        fit_res <- fit_gpd(
+          data             = perm_i[perm_i > thresh],
+          thresh           = thresh,
+          fit_method       = control$fit_method,
+          tol              = control$tol,
+          eps              = eps,
+          eps_type         = control$eps_type,
+          constraint       = control$constraint,
+          support_boundary = support_boundary,
+          gof_test         = control$gof_test,
+          gof_alpha        = control$gof_alpha,
+          ...
+        )
+        
+        out$shape       <- fit_res$shape
+        out$scale       <- fit_res$scale
+        out$gof_p_value <- fit_res$p_value
+        out$epsilon     <- fit_res$epsilon
+        out$method_used <- "gpd"
+        
+        # Compute upper‐tail probability (p-value)
+        p_gpd <- (n_exceed / n_perm) *
+          .pgpd_upper_tail(q        = obs_i - thresh,
+                           location = 0,
+                           scale    = out$scale,
+                           shape    = out$shape)
+        
+        if (p_gpd == 0 | is.na(p_gpd)) {
+          out$p_value       <- p_empirical[i]
+          out$zero_replaced <- TRUE
+          out$method_used   <- "empirical"
+        } else {
+          out$p_value <- p_gpd
+        }
       }
     }
 
