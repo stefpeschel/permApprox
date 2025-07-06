@@ -135,16 +135,16 @@
                           tol = 1e-8,
                           eps = 0,
                           eps_type = "fix",
-                          constraint = "none",
+                          constraint = "unconstrained",
                           support_boundary = NULL,
                           gof_test = gof_test)#,
     #...)
 
     shapeVec[i] <- fittestres$shape
     scaleVec[i] <- fittestres$scale
-    gof_p_value_vec[i] <- fittestres$pval
+    gof_p_value_vec[i] <- fittestres$p_value
 
-    if (thresh_method == "ftr" && is.na(idxUse) && fittestres$pval > gof_alpha) {
+    if (thresh_method == "ftr" && is.na(idxUse) && fittestres$p_value > gof_alpha) {
       idxUse <- i
       #break
     } else if (thresh_method == "ftrMin5" && i > 5 && is.na(idxUse) &&
