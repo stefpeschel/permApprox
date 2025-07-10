@@ -9,8 +9,8 @@ fit_gpd(
   thresh = NULL,
   fit_method = "MLE1D",
   tol = 1e-08,
-  eps = 0.05,
-  eps_type = "factor",
+  eps_fun = eps_power,
+  eps_par = list(),
   constraint = "unconstrained",
   support_boundary = NULL,
   gof_test = "ad",
@@ -18,22 +18,24 @@ fit_gpd(
 )
 }
 \arguments{
-\item{data}{Numeric vector. Input data to which the GPD is fitted.}
+\item{data}{Numeric vector of observations.}
 
-\item{thresh}{Numeric scalar. Threshold above which the data are considered exceedances.}
+\item{thresh}{Numeric scalar; exceedance threshold.}
 
 \item{fit_method}{Character string specifying the fitting method to be used.
 Must be one of \code{"LME"}, \code{"MLE1D"}, \code{"MLE2D"}, \code{"MOM"},
 \code{"NLS2"}, \code{"WNLLSM"}, or \code{"ZSE"}.}
 
-\item{tol}{Numeric. Convergence tolerance for iterative fitting procedures.
-Default is \code{1e-8}.}
+\item{tol}{Numeric. Convergence tolerance (default 1e-8).}
 
-\item{eps}{Numeric. A small value used in support-related constraints (e.g., added to
-the upper support limit). Default is \code{0.05}.}
+\item{eps_fun}{Function that returns the ε to use. Possible options are 
+\code{\link{eps_fixed}}, \code{\link{eps_fixed}}, \code{\link{eps_fixed}},
+or a user-defined function. It is called as
+     `eps_fun(n = length(data), data = data,
+              support_boundary = support_boundary,
+              thresh = thresh, !!!eps_par)`.}
 
-\item{eps_type}{Character. Type of epsilon adjustment to apply. Can be
-\code{"factor"} (default) or \code{"fix"}.}
+\item{eps_par}{List of additional named arguments forwarded to `eps_fun`.}
 
 \item{constraint}{Character. Type of constraint to enforce during GPD fitting.
 Options are \code{"unconstrained"}, \code{"shape_nonneg"},
@@ -47,7 +49,7 @@ the maximum of the data vector is used.}
 Options are \code{"ad"} (Anderson-Darling), \code{"cvm"} (Cramér-von Mises),
 or \code{"none"}. Default is \code{"ad"}.}
 
-\item{...}{Additional arguments passed to internal fitting functions.}
+\item{...}{Further arguments passed to low-level fitting helpers.}
 }
 \value{
 A named list with components:
@@ -55,6 +57,7 @@ A named list with components:
     \item{\code{shape}}{Estimated shape parameter of the GPD.}
     \item{\code{scale}}{Estimated scale parameter of the GPD.}
     \item{\code{p_value}}{P-value from the goodness-of-fit test, if applicable.}
+    \item{\code{epsilon}}{Epsilon used for each test.}
   }
 }
 \description{

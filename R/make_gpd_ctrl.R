@@ -4,14 +4,14 @@
 #' Distribution (GPD) tail approximation method used in permApprox.
 #'
 #' @param fit_method Character. Method for GPD fitting. Options: "LME", "MLE1D",
-#'   "MLE2D", "MOM", "NLS2", "WNLLSM", "ZSE". Default: "MLE1D".
+#'   "MLE2D", "MOM", "NLS2", "WNLLSM", "ZSE". Default: "LME".
 #'
 #' @param include_obs Logical. If \code{TRUE}, the observed test statistic is
 #'   included into the tail approximation (considered as permutation test
 #'   statistic). Default: \code{FALSE}.
 #'
 #' @param constraint Character. Constraint for the fitting process.
-#'   Default: "unconstrained". Options:
+#'   Default: "support_at_max". Options:
 #'   \describe{
 #'     \item{\code{"unconstrained"}}{No constraint.}
 #'     \item{\code{"shape_nonneg"}}{Shape parameter must be non-negative.}
@@ -19,17 +19,21 @@
 #'     \item{\code{"support_at_max"}}{Positive density for maximum of all
 #'     observed test statistics (in the multiple testing case).}
 #'   }
-#' @param eps Numeric. Small value or factor (used for constraint).
-#'   Can also be a vector with one value for each test.
 #'
-#' @param eps_type Character. Defines the type of epsilon. Options: "factor",
-#'   "fix". Default: "factor", which means epsilon = \code{eps} * obs_stat.
+#' @param eps_fun Function that returns the ε to use. Possible options are 
+#'   \code{\link{eps_fixed}}, \code{\link{eps_factor}}, \code{\link{eps_power}},
+#'   or a user-defined function. It is called as
+#'        `eps_fun(n = length(data), data = data,
+#'                 support_boundary = support_boundary,
+#'                 thresh = thresh, !!!eps_par)`.
+#'                 
+#' @param eps_par List of additional named arguments forwarded to `eps_fun`.
 #'
 #' @param tol Numeric. Convergence tolerance for fitting GPD parameters.
 #'   Default: 1e-8.
 #'
 #' @param thresh_method Character. Method for threshold detection.
-#'   Default: "fix". Options:
+#'   Default: "ftr_min5". Options:
 #'   \describe{
 #'     \item{\code{"fix"}}{Fix threshold (defined via \code{thresh0}).}
 #'     \item{\code{"ftr"}}{Failure to reject.}
@@ -72,15 +76,15 @@
 #'
 #' @export
 make_gpd_ctrl <- function(
-    fit_method = "MLE1D",
+    fit_method = "LME",
     include_obs = FALSE,
-    constraint = "unconstrained",
-    eps = 0.05,
-    eps_type = "factor",
+    constraint = "support_at_max",
+    eps_fun = eps_power,
+    eps_par = list(),
     tol = 1e-8,
-    thresh_method = "fix",
+    thresh_method = "ftr_min5",
     thresh0 = NULL,
-    thresh_step = 1,
+    thresh_step = 10,
     exceed0 = 0.25,
     exceed_min = 10,
     gof_test = "ad",
@@ -111,8 +115,7 @@ make_gpd_ctrl <- function(
          "MLE1D, MLE2D, and NLS2.")
   }
 
-  stopifnot(is.numeric(eps))
-  stopifnot(eps_type %in% c("factor", "fix"))
+  stopifnot(is.function(eps_fun))
 
   thresh_method <- match.arg(thresh_method,
                              choices = c("fix",
@@ -156,8 +159,8 @@ make_gpd_ctrl <- function(
     fit_method = fit_method,
     include_obs = include_obs,
     constraint = constraint,
-    eps = eps,
-    eps_type = eps_type,
+    eps_fun = eps_fun,
+    eps_par = eps_par,
     tol = tol,
     thresh_method = thresh_method,
     thresh0 = thresh0,

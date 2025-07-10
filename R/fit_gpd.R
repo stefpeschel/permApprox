@@ -5,22 +5,24 @@
 #' using one of several available estimation methods. Optionally applies a goodness-of-fit test
 #' to assess the adequacy of the fitted model.
 #'
-#' @param data Numeric vector. Input data to which the GPD is fitted.
+#' @param data Numeric vector of observations.
 #'
-#' @param thresh Numeric scalar. Threshold above which the data are considered exceedances.
+#' @param thresh Numeric scalar; exceedance threshold.
 #'
 #' @param fit_method Character string specifying the fitting method to be used.
 #'   Must be one of \code{"LME"}, \code{"MLE1D"}, \code{"MLE2D"}, \code{"MOM"},
 #'   \code{"NLS2"}, \code{"WNLLSM"}, or \code{"ZSE"}.
 #'
-#' @param tol Numeric. Convergence tolerance for iterative fitting procedures.
-#'   Default is \code{1e-8}.
+#' @param tol Numeric. Convergence tolerance (default 1e-8).
 #'
-#' @param eps Numeric. A small value used in support-related constraints (e.g., added to
-#'   the upper support limit). Default is \code{0.05}.
-#'
-#' @param eps_type Character. Type of epsilon adjustment to apply. Can be
-#'   \code{"factor"} (default) or \code{"fix"}.
+#' @param eps_fun Function that returns the ε to use. Possible options are 
+#'   \code{\link{eps_fixed}}, \code{\link{eps_fixed}}, \code{\link{eps_fixed}},
+#'   or a user-defined function. It is called as
+#'        `eps_fun(n = length(data), data = data,
+#'                 support_boundary = support_boundary,
+#'                 thresh = thresh, !!!eps_par)`.
+#'                 
+#' @param eps_par List of additional named arguments forwarded to `eps_fun`.
 #'
 #' @param constraint Character. Type of constraint to enforce during GPD fitting.
 #'   Options are \code{"unconstrained"}, \code{"shape_nonneg"},
@@ -34,7 +36,7 @@
 #'   Options are \code{"ad"} (Anderson-Darling), \code{"cvm"} (Cramér-von Mises),
 #'   or \code{"none"}. Default is \code{"ad"}.
 #'
-#' @param ... Additional arguments passed to internal fitting functions.
+#' @param ... Further arguments passed to low-level fitting helpers.
 #'
 #' @details
 #' If the shape parameter is negative (indicating a bounded tail), a constraint
@@ -48,6 +50,7 @@
 #'     \item{\code{shape}}{Estimated shape parameter of the GPD.}
 #'     \item{\code{scale}}{Estimated scale parameter of the GPD.}
 #'     \item{\code{p_value}}{P-value from the goodness-of-fit test, if applicable.}
+#'     \item{\code{epsilon}}{Epsilon used for each test.}
 #'   }
 #'
 #' @export
@@ -57,8 +60,8 @@ fit_gpd <- function(data,
                     thresh = NULL,
                     fit_method = "MLE1D",
                     tol = 1e-8,
-                    eps = 0.05,
-                    eps_type = "factor",
+                    eps_fun = eps_power,
+                    eps_par = list(),
                     constraint = "unconstrained",
                     support_boundary = NULL,
                     gof_test = "ad",
@@ -82,118 +85,94 @@ fit_gpd <- function(data,
                                       "support_at_obs",
                                       "support_at_max"))
 
-  stopifnot(is.numeric(eps))
-  stopifnot(eps_type %in% c("factor", "fix"))
-
   gof_test <- match.arg(gof_test, choices = c("ad", "cvm", "none"))
+  
+  stopifnot(is.function(eps_fun))
+  
+  #-----------------------------------------------------------------------------
+  # Compute epsilon
+  #-----------------------------------------------------------------------------
+  
+  eps <- do.call(
+    eps_fun,
+    c(list(n = length(data),
+           data = data,
+           support_boundary = support_boundary,
+           thresh = thresh),
+      eps_par)
+  )
+  if (!is.numeric(eps) || length(eps) != 1L || eps <= 0)
+    stop("`eps_fun` must return a single positive numeric value.")
 
   #-----------------------------------------------------------------------------
-  # Fit GPD to the data
+  # Exceedances
   #-----------------------------------------------------------------------------
 
-  # Exceedances (test statistics above threshold)
   exceedances <- data[data > thresh]
-  excess <- exceedances - thresh
-
-  # Consider maximum value at which the GPD density must be positive
+  excess      <- exceedances - thresh
+  
+  # Evaluation point / support boundary shift
+  eval_point      <- excess_boundary <- NULL
   if (!is.null(support_boundary)) {
-    # Point at which the support is checked/evaluated
-    eval_point <- support_boundary - thresh
-    excess_boundary <- eval_point
-    
-    if (eps_type == "factor") {
-      eps <- support_boundary * eps
-    }
-    
+    eval_point      <- support_boundary - thresh
     excess_boundary <- eval_point + eps
-
-  } else {
-    eval_point <- excess_boundary <- NULL
   }
 
-  # Contraint of a positive shape parameter
-  if (constraint == "shape_nonneg") {
-    if (!fit_method %in% c("MLE1D", "MLE2D", "NLS2")) {
-      stop("Constraint \"shape_nonneg\" only available for methods ",
-           "MLE1D, MLE2D, and NLS2.")
-    }
-
-    shapeMin <- 0
-    shapePos <- TRUE
+  #-----------------------------------------------------------------------------
+  # Shape-parameter constraints
+  #-----------------------------------------------------------------------------
+  
+  if (constraint == "shape_nonneg" &&
+      !fit_method %in% c("MLE1D","MLE2D","NLS2"))
+    stop("Constraint 'shape_nonneg' only available for MLE1D, MLE2D, NLS2.")
+  
+  shapeMin <- if (constraint == "shape_nonneg") 0 else -Inf
+  shapePos <- identical(shapeMin, 0)
+  
+  #-----------------------------------------------------------------------------
+  # Fit switch
+  #-----------------------------------------------------------------------------
+  
+  fit <- switch(fit_method,
+                MLE2D  = try(.fit_gpd_mle2d(excess, excess_boundary, eval_point,
+                                            tol = tol, shapeMin = shapeMin), 
+                             silent = TRUE),
+                MLE1D  = try(.fit_gpd_mle1d(excess, excess_boundary, eval_point,
+                                            tol = tol, shapePos = shapePos), 
+                             silent = TRUE),
+                LME    = try(.fit_gpd_lme  (excess, excess_boundary, eval_point,
+                                            tol = tol), 
+                             silent = TRUE),
+                NLS2   = try(.fit_gpd_nls2 (excess, excess_boundary, eval_point,
+                                            tol = tol, shapeMin = shapeMin), 
+                             silent = TRUE),
+                WNLLSM = try(.fit_gpd_wnllsm(excess, excess_boundary, eval_point,
+                                             tol = tol), 
+                             silent = TRUE),
+                ZSE    = try(.fit_gpd_zse  (excess, excess_boundary, eval_point),
+                             silent = TRUE),
+                MOM    = try(.fit_gpd_mom  (excess), 
+                             silent = TRUE)
+  )
+  
+  #-----------------------------------------------------------------------------
+  # Collect results
+  #-----------------------------------------------------------------------------
+  
+  if (inherits(fit, "try-error")) {
+    list(shape = NA, scale = NA, p_value = 0, epsilon = eps)
   } else {
-    shapeMin <- -Inf
-    shapePos <- FALSE
-  }
-
-  # GPD fit
-  if (fit_method == "MLE2D") {
-    fit <- try(.fit_gpd_mle2d(x = excess, boundary = excess_boundary,
-                              eval_point = eval_point,
-                             tol = tol, shapeMin = shapeMin),
-                  silent = TRUE)
-
-  } else if (fit_method == "MLE1D") {
-    fit <- try(.fit_gpd_mle1d(x = excess, boundary = excess_boundary,
-                              eval_point = eval_point,
-                             tol = tol, shapePos = shapePos),
-                  silent = TRUE)
-
-  } else if (fit_method == "LME") {
-    fit <- try(.fit_gpd_lme(x = excess, boundary = excess_boundary,
-                            eval_point = eval_point,
-                           tol = tol),
-                  silent = TRUE)
-
-  } else if (fit_method == "NLS2") {
-    fit <- try(.fit_gpd_nls2(x = excess, boundary = excess_boundary,
-                             eval_point = eval_point,
-                            tol = tol, shapeMin = shapeMin),
-                  silent = TRUE)
-
-  } else if (fit_method == "WNLLSM") {
-    fit <- try(.fit_gpd_wnllsm(x = excess, boundary = excess_boundary,
-                               eval_point = eval_point,
-                              tol = tol),
-                  silent = TRUE)
-
-  } else if (fit_method == "ZSE") {
-    fit <- try(.fit_gpd_zse(x = excess, boundary = excess_boundary,
-                            eval_point = eval_point),
-                  silent = TRUE)
-
-  } else if (fit_method == "MOM") {
-    fit <- try(.fit_gpd_mom(x = excess),
-                  silent = TRUE)
-  }
-
-  if ("try-error" %in% class(fit)) {
-    shape <- scale <- negLogLik <- NA
-    p_value <- 0
-
-  } else {
-    shape <- fit$shape
-    scale <- fit$scale
-    names(shape) <- names(scale) <- NULL
-
-    #negLogLik <- fit$negLogLik
-
-    if (gof_test == "none") {
-      p_value <- NULL
-
+    shape <- fit$shape; scale <- fit$scale
+    
+    p_val <- if (gof_test == "none") {
+      NULL
     } else {
-      if (gof_test == "ad") {
-        testres <- try(.gof_gpd_ad(excess,
-                                   scale = scale, shape = shape), silent = TRUE)
-      } else if (gof_test == "cvm") {
-        testres <- try(.gof_gpd_cvm(excess,
-                                    scale = scale, shape = shape), silent = TRUE)
-      }
-
-      p_value <- ifelse("try-error" %in% class(testres), 0, testres$p.value)
+      tfun <- if (gof_test == "ad") .gof_gpd_ad else .gof_gpd_cvm
+      tmp  <- try(tfun(excess, scale = scale, shape = shape), silent = TRUE)
+      if (inherits(tmp, "try-error")) 0 else tmp$p.value
     }
-
+    
+    list(shape = shape, scale = scale, p_value = p_val, epsilon = eps)
   }
-
-  return(list(shape = shape, scale = scale, p_value = p_value, epsilon = eps))#, negLogLik = negLogLik))
 }
 

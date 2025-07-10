@@ -7,7 +7,7 @@
 .find_gpd_thresh <- function(perm_stats,
                              obs_stats,
                              tol,
-                             thresh_method = "PRbelowAlpha",
+                             thresh_method = "pr_below_alpha",
                              thresh0 = NULL,
                              exceed0 = NULL,
                              exceed_min = 1,
@@ -115,7 +115,7 @@
   idxVec <- n_exceed_vec <- shapeVec <- scaleVec <- gof_p_value_vec <-
     numeric(length(thresh_poss))
 
-  idxUse <- NA
+  idx_use <- NA
 
   for (i in seq_along(thresh_poss)) {
     idxVec[i] <- i
@@ -131,10 +131,7 @@
     # Fit and test the GPD distribution
     fittestres <- fit_gpd(data = tSort,
                           thresh = thresh,
-                          fit_method = "MLE1D",
-                          tol = 1e-8,
-                          eps = 0,
-                          eps_type = "fix",
+                          fit_method = "LME",
                           constraint = "unconstrained",
                           support_boundary = NULL,
                           gof_test = gof_test)#,
@@ -144,54 +141,54 @@
     scaleVec[i] <- fittestres$scale
     gof_p_value_vec[i] <- fittestres$p_value
 
-    if (thresh_method == "ftr" && is.na(idxUse) && fittestres$p_value > gof_alpha) {
-      idxUse <- i
+    if (thresh_method == "ftr" && is.na(idx_use) && fittestres$p_value > gof_alpha) {
+      idx_use <- i
       #break
-    } else if (thresh_method == "ftrMin5" && i > 5 && is.na(idxUse) &&
+    } else if (thresh_method == "ftr_min5" && i > 5 && is.na(idx_use) &&
                all(gof_p_value_vec[(i-5):i] > gof_alpha)) {
       #break
-      idxUse <- i-5
+      idx_use <- i-5
     }
   }
 
-  # if (thresh_method %in% c("ftr", "ftrMin5") && is.na(idxUse)) {
-  #   idxUse <- i
+  # if (thresh_method %in% c("ftr", "ftr_min5") && is.na(idx_use)) {
+  #   idx_use <- i
   # }
 
-  if (is.na(idxUse)) {
+  if (is.na(idx_use)) {
 
     # Find threshold index
     if(all(gof_p_value_vec <= gof_alpha)){
 
-      idxUse <- NA
+      idx_use <- NA
     }
 
-    idxH0accept <- which(gof_p_value_vec > gof_alpha)
-    idxH0reject <- which(gof_p_value_vec <= gof_alpha)
+    idx_H0_accept <- which(gof_p_value_vec > gof_alpha)
+    idx_H0_reject <- which(gof_p_value_vec <= gof_alpha)
 
-    if(thresh_method == "PRbelowAlpha"){
+    if(thresh_method == "pr_below_alpha"){
 
       # Actual number of iterations
       n <- length(gof_p_value_vec)
 
       # Proportion of rejected GOF tests for all thresholds
-      propReject <- sapply(1:n, function(i){
+      prop_reject <- sapply(1:n, function(i){
         sum(gof_p_value_vec[i:n] <= gof_alpha) / (n - i + 1)
       })
 
       # Ensure that H0 is accepted at the chosen threshold
-      propReject2 <- propReject
-      propReject2[idxH0reject] <- 1
+      prop_reject2 <- prop_reject
+      prop_reject2[idx_H0_reject] <- 1
 
       # Select the first threshold with a PR below alpha
-      idxUse <- which(propReject2 <= gof_alpha)[1]
+      idx_use <- which(prop_reject2 <= gof_alpha)[1]
 
-      if (is.na(idxUse)) {
+      if (is.na(idx_use)) {
         # Use the minimum if no threshold leads to a PR below alpha
-        idxUse <- which.min(propReject2)
+        idx_use <- which.min(prop_reject2)
       }
 
-    } else if(thresh_method == "fwdStop"){
+    } else if(thresh_method == "fwd_stop"){
 
       # Log-transformed p-values
       y <- -log(1 - gof_p_value_vec)
@@ -202,17 +199,17 @@
       })
 
       if (all(ysum <= gof_alpha)) {
-        idxUse <- length(gof_p_value_vec)
+        idx_use <- length(gof_p_value_vec)
 
       } else if (all(ysum > gof_alpha)) {
-        idxUse <- 1
+        idx_use <- 1
 
       } else{
         # Select the first value above alpha
-        idxUse <- which(ysum > gof_alpha)[1]
+        idx_use <- which(ysum > gof_alpha)[1]
       }
 
-    } else if (thresh_method == "gofCP") {
+    } else if (thresh_method == "gof_cp") {
 
       # Add 100 fake p-values (sampled from U(0, 0.01)) to ensure a correct
       # estimate if (nearly) all hypotheses are true
@@ -224,24 +221,24 @@
       idxSel <- cp@cpts[1] - 100
 
       # Find the next larger index for which the AD test is accepted
-      idxUse <- idxH0accept[idxH0accept >= idxSel][1]
+      idx_use <- idx_H0_accept[idx_H0_accept >= idxSel][1]
 
     } else {
       stop("Threshold method not supported.")
     }
   }
 
-  if (is.null(idxUse) || is.na(idxUse)) {
+  if (is.null(idx_use) || is.na(idx_use)) {
     thresh <- n_exceed <- NA
 
   } else {
-    thresh <- thresh_poss[idxUse]
-    n_exceed <- n_exceed_vec[idxUse]
+    thresh <- thresh_poss[idx_use]
+    n_exceed <- n_exceed_vec[idx_use]
   }
 
   if (doPlot) {
-    #tmp <- gof_p_value_vec[(idxUse-50):(idxUse+100)]
-    #thtmp <- thresh_poss[(idxUse-50):(idxUse+100)]
+    #tmp <- gof_p_value_vec[(idx_use-50):(idx_use+100)]
+    #thtmp <- thresh_poss[(idx_use-50):(idx_use+100)]
     #thtmp <- seq(thresh_poss[1], rev(thresh_poss)[1], length = 10)
 
     plot(gof_p_value_vec ~ thresh_poss, pch = 20,

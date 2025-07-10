@@ -8,7 +8,7 @@
   perm_stats,
   obs_stats,
   tol,
-  thresh_method = "PRbelowAlpha",
+  thresh_method = "pr_below_alpha",
   thresh0 = NULL,
   exceed0 = NULL,
   exceed_min = 1,

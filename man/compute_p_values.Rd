@@ -136,7 +136,8 @@ res_gamma <- compute_p_values(obs_stats = obs,
                               method = "gamma",
                               gamma_ctrl = gamma_ctrl)
 
-# GPD approximation
+# GPD approximation without constraint
+gpd_ctrl <- make_gpd_ctrl(constraint = "unconstrained")
 res_gpd <- compute_p_values(obs_stats = obs,
                             perm_stats = perm,
                             method = "gpd")
@@ -149,11 +150,22 @@ res_gpd_constr <- compute_p_values(obs_stats = obs,
                                    method = "gpd",
                                    gpd_ctrl = gpd_ctrl)
 
+# GPD approximation with constraint and fixed epsilon
+gpd_ctrl <- make_gpd_ctrl(constraint = "support_at_max",
+                          eps_fun = eps_fixed, 
+                          eps_par = list(value = 0.1))
+
+res_gpd_constr_eps0.1 <- compute_p_values(obs_stats = obs,
+                                   perm_stats = perm,
+                                   method = "gpd",
+                                   gpd_ctrl = gpd_ctrl)
+
 # Data frame with (unadjusted) p-values
 p_values <- data.frame(empirical = res_emp$p_unadjusted,
                        gamma = res_gamma$p_unadjusted,
                        gpd = res_gpd$p_unadjusted,
-                       gpd_constr = res_gpd_constr$p_unadjusted)
+                       gpd_constr = res_gpd_constr$p_unadjusted,
+                       gpd_constr_eps0.1 = res_gpd_constr_eps0.1$p_unadjusted)
 
 p_values
 

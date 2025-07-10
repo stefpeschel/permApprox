@@ -48,13 +48,6 @@
     # Include observed stat if requested
     if (control$include_obs) perm_i <- c(obs_i, perm_i)
     
-    # Define epsilon
-    if (length(control$eps) > 1) {
-      eps <- control$eps[i]
-    } else {
-      eps <- control$eps
-    }
-    
     if (length(unique(perm_i)) < n_perm * 0.02) { # Check for discreteness
       if (control$verbose) {
         message(paste0("In test ", i, ": Data too discrete to fit a GPD. ", 
@@ -114,8 +107,8 @@
           thresh           = thresh,
           fit_method       = control$fit_method,
           tol              = control$tol,
-          eps              = eps,
-          eps_type         = control$eps_type,
+          eps_fun          = control$eps_fun,
+          eps_par          = control$eps_par,
           constraint       = control$constraint,
           support_boundary = support_boundary,
           gof_test         = control$gof_test,
