@@ -39,7 +39,7 @@
   }
   
   # Define the fit function for one test
-  fit_one <- function(i, control) {
+  fit_one <- function(i, control, trans_obs, trans_perm) {
     out <- list()
 
     obs_i  <- trans_obs[i]
@@ -97,8 +97,8 @@
       } else {
         # Possibly constrain support
         support_boundary <- switch(control$constraint,
-                                   support_at_max = max(obs_stats),
-                                   support_at_obs = obs_stats[i],
+                                   support_at_max = max(trans_obs),
+                                   support_at_obs = obs_i,
                                    NULL)
         
         # Fit GPD
@@ -156,7 +156,8 @@
     future.apply::future_lapply(
       idx_fit,
       FUN = function(i) {
-        res <- fit_one(i, control)
+        res <- fit_one(i, control = control, 
+                       trans_obs = trans_obs, trans_perm = trans_perm)
         if (control$verbose) {
           p()  # update progress bar
         }
