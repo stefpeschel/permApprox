@@ -32,7 +32,7 @@ eps_fixed <- function(value = 0.05, ...) {
 #' (or fixed to the maximum observed statistic).
 #'
 #' @param support_boundary Numeric scalar \eqn{>= 0}.
-#'   Upper boundary of the GPD support (on the original test-statistic scale).
+#'   Upper boundary of the GPD support.
 #' @param factor Numeric scalar \eqn{>= 0}.  Multiplier applied to
 #'   `support_boundary`.  Default is `0.05`.
 #' @param ... Unused, included for forward compatibility.
@@ -69,10 +69,12 @@ eps_factor <- function(support_boundary,
 #'
 #' @description
 #' Implements the general power-law
-#' \deqn{\varepsilon = \frac{A}{n^{B}}}{epsilon = A / n^B}
+#' \deqn{\varepsilon = \frac{A}{n^{B}} \times x_{bound},}
 #' which captures the empirically observed decrease of the optimal ε with
 #' growing sample size.
 #'
+#' @param support_boundary Numeric scalar \eqn{>= 0}.
+#'   Upper boundary of the GPD support.
 #' @param n Integer (length-one). Sample size.
 #' @param A Numeric scalar \eqn{> 0}.  Numerator (default `7.5e3`).
 #' @param B Numeric scalar \eqn{> 0}.  Exponent (default `2`).
@@ -86,7 +88,10 @@ eps_factor <- function(support_boundary,
 #'
 #' @export
 
-eps_power <- function(n, A = 7.5e3, B = 2, ...) {
+eps_power <- function(support_boundary, n, A = 7.5e3, B = 2, ...) {
+  if (is.null(support_boundary))
+    stop("`support_boundary` must be supplied for `eps_factor()`.")
+  
   if (!is.numeric(n) || length(n) != 1L || n <= 0)
     stop("`n` must be a single positive number.")
   
@@ -96,5 +101,9 @@ eps_power <- function(n, A = 7.5e3, B = 2, ...) {
   if (!is.numeric(B) || length(B) != 1L || B <= 0)
     stop("`B` must be a single positive number.")
   
-  A / n^B
+  support_boundary * (A / n^B)
+  
 }
+
+
+

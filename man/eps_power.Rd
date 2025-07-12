@@ -4,9 +4,12 @@
 \alias{eps_power}
 \title{Epsilon rule: inverse power of sample size}
 \usage{
-eps_power(n, A = 7500, B = 2, ...)
+eps_power(support_boundary, n, A = 7500, B = 2, ...)
 }
 \arguments{
+\item{support_boundary}{Numeric scalar \eqn{>= 0}.
+Upper boundary of the GPD support.}
+
 \item{n}{Integer (length-one). Sample size.}
 
 \item{A}{Numeric scalar \eqn{> 0}.  Numerator (default `7.5e3`).}
@@ -20,7 +23,7 @@ A numeric scalar \eqn{\varepsilon}.
 }
 \description{
 Implements the general power-law
-\deqn{\varepsilon = \frac{A}{n^{B}}}{epsilon = A / n^B}
+\deqn{\varepsilon = \frac{A}{n^{B}} \times x_{bound},}
 which captures the empirically observed decrease of the optimal ε with
 growing sample size.
 }

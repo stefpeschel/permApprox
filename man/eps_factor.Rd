@@ -8,7 +8,7 @@ eps_factor(support_boundary, factor = 0.05, ...)
 }
 \arguments{
 \item{support_boundary}{Numeric scalar \eqn{>= 0}.
-Upper boundary of the GPD support (on the original test-statistic scale).}
+Upper boundary of the GPD support.}
 
 \item{factor}{Numeric scalar \eqn{>= 0}.  Multiplier applied to
 `support_boundary`.  Default is `0.05`.}
