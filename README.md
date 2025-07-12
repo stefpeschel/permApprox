@@ -1,8 +1,8 @@
 
 # permApprox - Permutation p-value approximation
 
-permApprox is an R package to compute empirical and approximated p-values
-from permutation tests, especially useful when the number of
+permApprox is an R package to compute empirical and approximated
+p-values from permutation tests, especially useful when the number of
 permutations is small and zero p-values should be strictly avoided. It
 offers approximation using the Gamma distribution or the Generalized
 Pareto Distribution (GPD) fitted to the tail of the permutation
@@ -10,12 +10,12 @@ distribution.
 
 ## Early version disclaimer
 
-**Note:** This is an early version of the permApprox package and is still
-under active development. While the core functionality is in place, the
-interface, parameter settings, and behavior of certain functions may
-change in future versions. Users are encouraged to use the package with
-care and avoid relying on its current structure for production
-workflows.
+**Note:** This is an early version of the permApprox package and is
+still under active development. While the core functionality is in
+place, the interface, parameter settings, and behavior of certain
+functions may change in future versions. Users are encouraged to use the
+package with care and avoid relying on its current structure for
+production workflows.
 
 ## Installation
 
@@ -54,32 +54,45 @@ res_gamma <- compute_p_values(obs_stats = obs,
                               method = "gamma",
                               gamma_ctrl = gamma_ctrl)
 
-# GPD approximation
+# GPD approximation without constraints
+gpd_ctrl <- make_gpd_ctrl(constraint = "unconstrained")
 res_gpd <- compute_p_values(obs_stats = obs,
                             perm_stats = perm,
                             method = "gpd")
 
-# GPD with constraint
+# GPD approximation with constraint
+# (GPD must have support at t_obs + epsilon)
 gpd_ctrl <- make_gpd_ctrl(constraint = "support_at_obs")
 res_gpd_constr <- compute_p_values(obs_stats = obs,
                                    perm_stats = perm,
                                    method = "gpd",
                                    gpd_ctrl = gpd_ctrl)
 
-# Compare unadjusted p-values
+# GPD approximation with constraint and fixed epsilon
+gpd_ctrl <- make_gpd_ctrl(constraint = "support_at_max",
+                          eps_fun = eps_fixed,
+                          eps_par = list(value = 0.1))
+
+res_gpd_constr_eps0.1 <- compute_p_values(obs_stats = obs,
+                                   perm_stats = perm,
+                                   method = "gpd",
+                                   gpd_ctrl = gpd_ctrl)
+
+# Data frame with (unadjusted) p-values
 p_values <- data.frame(empirical = res_emp$p_unadjusted,
                        gamma = res_gamma$p_unadjusted,
                        gpd = res_gpd$p_unadjusted,
-                       gpd_constr = res_gpd_constr$p_unadjusted)
+                       gpd_constr = res_gpd_constr$p_unadjusted,
+                       gpd_constr_eps0.1 = res_gpd_constr_eps0.1$p_unadjusted)
 
-print(p_values)
+p_values
 ```
 
-    ##     empirical        gamma         gpd   gpd_constr
-    ## 1 0.047952048 0.0596524811 0.043929958 4.392996e-02
-    ## 2 0.005994006 0.0112178961 0.002959802 2.959802e-03
-    ## 3 0.000999001 0.0023100226 0.000999001 7.244486e-05
-    ## 4 0.000999001 0.0005513698 0.000999001 1.432400e-06
+    ##     empirical        gamma          gpd   gpd_constr gpd_constr_eps0.1
+    ## 1 0.047952048 0.0596524811 4.316868e-02 4.441052e-02      4.317300e-02
+    ## 2 0.005994006 0.0112178961 3.007131e-03 3.007131e-03      3.007131e-03
+    ## 3 0.000999001 0.0023100226 2.416279e-05 1.489682e-08      2.319110e-05
+    ## 4 0.000999001 0.0005513698 2.646884e-12 2.646884e-12      8.585641e-13
 
 ## Documentation
 
