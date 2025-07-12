@@ -66,7 +66,7 @@ fit_gpd <- function(data,
                     support_boundary = NULL,
                     gof_test = "ad",
                     ...) {
-
+  
   stopifnot(is.vector(data) & is.numeric(data))
   stopifnot(is.numeric(thresh) & length(thresh) == 1)
 

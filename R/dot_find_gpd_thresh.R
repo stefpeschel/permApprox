@@ -134,6 +134,8 @@
                           fit_method = "LME",
                           constraint = "unconstrained",
                           support_boundary = NULL,
+                          eps_fun = eps_fixed,
+                          eps_par = list(value = 0),
                           gof_test = gof_test)#,
     #...)
 
