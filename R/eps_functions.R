@@ -57,8 +57,8 @@ eps_factor <- function(support_boundary,
   if (is.null(support_boundary))
     stop("`support_boundary` must be supplied for `eps_factor()`.")
   
-  if (!is.numeric(factor) || length(factor) != 1L || factor <= 0)
-    stop("`factor` must be a single positive number.")
+  if (!is.numeric(factor) || length(factor) != 1L || factor < 0)
+    stop("`factor` must be a single non-negative number.")
   
   factor * support_boundary
 }
