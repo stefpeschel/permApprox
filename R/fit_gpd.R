@@ -101,8 +101,8 @@ fit_gpd <- function(data,
            thresh = thresh),
       eps_par)
   )
-  if (!is.numeric(eps) || length(eps) != 1L || eps <= 0)
-    stop("`eps_fun` must return a single positive numeric value.")
+  if (!is.numeric(eps) || length(eps) != 1L || eps < 0)
+    stop("`eps_fun` must return a single non-negative numeric value.")
 
   #-----------------------------------------------------------------------------
   # Exceedances
