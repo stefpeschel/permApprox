@@ -4,7 +4,7 @@
 \alias{eps_power}
 \title{Epsilon rule: inverse power of sample size}
 \usage{
-eps_power(support_boundary, n, A = 7500, B = 2, ...)
+eps_power(support_boundary = NULL, n = NULL, A = 10000, B = 2, ...)
 }
 \arguments{
 \item{support_boundary}{Numeric scalar \eqn{>= 0}.
@@ -28,7 +28,7 @@ which captures the empirically observed decrease of the optimal ε with
 growing sample size.
 }
 \examples{
-eps_power(n = 100)                 # 7500 / 100^2 = 0.75
+eps_power(n = 100)                  # 10000/100^2 = 1
 eps_power(n = 250, A = 5000, B = 2) # 0.08
 
 }

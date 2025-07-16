@@ -11,8 +11,8 @@
 #' @return A numeric scalar equal to `value`.
 #'
 #' @examples
-#' eps_fixed(n = 100)            # 0.05
-#' eps_fixed(n = 250, value = 1) # 1
+#' eps_fixed()          # 0.05
+#' eps_fixed(value = 1) # 1
 #'
 #' @export
 
@@ -49,7 +49,7 @@ eps_fixed <- function(value = 0.05, ...) {
 #'
 #' @export
 
-eps_factor <- function(support_boundary,
+eps_factor <- function(support_boundary = NULL,
                        factor = 0.05,
                        ...
                        ) {
@@ -83,14 +83,17 @@ eps_factor <- function(support_boundary,
 #' @return A numeric scalar \eqn{\varepsilon}.
 #'
 #' @examples
-#' eps_power(n = 100)                 # 7500 / 100^2 = 0.75
+#' eps_power(n = 100)                  # 10000/100^2 = 1
 #' eps_power(n = 250, A = 5000, B = 2) # 0.08
 #'
 #' @export
 
-eps_power <- function(support_boundary, n, A = 7.5e3, B = 2, ...) {
+eps_power <- function(support_boundary = NULL, n = NULL, A = 1e4, B = 2, ...) {
   if (is.null(support_boundary))
     stop("`support_boundary` must be supplied for `eps_factor()`.")
+  
+  if (is.null(n))
+    stop("Sample size `n` must be given for this epsilon rule.")
   
   if (!is.numeric(n) || length(n) != 1L || n <= 0)
     stop("`n` must be a single positive number.")

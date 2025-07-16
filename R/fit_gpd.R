@@ -18,8 +18,7 @@
 #' @param eps_fun Function that returns the ε to use. Possible options are 
 #'   \code{\link{eps_fixed}}, \code{\link{eps_fixed}}, \code{\link{eps_fixed}},
 #'   or a user-defined function. It is called as
-#'        `eps_fun(n = length(data), data = data,
-#'                 support_boundary = support_boundary,
+#'        `eps_fun(data = data, support_boundary = support_boundary,
 #'                 thresh = thresh, !!!eps_par)`.
 #'                 
 #' @param eps_par List of additional named arguments forwarded to `eps_fun`.
@@ -66,7 +65,6 @@ fit_gpd <- function(data,
                     support_boundary = NULL,
                     gof_test = "ad",
                     ...) {
-  
   stopifnot(is.vector(data) & is.numeric(data))
   stopifnot(is.numeric(thresh) & length(thresh) == 1)
 
@@ -95,8 +93,7 @@ fit_gpd <- function(data,
   
   eps <- do.call(
     eps_fun,
-    c(list(n = length(data),
-           data = data,
+    c(list(data = data,
            support_boundary = support_boundary,
            thresh = thresh),
       eps_par)

@@ -20,7 +20,7 @@ Returns the same non-negative constant for every call.  Useful when you want to
 supply a *single, non–data-dependent* value of ε.
 }
 \examples{
-eps_fixed(n = 100)            # 0.05
-eps_fixed(n = 250, value = 1) # 1
+eps_fixed()          # 0.05
+eps_fixed(value = 1) # 1
 
 }

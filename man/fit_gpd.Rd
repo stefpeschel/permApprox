@@ -31,8 +31,7 @@ Must be one of \code{"LME"}, \code{"MLE1D"}, \code{"MLE2D"}, \code{"MOM"},
 \item{eps_fun}{Function that returns the ε to use. Possible options are 
 \code{\link{eps_fixed}}, \code{\link{eps_fixed}}, \code{\link{eps_fixed}},
 or a user-defined function. It is called as
-     `eps_fun(n = length(data), data = data,
-              support_boundary = support_boundary,
+     `eps_fun(data = data, support_boundary = support_boundary,
               thresh = thresh, !!!eps_par)`.}
 
 \item{eps_par}{List of additional named arguments forwarded to `eps_fun`.}

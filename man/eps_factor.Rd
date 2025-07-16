@@ -4,7 +4,7 @@
 \alias{eps_factor}
 \title{Epsilon rule: factor of support boundary}
 \usage{
-eps_factor(support_boundary, factor = 0.05, ...)
+eps_factor(support_boundary = NULL, factor = 0.05, ...)
 }
 \arguments{
 \item{support_boundary}{Numeric scalar \eqn{>= 0}.
