@@ -17,7 +17,6 @@
                              seed = NULL,
                              doPlot = FALSE,
                              ...) {
-
   if (!is.null(seed)) set.seed(seed)
 
   n_perm <- length(perm_stats)
@@ -41,7 +40,7 @@
   if (exceed_min < 1) {
     exceed_min <- floor(n_perm * exceed_min)
   }
-
+  
   #-----------------------------------------------------------------------------
   if (thresh_method == "fix") {
     if (!is.null(thresh0)) {
@@ -145,11 +144,15 @@
 
     if (thresh_method == "ftr" && is.na(idx_use) && fittestres$p_value > gof_alpha) {
       idx_use <- i
-      #break
+      if (!doPlot) {
+        break
+      }
     } else if (thresh_method == "ftr_min5" && i > 5 && is.na(idx_use) &&
                all(gof_p_value_vec[(i-5):i] > gof_alpha)) {
-      #break
       idx_use <- i-5
+      if (!doPlot) {
+        break
+      }
     }
   }
 
@@ -163,70 +166,71 @@
     if(all(gof_p_value_vec <= gof_alpha)){
 
       idx_use <- NA
-    }
-
-    idx_H0_accept <- which(gof_p_value_vec > gof_alpha)
-    idx_H0_reject <- which(gof_p_value_vec <= gof_alpha)
-
-    if(thresh_method == "pr_below_alpha"){
-
-      # Actual number of iterations
-      n <- length(gof_p_value_vec)
-
-      # Proportion of rejected GOF tests for all thresholds
-      prop_reject <- sapply(1:n, function(i){
-        sum(gof_p_value_vec[i:n] <= gof_alpha) / (n - i + 1)
-      })
-
-      # Ensure that H0 is accepted at the chosen threshold
-      prop_reject2 <- prop_reject
-      prop_reject2[idx_H0_reject] <- 1
-
-      # Select the first threshold with a PR below alpha
-      idx_use <- which(prop_reject2 <= gof_alpha)[1]
-
-      if (is.na(idx_use)) {
-        # Use the minimum if no threshold leads to a PR below alpha
-        idx_use <- which.min(prop_reject2)
-      }
-
-    } else if(thresh_method == "fwd_stop"){
-
-      # Log-transformed p-values
-      y <- -log(1 - gof_p_value_vec)
-
-      # Transform log-p-values as described in Barder et. al 2018
-      ysum <- sapply(1:length(gof_p_value_vec), function(k) {
-        1 / k * sum(y[1:k])
-      })
-
-      if (all(ysum <= gof_alpha)) {
-        idx_use <- length(gof_p_value_vec)
-
-      } else if (all(ysum > gof_alpha)) {
-        idx_use <- 1
-
-      } else{
-        # Select the first value above alpha
-        idx_use <- which(ysum > gof_alpha)[1]
-      }
-
-    } else if (thresh_method == "gof_cp") {
-
-      # Add 100 fake p-values (sampled from U(0, 0.01)) to ensure a correct
-      # estimate if (nearly) all hypotheses are true
-      gof_p_value_tmp <- c(stats::runif(100, min = 0, max = 0.01),
-                           gof_p_value_vec)
-
-      # Changepoint detection
-      cp <- changepoint::cpt.meanvar(gof_p_value_tmp)
-      idxSel <- cp@cpts[1] - 100
-
-      # Find the next larger index for which the AD test is accepted
-      idx_use <- idx_H0_accept[idx_H0_accept >= idxSel][1]
 
     } else {
-      stop("Threshold method not supported.")
+      idx_H0_accept <- which(gof_p_value_vec > gof_alpha)
+      idx_H0_reject <- which(gof_p_value_vec <= gof_alpha)
+      
+      if(thresh_method == "pr_below_alpha"){
+        
+        # Actual number of iterations
+        n <- length(gof_p_value_vec)
+        
+        # Proportion of rejected GOF tests for all thresholds
+        prop_reject <- sapply(1:n, function(i){
+          sum(gof_p_value_vec[i:n] <= gof_alpha) / (n - i + 1)
+        })
+        
+        # Ensure that H0 is accepted at the chosen threshold
+        prop_reject2 <- prop_reject
+        prop_reject2[idx_H0_reject] <- 1
+        
+        # Select the first threshold with a PR below alpha
+        idx_use <- which(prop_reject2 <= gof_alpha)[1]
+        
+        if (is.na(idx_use)) {
+          # Use the minimum if no threshold leads to a PR below alpha
+          idx_use <- which.min(prop_reject2)
+        }
+        
+      } else if(thresh_method == "fwd_stop"){
+        
+        # Log-transformed p-values
+        y <- -log(1 - gof_p_value_vec)
+        
+        # Transform log-p-values as described in Barder et. al 2018
+        ysum <- sapply(1:length(gof_p_value_vec), function(k) {
+          1 / k * sum(y[1:k])
+        })
+        
+        if (all(ysum <= gof_alpha)) {
+          idx_use <- length(gof_p_value_vec)
+          
+        } else if (all(ysum > gof_alpha)) {
+          idx_use <- 1
+          
+        } else{
+          # Select the first value above alpha
+          idx_use <- which(ysum > gof_alpha)[1]
+        }
+        
+      } else if (thresh_method == "gof_cp") {
+        
+        # Add 100 fake p-values (sampled from U(0, 0.01)) to ensure a correct
+        # estimate if (nearly) all hypotheses are true
+        gof_p_value_tmp <- c(stats::runif(100, min = 0, max = 0.01),
+                             gof_p_value_vec)
+        
+        # Changepoint detection
+        cp <- changepoint::cpt.meanvar(gof_p_value_tmp)
+        idxSel <- cp@cpts[1] - 100
+        
+        # Find the next larger index for which the AD test is accepted
+        idx_use <- idx_H0_accept[idx_H0_accept >= idxSel][1]
+        
+      } else {
+        stop("Threshold method not supported.")
+      }
     }
   }
 
