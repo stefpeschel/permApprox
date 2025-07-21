@@ -58,6 +58,7 @@
       out$n_exceed     <- NA
       out$zero_replaced <- FALSE
       out$method_used   <- "empirical"
+      out$discrete      <- TRUE
       out$p_value       <- p_empirical[i]
       out$shape         <- NA
       out$scale         <- NA
@@ -85,6 +86,7 @@
       out$thresh       <- thresh
       out$n_exceed     <- n_exceed
       out$zero_replaced <- FALSE
+      out$discrete     <- FALSE
       
       # No valid threshold → fallback to empirical
       if (is.na(thresh)) {
@@ -181,6 +183,7 @@
   scale_vec      <- numeric(n_test)
   gof_pval_vec   <- numeric(n_test)
   zero_replaced  <- logical(n_test)
+  discrete       <- logical(n_test)
   epsilon_vec    <- numeric(n_test)
   perm_stats_fit <- vector("list", n_test)
 
@@ -197,6 +200,7 @@
     scale_vec[i]     <- res$scale
     gof_pval_vec[i]  <- res$gof_p_value
     zero_replaced[i] <- res$zero_replaced
+    discrete[i]      <- res$discrete
     epsilon_vec[i]   <- res$epsilon
 
     # store the permuted stats used for fitting
@@ -219,6 +223,7 @@
     epsilon        = epsilon_vec,
     gof_p_value    = gof_pval_vec,
     zero_replaced  = zero_replaced,
+    discrete       = discrete,
     perm_stats_fit = perm_stats_fit
   )
 }
