@@ -91,16 +91,20 @@ fit_gpd <- function(data,
   # Compute epsilon
   #-----------------------------------------------------------------------------
   
-  eps <- do.call(
-    eps_fun,
-    c(list(data = data,
-           support_boundary = support_boundary,
-           thresh = thresh),
-      eps_par)
-  )
-  if (!is.numeric(eps) || length(eps) != 1L || eps < 0)
-    stop("`eps_fun` must return a single non-negative numeric value.")
-
+  if (constraint %in% c("support_at_obs", "support_at_max")) {
+    eps <- do.call(
+      eps_fun,
+      c(list(data = data,
+             support_boundary = support_boundary,
+             thresh = thresh),
+        eps_par)
+    )
+    if (!is.numeric(eps) || length(eps) != 1L || eps < 0)
+      stop("`eps_fun` must return a single non-negative numeric value.")
+  } else {
+    eps <- NA
+  }
+  
   #-----------------------------------------------------------------------------
   # Exceedances
   #-----------------------------------------------------------------------------
