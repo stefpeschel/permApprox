@@ -95,6 +95,7 @@
         out$shape         <- NA
         out$scale         <- NA
         out$gof_p_value   <- NA
+        out$epsilon       <- NA
         
       } else {
         # Possibly constrain support
