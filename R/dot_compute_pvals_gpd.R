@@ -97,7 +97,7 @@
       } else {
         # Possibly constrain support
         support_boundary <- switch(control$constraint,
-                                   support_at_max = max(trans_obs),
+                                   support_at_max = max(trans_obs, na.rm = TRUE),
                                    support_at_obs = obs_i,
                                    NULL)
         
