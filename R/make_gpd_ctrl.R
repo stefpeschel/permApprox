@@ -20,14 +20,36 @@
 #'     observed test statistics (in the multiple testing case).}
 #'   }
 #'
-#' @param eps_fun Function that returns the ε to use. Possible options are 
-#'   \code{\link{eps_fixed}}, \code{\link{eps_factor}}, \code{\link{eps_power}},
-#'   or a user-defined function. It is called as
-#'        `eps_fun(n = length(data), data = data,
-#'                 support_boundary = support_boundary,
-#'                 thresh = thresh, !!!eps_par)`.
+#' @param eps_rule Choice of rule for computing \eqn{\varepsilon}. 
+#'   Allowed character values are:
+#'   \itemize{
+#'     \item \code{"constant"}: Use a fixed \eqn{\varepsilon}. 
+#'       The constant is defined via \code{eps_par}.
+#'     \item \code{"factor"}: Set \eqn{\varepsilon = c \cdot |t_{\mathrm{obs}}|} 
+#'       with \code{c} provided via \code{eps_par}.
+#'     \item \code{"slls"}: Use the Standardized Lifted Log-Saturation (SLLS) 
+#'       rule on the \emph{Z}-scale with permutation-based cap; \code{eps_par} 
+#'       controls its conservativeness via \code{target_factor}. The sample 
+#'       size must be provided via \code{sample_size} for this rule.
+#'   }
 #'                 
-#' @param eps_par List of additional named arguments forwarded to `eps_fun`.
+#' @param eps_par Adaptive parameterization for \code{eps_rule}. Its meaning
+#'   depends on \code{eps_rule}:
+#'   \itemize{
+#'     \item \code{"constant"}: numeric. If length 1, the same constant 
+#'       \eqn{\varepsilon} is used for all tests; if length equals the number of 
+#'       tests, values are applied per test.
+#'     \item \code{"factor"}: numeric scalar \code{c} used as 
+#'       \eqn{\varepsilon = c \cdot |t_{\mathrm{obs}}|}.
+#'     \item \code{"slls"}: Numeric scalar that is used as \code{target_factor} 
+#'       of the epsilon function (higher \code{target_factor}
+#'           \textrightarrow{} more conservative plateau).
+#'   }
+#' 
+#' @param sample_size Optional numeric giving the sample size. Needed for the 
+#'   "slls" rule. For groups with different sample sizes use the smaller one. 
+#'   If the sample size is unknown, use a small value (e.g., 30) to be 
+#'   conservative.
 #'
 #' @param tol Numeric. Convergence tolerance for fitting GPD parameters.
 #'   Default: 1e-8.
@@ -75,12 +97,23 @@
 #' @return A named list of class "gpd_ctrl" containing GPD settings.
 #'
 #' @export
+#' 
 make_gpd_ctrl <- function(
     fit_method = "LME",
     include_obs = FALSE,
     constraint = "support_at_max",
-    eps_fun = eps_power,
-    eps_par = list(),
+    eps_rule = "slls",
+    eps_par = 0.25,
+    zero_guard = TRUE,
+    eps_retry  = list(
+      max_iter = 20L,
+      min_drop = 3,
+      step = 0.5,
+      step_min = 0.25,
+      step_max = 10,
+      growth_cap = 64
+    ),
+    sample_size = NULL,
     tol = 1e-8,
     thresh_method = "ftr_min5",
     thresh0 = NULL,
@@ -92,7 +125,7 @@ make_gpd_ctrl <- function(
     cores = 1,
     verbose = TRUE
 ) {
-
+  
   fit_method <- match.arg(fit_method,
                           choices = c("LME",
                                       "MLE1D",
@@ -101,22 +134,48 @@ make_gpd_ctrl <- function(
                                       "NLS2",
                                       "WNLLSM",
                                       "ZSE"))
-
+  
   stopifnot(is.logical(include_obs))
-
+  
   constraint <- match.arg(constraint,
                           choices = c("unconstrained",
                                       "shape_nonneg",
                                       "support_at_obs",
                                       "support_at_max"))
-
+  
   if (constraint == "shape_nonneg" && !fit_method %in% c("MLE1D", "MLE2D", "NLS2")) {
     stop("Constraint \"shape_nonneg\" only available for methods ",
          "MLE1D, MLE2D, and NLS2.")
   }
-
-  stopifnot(is.function(eps_fun))
-
+  
+  # --- Error handling for eps_rule / eps_par ---
+  if (!eps_rule %in% c("constant", "factor", "slls")) {
+    stop("Invalid 'eps_rule'. Must be one of: 'constant', 'factor', 'slls'.")
+  }
+  
+  if (eps_rule == "constant") {
+    if (!is.numeric(eps_par) || eps_par < 0) {
+      stop("'eps_par' must be a numeric, non-negative scalar or vector for eps_rule = 'constant'.")
+    }
+  }
+  
+  if (eps_rule == "factor") {
+    if (!is.numeric(eps_par) || length(eps_par) != 1 || eps_par < 0) {
+      stop("'eps_par' must be a numeric, non-negative scalar for eps_rule = 'factor'.")
+    }
+  }
+  
+  if (eps_rule == "slls") {
+    if (!is.numeric(eps_par) || length(eps_par) != 1 || eps_par < 0) {
+      stop("'eps_par' must be a numeric, non-negative scalar (target_factor) for eps_rule = 'slls'.")
+    }
+    if (is.null(sample_size)) {
+      stop("'sample_size' must be provided for eps_rule = 'slls'. ", 
+           "For groups with different sample sizes use the smaller one. ")
+    }
+  }
+  # ---
+  
   thresh_method <- match.arg(thresh_method,
                              choices = c("fix",
                                          "ftr",
@@ -124,7 +183,7 @@ make_gpd_ctrl <- function(
                                          "pr_below_alpha",
                                          "fwd_stop",
                                          "gof_cp"))
-
+  
   # Error handling for thresh0 and exceed0
   if (is.null(thresh0) && is.null(exceed0)) {
     stop("You must specify either 'thresh0' or 'exceed0'. Both are currently NULL.")
@@ -148,19 +207,22 @@ make_gpd_ctrl <- function(
       stop("'exceed0' must be a non-negative number (or NULL).")
     }
   }
-
+  
   stopifnot(is.numeric(exceed_min) & exceed_min >= 0)
-
+  
   gof_test <- match.arg(gof_test, choices = c("ad", "cvm", "none"))
-
+  
   stopifnot(is.numeric(gof_alpha) & gof_alpha > 0 & gof_alpha < 1)
-
+  
   control <- list(
     fit_method = fit_method,
     include_obs = include_obs,
     constraint = constraint,
-    eps_fun = eps_fun,
+    eps_rule = eps_rule,
     eps_par = eps_par,
+    zero_guard = zero_guard,
+    eps_retry = eps_retry,
+    sample_size = sample_size,
     tol = tol,
     thresh_method = thresh_method,
     thresh0 = thresh0,

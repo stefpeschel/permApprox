@@ -8,9 +8,9 @@
 #'
 #' @param obs_stats Numeric vector of observed test statistic(s).
 #'
-#' @param perm_stats Numeric vector or matrix of permutation test statistics.
-#'   For a single test, supply a vector; for multiple tests, supply a matrix
-#'   with one row per test.
+#' @param perm_stats Permutation test statistics. Should be provided as a 
+#'   numeric matrix or data frame with permutations in rows and tests in 
+#'   columns.
 #'
 #' @param method Character. Method used to compute p-values. Default is
 #'   \code{"gpd"}. Options are:
@@ -31,7 +31,7 @@
 #'
 #' @param alternative Character. One of \code{"greater"}, \code{"less"}, or
 #'   \code{"two_sided"} (default), indicating the tail of the test.
-#'
+#'   
 #' @param null_center Numeric or character. Specifies the value around which the
 #'   null distribution is centered. If set to \code{"mean"} or \code{"median"},
 #'   the per-row mean or median of \code{perm_stats} is used instead.
@@ -164,120 +164,151 @@ compute_p_values <- function(
     adjust_ctrl = make_adjust_ctrl(),
     ...
 ) {
-
+  
+  # Validate 'alternative'
   alternative <- match.arg(alternative,
                            choices = c("greater", "less", "two_sided"))
-
+  
+  # Validate 'method'
   method <- match.arg(method,
                       choices = c("gpd", "gamma", "empirical"))
-
+  
   # Validate control arguments
   if (!inherits(gpd_ctrl, "gpd_ctrl")) {
     stop("'gpd_ctrl' must be created with make_gpd_ctrl().")
   }
-
+  
   if (!inherits(gamma_ctrl, "gamma_ctrl")) {
     stop("'gamma_ctrl' must be created with make_gamma_ctrl().")
   }
-
+  
   if (!inherits(adjust_ctrl, "adjust_ctrl")) {
     stop("'adjust_ctrl' must be created with make_adjust_ctrl().")
   }
-
+  
   # Validate multiple testing adjustment method
   adjust_method <- match.arg(adjust_method, c("none", p.adjust.methods,
                                               "lfdr", "adaptBH", "rbFDR"))
-
-  # Number of permutations and tests
-  n_perm <- ncol(perm_stats)
-  n_test <- length(obs_stats)
-
-  # Ensure matrix format for multiple tests
-  if (length(obs_stats) == 1) {
-    perm_stats <- matrix(perm_stats, nrow = 1)
+  
+  ## ---------------------------------------------------------------------------
+  ## Ensure matrix format: permutations in rows, tests in columns
+  ## ---------------------------------------------------------------------------
+  
+  if (is.null(dim(perm_stats))) {
+    # Single test: vector of permutation statistics
+    perm_stats <- matrix(perm_stats, ncol = 1)
+  } else {
+    perm_stats <- as.matrix(perm_stats)
   }
-
+  
+  n_perm <- nrow(perm_stats)    # permutations
+  n_test <- ncol(perm_stats)    # tests
+  
+  # Match observed statistics length
+  if (length(obs_stats) != n_test) {
+    stop("Length of 'obs_stats' must match number of columns in 'perm_stats'.")
+  }
+  
+  ## ---------------------------------------------------------------------------
+  ## Center test statistics around H0
+  ## ---------------------------------------------------------------------------
+  
   # Determine centering vector
   if (is.numeric(null_center)) {
     center_vec <- null_center
   } else {
     center_vec <- switch(
       null_center,
-      mean = if (n_test == 1) mean(perm_stats) else rowMeans(perm_stats),
-      median = if (n_test == 1) median(perm_stats) else apply(perm_stats, 1, median),
+      mean = if (n_test == 1) mean(perm_stats) else colMeans(perm_stats),
+      median = if (n_test == 1) median(perm_stats) else apply(perm_stats, 2, median),
       stop("Invalid 'null_center': must be numeric, 'mean', or 'median'")
     )
   }
-
+  
   # Center permutation statistics
   if (n_test == 1) {
     perm_stats <- perm_stats - center_vec
   } else {
-    perm_stats <- sweep(perm_stats, 1, center_vec, FUN = "-")
+    perm_stats <- sweep(perm_stats, 2, center_vec, FUN = "-")
   }
-
+  
   # Center observed statistic(s)
   obs_stats <- obs_stats - center_vec
-
-  # Empirical p-values
-  pvals_emp_list <- .compute_pvals_emp(obs_stats = obs_stats,
-                                       perm_stats = perm_stats,
-                                       n_test = n_test,
-                                       n_perm = n_perm,
-                                       alternative = alternative)
-
-  p_empirical <- pvals_emp_list$pvals
-  n_perm_exceeding <- pvals_emp_list$n_perm_exceeding
-
-  # Initialize gamme_fit and gpd_fit
+  
+  ## ---------------------------------------------------------------------------
+  ## Empirical p-values
+  ## ---------------------------------------------------------------------------
+  pvals_emp_list <- .compute_pvals_emp(
+    obs_stats = obs_stats,
+    perm_stats = perm_stats,
+    n_test     = n_test,
+    n_perm     = n_perm,
+    alternative = alternative
+  )
+  
+  p_empirical        <- pvals_emp_list$pvals
+  n_perm_exceeding   <- pvals_emp_list$n_perm_exceeding
+  method_used <- rep("empirical", n_test)
+  
+  ## ---------------------------------------------------------------------------
+  ## Approximate p-values
+  ## ---------------------------------------------------------------------------
+  
+  # Transform test statisitics according to the alternative
+  transformed <- lapply(seq_len(n_test), function(i) {
+    .transform_stats(perm_stats = perm_stats[, i],
+                     obs_stats  = obs_stats[i],
+                     alternative = alternative)
+  })
+  t_obs  <- vapply(transformed, `[[`, numeric(1), "obs_stats")
+  t_perm_list <- lapply(transformed, `[[`, "perm_stats")
+  t_perm <- do.call(cbind, t_perm_list)
+  dimnames(t_perm) <- dimnames(perm_stats)
+  
+  # Initialize gamma_fit and gpd_fit
   gamma_fit <- gpd_fit <- NULL
-
-  #-----------------------------------------------------------------------------
-  # Compute p-values
-
-  if (method == "empirical" | all(p_empirical > fit_thresh)) { # Empirical p-values
-
+  
+  if (method == "empirical") { # Empirical p-values
+    
     p_values <- p_empirical
-
-    method_used <- rep("empirical", n_test)
-
+    
   } else if (method == "gamma") { # Gamma approximation
-    gamma_fit <- .compute_pvals_gamma(p_empirical = p_empirical,
-                                      perm_stats = perm_stats,
-                                      obs_stats = obs_stats,
-                                      n_test = n_test,
-                                      fit_thresh = fit_thresh,
+    gamma_fit <- .compute_pvals_gamma(perm_stats = t_perm,
+                                      obs_stats = t_obs,
                                       alternative = alternative,
                                       control = gamma_ctrl)
-
-    p_values <- gamma_fit$p_values
-    method_used <- gamma_fit$method_used
-
+    p_values <- p_empirical
+    idx_gamma <- idx_fit[gamma_fit$method_used == "gamma"]
+    p_values[idx_gamma] <- gamma_fit$p_values[gamma_fit$method_used == "gamma"]
+    method_used[idx_gamma] <- "gamma"
+    
   } else if (method == "gpd") { # Tail approximation using the GPD
-
-    gpd_fit <- .compute_pvals_gpd(p_empirical = p_empirical,
-                                  perm_stats = perm_stats,
-                                  obs_stats = obs_stats,
-                                  n_test = n_test,
+    
+    gpd_fit <- .compute_pvals_gpd(obs_stats = t_obs,
+                                  perm_stats = t_perm,
+                                  p_empirical = p_empirical,
                                   fit_thresh = fit_thresh,
-                                  alternative = alternative,
-                                  control = gpd_ctrl)
-
-    p_values <- gpd_fit$p_values
-    method_used <- gpd_fit$method_used
+                                  control = gpd_ctrl,
+                                  ...)
+    browser()
+    p_values <- gpd_fit$p_value
+    idx_gpd <- idx_fit[gpd_fit$status == "success"]
+    p_values[idx_gamma] <- gamma_fit$p_values[gamma_fit$method_used == "gamma"]
+    method_used[idx_gamma] <- "gamma"
   }
-
-  #-----------------------------------------------------------------------------
-  # Multiple testing adjustment
-
+  
+  ## ---------------------------------------------------------------------------
+  ## Multiple testing adjustment
+  ## ---------------------------------------------------------------------------
+  
   # Store unadjusted p-values
   p_unadjusted <- p_values
-
+  
   if (adjust_method == "none") {
     adjust_result <- NULL
-
+    
   } else {
-
+    
     adjust_result <- mult_adjust(p_values = p_values,
                                  method = adjust_method,
                                  true_null_method = adjust_ctrl$true_null_method,
@@ -286,14 +317,14 @@ compute_p_values <- function(
                                  perm_stats = adjust_ctrl$perm_stats,
                                  cores = adjust_ctrl$cores,
                                  verbose = adjust_ctrl$verbose)
-
+    
     p_values <- adjust_result$p_adjusted
   }
-
+  
   #-----------------------------------------------------------------------------
   callArgs <- mget(names(formals()),sys.frame(sys.nframe()))
   callArgs$gpdEstimate <- NULL
-
+  
   output <- list(p_values = p_values,
                  p_unadjusted = p_unadjusted,
                  p_empirical = p_empirical,
@@ -307,7 +338,7 @@ compute_p_values <- function(
                    adjust = adjust_ctrl
                  )
   )
-
+  
   return(output)
 }
 

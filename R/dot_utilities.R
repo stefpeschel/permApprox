@@ -12,10 +12,10 @@
     perm_stats <- perm_stats[perm_stats < 0]
     perm_stats <- - perm_stats
     obs_stats <- -obs_stats
-
+    
   } else if (alternative == "greater") {
     perm_stats <- perm_stats[perm_stats > 0]
-
+    
   } else {
     perm_stats <- abs(perm_stats)
     obs_stats <- abs(obs_stats)

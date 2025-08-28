@@ -39,3 +39,7 @@ vignettes/*.pdf
 
 # R Environment Variables
 .Renviron
+
+/R/waddR_package
+/data
+trials.Rmd

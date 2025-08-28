@@ -59,15 +59,17 @@ fit_gpd <- function(data,
                     thresh = NULL,
                     fit_method = "MLE1D",
                     tol = 1e-8,
-                    eps_fun = eps_power,
-                    eps_par = list(),
+                    epsilon = 0,
+                    #eps_fun = NULL,
+                    #eps_par = list(),
                     constraint = "unconstrained",
                     support_boundary = NULL,
                     gof_test = "ad",
                     ...) {
+  
   stopifnot(is.vector(data) & is.numeric(data))
   stopifnot(is.numeric(thresh) & length(thresh) == 1)
-
+  
   fit_method <- match.arg(fit_method,
                           choices = c("LME",
                                       "MLE1D",
@@ -76,39 +78,44 @@ fit_gpd <- function(data,
                                       "NLS2",
                                       "WNLLSM",
                                       "ZSE"))
-
+  
   constraint <- match.arg(constraint,
                           choices = c("unconstrained",
                                       "shape_nonneg",
                                       "support_at_obs",
                                       "support_at_max"))
-
+  
   gof_test <- match.arg(gof_test, choices = c("ad", "cvm", "none"))
   
-  stopifnot(is.function(eps_fun))
+  #stopifnot(is.function(eps_fun))
   
   #-----------------------------------------------------------------------------
   # Compute epsilon
   #-----------------------------------------------------------------------------
   
-  if (constraint %in% c("support_at_obs", "support_at_max")) {
-    eps <- do.call(
-      eps_fun,
-      c(list(data = data,
-             support_boundary = support_boundary,
-             thresh = thresh),
-        eps_par)
-    )
-    if (!is.numeric(eps) || length(eps) != 1L || eps < 0)
-      stop("`eps_fun` must return a single non-negative numeric value.")
-  } else {
-    eps <- NA
-  }
+  # if (constraint %in% c("support_at_obs", "support_at_max")) {
+  #   eps_list <- do.call(
+  #     eps_fun,
+  #     c(list(data = data,
+  #            support_boundary = support_boundary,
+  #            thresh = thresh),
+  #       eps_par)
+  #   )
+  #   eps <- eps_list$eps
+  #   eps_A <- eps_list$A
+  #   eps_B <- eps_list$B
+  #   if (!is.numeric(eps) || length(eps) != 1L || eps < 0)
+  #     stop("`eps_fun` must return a single non-negative numeric value.")
+  # } else {
+  #   eps <- eps_A <- eps_B <- NA
+  # }
+  
+  eps <- epsilon
   
   #-----------------------------------------------------------------------------
   # Exceedances
   #-----------------------------------------------------------------------------
-
+  
   exceedances <- data[data > thresh]
   excess      <- exceedances - thresh
   
@@ -118,7 +125,7 @@ fit_gpd <- function(data,
     eval_point      <- support_boundary - thresh
     excess_boundary <- eval_point + eps
   }
-
+  
   #-----------------------------------------------------------------------------
   # Shape-parameter constraints
   #-----------------------------------------------------------------------------
