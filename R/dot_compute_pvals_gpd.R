@@ -255,9 +255,9 @@
   if (isTRUE(control$verbose)) message("Run GPD fit ...")
   res_list <- run_gpd_fit(epsilons)
   if (isTRUE(control$verbose)) message("Done.")
-  
+  browser()
   ## -------------------------------------------------------------------------
-  ## Adaptive epsilon refinement if (underflow) zeros occur (subset)
+  ## Adaptive epsilon refinement (Fibonacci-ish bracketing: golden growth + bisection)
   ## -------------------------------------------------------------------------
   get_pvals_from_res <- function(res, idxs) vapply(res, `[[`, numeric(1), "p_value")
   
@@ -270,76 +270,142 @@
     as.integer(z)
   }
   
-  .bump_eps_par_add <- function(eps_par, step) {
-    if (is.list(eps_par)) {
-      if (!is.null(eps_par$target_factor)) {
-        eps_par$target_factor <- eps_par$target_factor + step
-      } else {
-        eps_par <- lapply(eps_par, 
-                          function(x) {
-                            if (is.numeric(x) && length(x) == 1) x + step else x
-                          })
-      }
-      return(eps_par)
-    } else if (is.numeric(eps_par)) {
-      return(eps_par + step)
-    } else {
-      return(eps_par)
-    }
-  }
-  browser()
-  max_iter <- 12L; step <- 0.5; step_min <- 0.25; step_max <- 64
-  eps_par_current <- control$eps_par
-  
   zero_idx <- .get_zero_idx(pvals_tmp, idx_valid)
-  iter <- 0L
   
-  while (length(zero_idx) > 0L && iter < max_iter) {
-    iter <- iter + 1L
+  if (isTRUE(control$zero_guard) && length(zero_idx) > 0L) {
+    ## Retry controls with sensible defaults
+    er <- control$eps_retry
+    step_init        <- er$step_init
+    grow_phi         <- er$grow
+    max_expand_iter  <- er$max_expand_iter
+    bisect_iter_max  <- er$bisect_iter_max
+    bisect_tol       <- er$bisect_tol
     
-    eps_par_current <- .bump_eps_par_add(eps_par_current, step)
+    eps_base_scalar  <- as.numeric(control$eps_par)
+    if (!is.finite(eps_base_scalar)) eps_base_scalar <- 0
     
-    if (isTRUE(control$verbose)) 
-      message(sprintf("Zero-guard round %d: zeros=%d, step=%.3g, eps_par=%.3g", 
-                      iter, length(zero_idx), step, eps_par_current))
+    ## ------------------ Expansion (golden growth) ------------------
+    step_cur <- step_init
+    eps_low  <- eps_base_scalar
+    eps_high <- NA_real_
     
-    epsilons <- .define_eps(
-      perm_stats   = perm_stats,
-      obs_stats    = obs_stats,
-      sample_size  = control$sample_size,
-      constraint   = control$constraint,
-      eps_rule     = control$eps_rule,
-      eps_par      = eps_par_current
-    )
+    expand_iter <- 0L
+    still_zeros <- length(zero_idx) > 0L
+    while (still_zeros && expand_iter < max_expand_iter) {
+      expand_iter <- expand_iter + 1L
+      prev_scalar <- eps_low
+      cand_scalar <- eps_low + step_cur
+      eps_par_try <- cand_scalar
+      
+      epsilons <- .define_eps(
+        perm_stats   = perm_stats,
+        obs_stats    = obs_stats,
+        sample_size  = control$sample_size,
+        constraint   = control$constraint,
+        eps_rule     = control$eps_rule,
+        eps_par      = eps_par_try
+      )
+      
+      res_list_zero <- run_gpd_fit(epsilons, idx_subset = zero_idx)
+      
+      ## Update p-values
+      pvals_tmp[zero_idx] <- vapply(res_list_zero, `[[`, numeric(1), "p_value")
+      
+      zero_idx_new <- .get_zero_idx(pvals_tmp, idx_valid)
+      if (length(zero_idx_new) == 0L) {
+        ## bracket found after this probe
+        eps_high <- cand_scalar
+        eps_low  <- prev_scalar
+        
+        ## Optional immediate backoff: try half the step to catch overshoot
+        mid_scalar   <- 0.5 * (eps_low + eps_high)
+        eps_par_try2 <- mid_scalar
+        
+        epsilons2 <- .define_eps(
+          perm_stats   = perm_stats,
+          obs_stats    = obs_stats,
+          sample_size  = control$sample_size,
+          constraint   = control$constraint,
+          eps_rule     = control$eps_rule,
+          eps_par      = eps_par_try2
+        )
+        
+        ## Refit only the *current zero set* for speed.
+        res_list_zero2 <- run_gpd_fit(epsilons2, idx_subset = zero_idx)
+        
+        ## Update p-values
+        pvals_tmp[zero_idx] <- vapply(res_list_zero2, `[[`, numeric(1), "p_value")
+        
+        zero_idx_new2 <- .get_zero_idx(pvals_tmp, idx_valid)
+        if (length(zero_idx_new2) == 0L) {
+          ## Half-step still clears zeros → tighten upper bracket (go further back).
+          eps_high <- mid_scalar
+          ## Note: zero_idx remains the last failing set for subsequent bisection.
+        } else {
+          ## Half-step brought zeros back → move low up and keep these as the active zero set.
+          eps_low  <- mid_scalar
+          zero_idx <- zero_idx_new2
+        }
+        break
+      } else {
+        ## continue expanding from the new baseline
+        eps_low   <- cand_scalar
+        zero_idx  <- zero_idx_new
+        step_cur  <- step_cur * grow_phi
+      }
+    }
     
-    res_list_zero <- run_gpd_fit(epsilons, idx_subset = zero_idx)
-    pvals_tmp[zero_idx] <- vapply(res_list_zero, `[[`, numeric(1), "p_value")
+    ## ------------------ Bisection within [eps_low, eps_high] ------------------
+    if (is.finite(eps_high) && (eps_high - eps_low) > bisect_tol) {
+      b_it <- 0L
+      while (b_it < bisect_iter_max && length(zero_idx) > 0L && (eps_high - eps_low) > bisect_tol) {
+        b_it <- b_it + 1L
+        mid <- 0.5 * (eps_low + eps_high)
+        eps_par_try <- .set_eps_scalar(control$eps_par, mid)
+        
+        epsilons <- .define_eps(
+          perm_stats   = perm_stats,
+          obs_stats    = obs_stats,
+          sample_size  = control$sample_size,
+          constraint   = control$constraint,
+          eps_rule     = control$eps_rule,
+          eps_par      = eps_par_try
+        )
+        
+        res_list_zero <- run_gpd_fit(epsilons, idx_subset = zero_idx)
+        pvals_tmp[zero_idx] <- vapply(res_list_zero, `[[`, numeric(1), "p_value")
+        
+        zero_idx_new <- .get_zero_idx(pvals_tmp, idx_valid)
+        if (length(zero_idx_new) == 0L) {
+          eps_high <- mid
+        } else {
+          eps_low  <- mid
+        }
+        zero_idx <- zero_idx_new
+      }
+      ## Adopt the minimal epsilon that clears zeros (eps_high if finite, else eps_low)
+      final_scalar <- if (is.finite(eps_high)) eps_high else eps_low
+      control$eps_par <- .set_eps_scalar(control$eps_par, final_scalar)
+    } else if (length(zero_idx) == 0L) {
+      ## Zeros already cleared during expansion; use eps_low->eps_high bracket high
+      final_scalar <- if (is.finite(eps_high)) eps_high else eps_low
+      control$eps_par <- .set_eps_scalar(control$eps_par, final_scalar)
+    } else {
+      ## No bracket found (hit max expansion); keep last scalar (eps_low)
+      control$eps_par <- .set_eps_scalar(control$eps_par, eps_low)
+    }
     
-    res_df$shape[zero_idx]       <- vapply(res_list_zero, `[[`, numeric(1),  "shape")
-    res_df$scale[zero_idx]       <- vapply(res_list_zero, `[[`, numeric(1),  "scale")
-    res_df$gof_p_value[zero_idx] <- vapply(res_list_zero, `[[`, numeric(1),  "gof_p_value")
-    res_df$epsilon[zero_idx]     <- vapply(res_list_zero, `[[`, numeric(1),  "epsilon")
-    
-    new_zero_idx <- .get_zero_idx(pvals_tmp, idx_valid)
-    drop <- length(zero_idx) - length(new_zero_idx)
-    frac <- if (length(zero_idx) > 0L) drop / length(zero_idx) else 1
-    if (frac < 0.05)      step <- min(step * 3, step_max)
-    else if (frac < 0.15) step <- min(step * 2, step_max)
-    else if (frac > 0.50) step <- max(step / 2, step_min)
-    
-    zero_idx <- new_zero_idx
-  }
-  
-  if (iter > 0L) {
+    ## Refit of all valid tests at the final epsilon
     if (isTRUE(control$verbose)) 
       message("Refitting all tests with final epsilon after zero-guard ...")
+    
     epsilons <- .define_eps(
       perm_stats   = perm_stats,
       obs_stats    = obs_stats,
       sample_size  = control$sample_size,
       constraint   = control$constraint,
       eps_rule     = control$eps_rule,
-      eps_par      = eps_par_current
+      eps_par      = control$eps_par
     )
     res_list <- run_gpd_fit(epsilons)
     pvals_tmp[idx_valid] <- vapply(res_list, `[[`, numeric(1),  "p_value")

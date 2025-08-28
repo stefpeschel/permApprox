@@ -105,13 +105,12 @@ make_gpd_ctrl <- function(
     eps_rule = "slls",
     eps_par = 0.25,
     zero_guard = TRUE,
-    eps_retry  = list(
-      max_iter = 20L,
-      min_drop = 3,
-      step = 0.5,
-      step_min = 0.25,
-      step_max = 10,
-      growth_cap = 64
+    eps_retry = list(
+      step_init       = 10,
+      grow            = (1 + sqrt(5)) / 2,   # ~1.618
+      max_expand_iter = 20L,
+      bisect_iter_max = 30L,
+      bisect_tol      = 1e-6    
     ),
     sample_size = NULL,
     tol = 1e-8,
