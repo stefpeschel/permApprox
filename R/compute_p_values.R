@@ -290,7 +290,7 @@ compute_p_values <- function(
                                   fit_thresh = fit_thresh,
                                   control = gpd_ctrl,
                                   ...)
-    browser()
+    
     p_values <- p_empirical
     idx_gpd <- gpd_fit$status == "success"
     p_values[idx_gpd] <- gpd_fit$p_value[idx_gpd]

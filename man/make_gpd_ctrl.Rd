@@ -12,7 +12,7 @@ make_gpd_ctrl(
   eps_par = 0.25,
   zero_guard = TRUE,
   eps_retry = list(step_init = 10, grow = (1 + sqrt(5))/2, max_expand_iter = 20L,
-    bisect_iter_max = 30L, bisect_tol = 1e-06),
+    bisect_iter_max = 30L, bisect_tol = 0.01),
   sample_size = NULL,
   tol = 1e-08,
   thresh_method = "ftr_min5",

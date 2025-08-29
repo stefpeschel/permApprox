@@ -111,8 +111,8 @@
                              workers = min(control$cores, length(idx_non_dis)))
     on.exit(future::plan(old_plan), add = TRUE)
     
-    res_list_thr <- with_progress({
-      if (control$verbose) p <- progressor(along = idx_non_dis)
+    res_list_thr <- progressr::with_progress({
+      if (control$verbose) p <- progressr::progressor(along = idx_non_dis)
       future.apply::future_lapply(
         idx_non_dis,
         function(j) {
@@ -120,13 +120,13 @@
           if (control$verbose) p()
           res
         },
-        future.packages = c("permApprox"),
+        future.packages = c("permApprox","progressr"),
         future.seed = TRUE
       )
     })
   } else {
     res_list_thr <- with_progress({
-      if (control$verbose) p <- progressor(along = idx_non_dis)
+      if (control$verbose) p <- progressr::progressor(along = idx_non_dis)
       lapply(idx_non_dis, function(j) {
         res <- find_thresh_one(j)
         if (control$verbose) p()
@@ -169,7 +169,7 @@
   ## -------------------------------------------------------------------------
   ## Helper to run GPD fit with given epsilon vector on an index subset
   ## -------------------------------------------------------------------------
-  run_gpd_fit <- function(epsilons, idx_subset = idx_valid) {
+  run_gpd_fit <- function(epsilons, idx_subset = idx_valid, use_progress = control$verbose) {
     fit_one_gpd <- function(i) {
       obs_i    <- obs_stats[i]
       perm_i   <- perm_stats[, i]
@@ -224,21 +224,34 @@
         future::multicore else future::multisession
       old_plan <- future::plan(strategy, workers = n_workers_fit)
       on.exit(future::plan(old_plan), add = TRUE)
-      res_list <- future.apply::future_lapply(
-        idx_subset, 
-        function(i) fit_one_gpd(i), 
-        future.packages = c("permApprox"),
-        future.seed = TRUE)
+      
+      if (isTRUE(use_progress)) {
+        res_list <- with_progress({
+          p <- progressr::progressor(along = idx_subset)
+          future.apply::future_lapply(
+            idx_subset, 
+            function(i) { r <- fit_one_gpd(i); p(); r },
+            future.packages = c("permApprox","progressr"),
+            future.seed = TRUE
+          )
+        })
+      } else {
+        res_list <- future.apply::future_lapply(
+          idx_subset, 
+          function(i) fit_one_gpd(i), 
+          future.packages = c("permApprox","progressr"),
+          future.seed = TRUE
+        )
+      }
     } else {
-      pb <- utils::txtProgressBar(min = 0, max = length(idx_subset), style = 3)
-      on.exit(close(pb), add = TRUE)
-      k <- 0L
-      res_list <- lapply(idx_subset, 
-                         function(i) { 
-                           r <- fit_one_gpd(i)
-                           k <<- k + 1L
-                           utils::setTxtProgressBar(pb, k); r 
-                         })
+      if (isTRUE(use_progress)) {
+        res_list <- with_progress({
+          p <- progressr::progressor(along = idx_subset)
+          lapply(idx_subset, function(i) { r <- fit_one_gpd(i); p(); r })
+        })
+      } else {
+        res_list <- lapply(idx_subset, function(i) fit_one_gpd(i))
+      }
     }
     res_list
   }
@@ -256,11 +269,12 @@
   )
   
   if (isTRUE(control$verbose)) message("Run GPD fit ...")
-  res_list <- run_gpd_fit(epsilons)
+  res_list <- run_gpd_fit(epsilons, use_progress = isTRUE(control$verbose))
   if (isTRUE(control$verbose)) message("Done.")
-  
   ## -------------------------------------------------------------------------
   ## Adaptive epsilon refinement (fit subset during search; full refit at end)
+  ## now with per-iteration reporting of target_factor (eps_par) and zero counts
+  ## and dynamic formatting of target_factor based on bisect tolerance
   ## -------------------------------------------------------------------------
   get_pvals_from_res <- function(res, idxs) vapply(res, `[[`, numeric(1), "p_value")
   
@@ -278,6 +292,14 @@
     sum(is.finite(pv) & pv <= min_pos)
   }
   
+  # digits to show for target_factor based on bisect tolerance
+  .digits_from_tol <- function(tol) {
+    if (!is.finite(tol) || tol <= 0) return(6L)
+    d <- ceiling(-log10(tol)) + 1L  # +1 to make changes at the tolerance visible
+    d <- max(0L, min(16L, d))       # clamp to sane bounds
+    as.integer(d)
+  }
+  
   zero_idx <- .get_zero_idx(pvals_tmp, idx_valid)
   
   if (isTRUE(control$zero_guard) && length(zero_idx) > 0L) {
@@ -292,7 +314,7 @@
         eps_rule     = control$eps_rule,
         eps_par      = tf
       )
-      res_sub <- run_gpd_fit(eps_try, idx_subset = idx_subset)
+      res_sub <- run_gpd_fit(eps_try, idx_subset = idx_subset, use_progress = FALSE)
       pv_sub  <- vapply(res_sub, `[[`, numeric(1), "p_value")
       list(res = res_sub, pvals = pv_sub)
     }
@@ -310,13 +332,16 @@
     max_bis <- control$eps_retry$bisect_iter_max
     bis_tol <- control$eps_retry$bisect_tol
     
+    tf_digits <- .digits_from_tol(bis_tol)
+    tf_fmt    <- function(x) sprintf(paste0("%.", tf_digits, "f"), x)
+    
     # Work only on the subset that currently underflows
     need_idx <- zero_idx
     
     if (isTRUE(control$verbose)) {
       message(sprintf(
-        "Zero-guard: start — tf0=%.6g, zeros=%d (of %d selected)",
-        tf0, length(zero_idx), length(idx_valid)
+        "Zero-guard: start — tf0=%s, zeros=%d (of %d selected)",
+        tf_fmt(tf0), length(zero_idx), length(idx_valid)
       ))
     }
     
@@ -333,14 +358,14 @@
       ev <- eval_tf_subset(tf_try, need_idx)
       zeros_now <- .count_zeros(ev$pvals)
       if (isTRUE(control$verbose)) {
-        message(sprintf("  expand %02d: tf=%.6g → zeros in subset=%d / %d",
-                        exp_it, tf_try, zeros_now, length(need_idx)))
+        message(sprintf("  expand %02d: tf=%s → zeros in subset=%d / %d",
+                        exp_it, tf_fmt(tf_try), zeros_now, length(need_idx)))
       }
       
       if (!any_zeros(ev$pvals)) {
         tf_hi <- tf_try   # bracket found
         if (isTRUE(control$verbose)) {
-          message(sprintf("  bracket found at tf=%.6g (subset zeros=0)", tf_hi))
+          message(sprintf("  bracket found at tf=%s (subset zeros=0)", tf_fmt(tf_hi)))
         }
         break
       } else {
@@ -379,8 +404,8 @@
         ev <- eval_tf_subset(tf_mid, ref_idx)
         zeros_mid <- .count_zeros(ev$pvals)
         if (isTRUE(control$verbose)) {
-          message(sprintf("  bisect %02d: tf=%.6g → zeros in subset=%d / %d",
-                          bis_it, tf_mid, zeros_mid, length(ref_idx)))
+          message(sprintf("  bisect %02d: tf=%s → zeros in subset=%d / %d",
+                          bis_it, tf_fmt(tf_mid), zeros_mid, length(ref_idx)))
         }
         
         if (any_zeros(ev$pvals)) {
@@ -408,9 +433,9 @@
       eps_par      = final_tf
     )
     if (isTRUE(control$verbose)) {
-      message("Zero-guard: refitting all selected tests with target_factor = ", signif(final_tf, 6))
+      message("Zero-guard: refitting all selected tests with target_factor = ", tf_fmt(final_tf))
     }
-    res_list <- run_gpd_fit(eps_final, idx_subset = idx_valid)
+    res_list <- run_gpd_fit(eps_final, idx_subset = idx_valid, use_progress = FALSE)
     pvals_tmp[idx_valid] <- vapply(res_list, `[[`, numeric(1), "p_value")
     
     if (isTRUE(control$verbose)) {

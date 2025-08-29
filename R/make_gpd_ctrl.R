@@ -110,7 +110,7 @@ make_gpd_ctrl <- function(
       grow            = (1 + sqrt(5)) / 2,   # ~1.618 (golden ratio)
       max_expand_iter = 20L,
       bisect_iter_max = 30L,
-      bisect_tol      = 1e-6    
+      bisect_tol      = 0.01
     ),
     sample_size = NULL,
     tol = 1e-8,
