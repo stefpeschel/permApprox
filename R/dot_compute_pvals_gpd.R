@@ -169,48 +169,50 @@
   ## -------------------------------------------------------------------------
   ## Helper to run GPD fit with given epsilon vector on an index subset
   ## -------------------------------------------------------------------------
+  
+  fit_one_gpd <- function(i) {
+    obs_i    <- obs_stats[i]
+    perm_i   <- perm_stats[, i]
+    eps_i    <- epsilons[i]
+    thr_i    <- thresh_vec[i]
+    exceed_i <- perm_i[perm_i > thr_i]
+    bound_i  <- support_boundaries[i]
+    
+    fit_res <- fit_gpd(
+      data             = exceed_i,
+      thresh           = thr_i,
+      fit_method       = control$fit_method,
+      tol              = control$tol,
+      epsilon          = eps_i,
+      constraint       = control$constraint,
+      support_boundary = bound_i,
+      gof_test         = control$gof_test,
+      gof_alpha        = control$gof_alpha,
+      ...
+    )
+    
+    gof_fail <- is.finite(fit_res$p_value) && (fit_res$p_value < control$gof_alpha)
+    
+    p_tail <- (n_exceed_vec[i] / n_perm) * .pgpd_upper_tail(
+      q        = obs_i - thr_i,
+      location = 0,
+      scale    = fit_res$scale,
+      shape    = fit_res$shape
+    )
+    p_tail_valid <- is.finite(p_tail) && p_tail >= 0 && p_tail <= 1
+    
+    list(
+      p_value     = if (!gof_fail && p_tail_valid) p_tail else NA_real_,
+      shape       = fit_res$shape,
+      scale       = fit_res$scale,
+      gof_p_value = fit_res$p_value,
+      epsilon     = fit_res$epsilon,
+      ok          = (!gof_fail && p_tail_valid),
+      gof_fail    = gof_fail
+    )
+  }
+  
   run_gpd_fit <- function(epsilons, idx_subset = idx_valid, use_progress = control$verbose) {
-    fit_one_gpd <- function(i) {
-      obs_i    <- obs_stats[i]
-      perm_i   <- perm_stats[, i]
-      eps_i    <- epsilons[i]
-      thr_i    <- thresh_vec[i]
-      exceed_i <- perm_i[perm_i > thr_i]
-      bound_i  <- support_boundaries[i]
-      
-      fit_res <- fit_gpd(
-        data             = exceed_i,
-        thresh           = thr_i,
-        fit_method       = control$fit_method,
-        tol              = control$tol,
-        epsilon          = eps_i,
-        constraint       = control$constraint,
-        support_boundary = bound_i,
-        gof_test         = control$gof_test,
-        gof_alpha        = control$gof_alpha,
-        ...
-      )
-      
-      gof_fail <- is.finite(fit_res$p_value) && (fit_res$p_value < control$gof_alpha)
-      
-      p_tail <- (n_exceed_vec[i] / n_perm) * .pgpd_upper_tail(
-        q        = obs_i - thr_i,
-        location = 0,
-        scale    = fit_res$scale,
-        shape    = fit_res$shape
-      )
-      p_tail_valid <- is.finite(p_tail) && p_tail >= 0 && p_tail <= 1
-      
-      list(
-        p_value     = if (!gof_fail && p_tail_valid) p_tail else NA_real_,
-        shape       = fit_res$shape,
-        scale       = fit_res$scale,
-        gof_p_value = fit_res$p_value,
-        epsilon     = fit_res$epsilon,
-        ok          = (!gof_fail && p_tail_valid),
-        gof_fail    = gof_fail
-      )
-    }
     
     n_workers_fit <- if (control$cores > 1L && length(idx_subset) > control$cores) {
       min(control$cores, length(idx_subset))
@@ -226,11 +228,16 @@
       on.exit(future::plan(old_plan), add = TRUE)
       
       if (isTRUE(use_progress)) {
-        res_list <- with_progress({
-          p <- progressr::progressor(along = idx_subset)
+        res_list <- progressr::with_progress({
           future.apply::future_lapply(
             idx_subset, 
-            function(i) { r <- fit_one_gpd(i); p(); r },
+            function(i) { 
+              if (control$verbose) {
+                p <- progressr::progressor(steps = 1)
+                on.exit(p(), add = TRUE)
+              }
+              fit_one_gpd(i)
+            },
             future.packages = c("permApprox","progressr"),
             future.seed = TRUE
           )
@@ -245,9 +252,14 @@
       }
     } else {
       if (isTRUE(use_progress)) {
-        res_list <- with_progress({
-          p <- progressr::progressor(along = idx_subset)
-          lapply(idx_subset, function(i) { r <- fit_one_gpd(i); p(); r })
+        res_list <- progressr::with_progress({
+          lapply(idx_subset, function(i) {
+            if (control$verbose) {
+              p <- progressr::progressor(steps = 1)
+              on.exit(p(), add = TRUE)
+            }
+            fit_one_gpd(i)
+          })
         })
       } else {
         res_list <- lapply(idx_subset, function(i) fit_one_gpd(i))
@@ -269,13 +281,56 @@
   )
   
   if (isTRUE(control$verbose)) message("Run GPD fit ...")
-  res_list <- run_gpd_fit(epsilons, use_progress = isTRUE(control$verbose))
+  
+  use_progress = isTRUE(control$verbose)
+  
+  n_workers_fit <- if (control$cores > 1L && length(idx_valid) > control$cores) {
+    min(control$cores, length(idx_valid))
+  } else {
+    1L
+  }
+  run_parallel_fit <- (n_workers_fit > 1L)
+  
+  if (run_parallel_fit) {
+    strategy <- if (.Platform$OS.type != "windows" && future::supportsMulticore()) 
+      future::multicore else future::multisession
+    old_plan <- future::plan(strategy, workers = n_workers_fit)
+    on.exit(future::plan(old_plan), add = TRUE)
+    
+    res_list <- progressr::with_progress({
+      if (control$verbose) p <- progressr::progressor(along = idx_valid)
+      
+      future.apply::future_lapply(
+        idx_valid, 
+        function(j) {
+          res <- fit_one_gpd(j)
+          if (control$verbose) p()
+          res
+        },
+        future.packages = c("permApprox","progressr"),
+        future.seed = TRUE
+      )
+    })
+    
+  } else {
+    res_list <- progressr::with_progress({
+      if (control$verbose) p <- progressr::progressor(along = idx_valid)
+      lapply(idx_valid, function(j) {
+        res <- fit_one_gpd(j)
+        if (control$verbose) p()
+        res
+      })
+    })
+  }
+  
+  #res_list <- run_gpd_fit(epsilons, use_progress = isTRUE(control$verbose))
   if (isTRUE(control$verbose)) message("Done.")
   ## -------------------------------------------------------------------------
   ## Adaptive epsilon refinement (fit subset during search; full refit at end)
   ## now with per-iteration reporting of target_factor (eps_par) and zero counts
   ## and dynamic formatting of target_factor based on bisect tolerance
   ## -------------------------------------------------------------------------
+  
   get_pvals_from_res <- function(res, idxs) vapply(res, `[[`, numeric(1), "p_value")
   
   pvals_tmp <- res_df$p_value
