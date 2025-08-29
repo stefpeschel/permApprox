@@ -15,14 +15,6 @@
 #'
 #' @param tol Numeric. Convergence tolerance (default 1e-8).
 #'
-#' @param eps_fun Function that returns the ε to use. Possible options are 
-#'   \code{\link{eps_fixed}}, \code{\link{eps_fixed}}, \code{\link{eps_fixed}},
-#'   or a user-defined function. It is called as
-#'        `eps_fun(data = data, support_boundary = support_boundary,
-#'                 thresh = thresh, !!!eps_par)`.
-#'                 
-#' @param eps_par List of additional named arguments forwarded to `eps_fun`.
-#'
 #' @param constraint Character. Type of constraint to enforce during GPD fitting.
 #'   Options are \code{"unconstrained"}, \code{"shape_nonneg"},
 #'   \code{"support_at_obs"}, and \code{"support_at_max"}.
@@ -60,10 +52,8 @@ fit_gpd <- function(data,
                     fit_method = "MLE1D",
                     tol = 1e-8,
                     epsilon = 0,
-                    #eps_fun = NULL,
-                    #eps_par = list(),
                     constraint = "unconstrained",
-                    support_boundary = NULL,
+                    support_boundary = NA_real_,
                     gof_test = "ad",
                     ...) {
   
@@ -87,31 +77,6 @@ fit_gpd <- function(data,
   
   gof_test <- match.arg(gof_test, choices = c("ad", "cvm", "none"))
   
-  #stopifnot(is.function(eps_fun))
-  
-  #-----------------------------------------------------------------------------
-  # Compute epsilon
-  #-----------------------------------------------------------------------------
-  
-  # if (constraint %in% c("support_at_obs", "support_at_max")) {
-  #   eps_list <- do.call(
-  #     eps_fun,
-  #     c(list(data = data,
-  #            support_boundary = support_boundary,
-  #            thresh = thresh),
-  #       eps_par)
-  #   )
-  #   eps <- eps_list$eps
-  #   eps_A <- eps_list$A
-  #   eps_B <- eps_list$B
-  #   if (!is.numeric(eps) || length(eps) != 1L || eps < 0)
-  #     stop("`eps_fun` must return a single non-negative numeric value.")
-  # } else {
-  #   eps <- eps_A <- eps_B <- NA
-  # }
-  
-  eps <- epsilon
-  
   #-----------------------------------------------------------------------------
   # Exceedances
   #-----------------------------------------------------------------------------
@@ -121,9 +86,9 @@ fit_gpd <- function(data,
   
   # Evaluation point / support boundary shift
   eval_point      <- excess_boundary <- NULL
-  if (!is.null(support_boundary)) {
+  if (!is.na(support_boundary)) {
     eval_point      <- support_boundary - thresh
-    excess_boundary <- eval_point + eps
+    excess_boundary <- eval_point + epsilon
   }
   
   #-----------------------------------------------------------------------------
@@ -168,7 +133,7 @@ fit_gpd <- function(data,
   #-----------------------------------------------------------------------------
   
   if (inherits(fit, "try-error")) {
-    list(shape = NA, scale = NA, p_value = 0, epsilon = eps)
+    list(shape = NA, scale = NA, p_value = 0, epsilon = epsilon)
   } else {
     shape <- fit$shape; scale <- fit$scale
     
@@ -180,7 +145,7 @@ fit_gpd <- function(data,
       if (inherits(tmp, "try-error")) 0 else tmp$p.value
     }
     
-    list(shape = shape, scale = scale, p_value = p_val, epsilon = eps)
+    list(shape = shape, scale = scale, p_value = p_val, epsilon = epsilon)
   }
 }
 

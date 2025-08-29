@@ -161,6 +161,7 @@
   ## -------------------------------------------------------------------------
   ## Support boundary vector according to constraint (subset)
   ## -------------------------------------------------------------------------
+  
   support_boundaries <- rep(NA_real_, n_test)
   sb <- switch(control$constraint,
                "support_at_max" = rep(max(obs_stats, na.rm = TRUE), length(idx_valid)),
@@ -172,7 +173,7 @@
   ## Helper to run GPD fit with given epsilon vector on an index subset
   ## -------------------------------------------------------------------------
   
-  fit_one_gpd <- function(i, eps) {
+  .fit_one_gpd <- function(i, eps) {
     obs_i    <- obs_stats[i]
     perm_i   <- perm_stats[, i]
     eps_i    <- eps[i]
@@ -247,7 +248,7 @@
       future.apply::future_lapply(
         idx_valid, 
         function(j) {
-          res <- fit_one_gpd(j, eps = epsilons)
+          res <- .fit_one_gpd(j, eps = epsilons)
           if (verbose) p()
           res
         },
@@ -260,7 +261,7 @@
     res_list <- progressr::with_progress({
       if (verbose) p <- progressr::progressor(along = idx_valid)
       lapply(idx_valid, function(j) {
-        res <- fit_one_gpd(j, eps = epsilons)
+        res <- .fit_one_gpd(j, eps = epsilons)
         if (verbose) p()
         res
       })
@@ -273,7 +274,9 @@
   ## Optional: Adaptive epsilon refinement
   ## -------------------------------------------------------------------------
   
-  if (isTRUE(control$zero_guard)) {
+  constr_fit <- control$constraint != "unconstrained"
+  
+  if (isTRUE(constr_fit) && isTRUE(control$zero_guard)) {
     
     # Index of zero (or underflow) p-values
     .get_zero_idx <- function(pv, idx) {
@@ -316,14 +319,14 @@
           
           res_list <- future.apply::future_lapply(
             idx_subset, 
-            function(i) fit_one_gpd(i, eps = epsilons), 
+            function(i) .fit_one_gpd(i, eps = epsilons), 
             future.packages = c("permApprox","progressr"),
             future.seed = TRUE
           )
         } else {
           
           res_list <- lapply(idx_subset,
-                             function(i) fit_one_gpd(i, eps = epsilons))
+                             function(i) .fit_one_gpd(i, eps = epsilons))
           
         }
         res_list
@@ -492,7 +495,7 @@
           future.apply::future_lapply(
             idx_valid, 
             function(j) {
-              res <- fit_one_gpd(j, eps = eps_final)
+              res <- .fit_one_gpd(j, eps = eps_final)
               if (verbose) p()
               res
             },
@@ -505,7 +508,7 @@
         res_list <- progressr::with_progress({
           if (verbose) p <- progressr::progressor(along = idx_valid)
           lapply(idx_valid, function(j) {
-            res <- fit_one_gpd(j, eps = eps_final)
+            res <- .fit_one_gpd(j, eps = eps_final)
             if (verbose) p()
             res
           })
@@ -525,7 +528,7 @@
   ## -------------------------------------------------------------------------
   ## Collect results into data.frame
   ## -------------------------------------------------------------------------
-  res_df$p_value[idx_valid]      <- pvals_tmp[idx_valid]
+  res_df$p_value[idx_valid]      <- vapply(res_list, `[[`, numeric(1), "p_value")
   res_df$shape[idx_valid]        <- vapply(res_list, `[[`, numeric(1),  "shape")
   res_df$scale[idx_valid]        <- vapply(res_list, `[[`, numeric(1),  "scale")
   res_df$gof_p_value[idx_valid]  <- vapply(res_list, `[[`, numeric(1),  "gof_p_value")

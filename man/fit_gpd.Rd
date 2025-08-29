@@ -11,7 +11,7 @@ fit_gpd(
   tol = 1e-08,
   epsilon = 0,
   constraint = "unconstrained",
-  support_boundary = NULL,
+  support_boundary = NA_real_,
   gof_test = "ad",
   ...
 )
@@ -40,14 +40,6 @@ Options are \code{"ad"} (Anderson-Darling), \code{"cvm"} (Cramér-von Mises),
 or \code{"none"}. Default is \code{"ad"}.}
 
 \item{...}{Further arguments passed to low-level fitting helpers.}
-
-\item{eps_fun}{Function that returns the ε to use. Possible options are 
-\code{\link{eps_fixed}}, \code{\link{eps_fixed}}, \code{\link{eps_fixed}},
-or a user-defined function. It is called as
-     `eps_fun(data = data, support_boundary = support_boundary,
-              thresh = thresh, !!!eps_par)`.}
-
-\item{eps_par}{List of additional named arguments forwarded to `eps_fun`.}
 }
 \value{
 A named list with components:

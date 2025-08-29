@@ -132,7 +132,6 @@
                           thresh = thresh,
                           fit_method = "LME",
                           constraint = "unconstrained",
-                          support_boundary = NULL,
                           gof_test = gof_test)#,
     #...)
     
