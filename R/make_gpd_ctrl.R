@@ -107,7 +107,7 @@ make_gpd_ctrl <- function(
     zero_guard = TRUE,
     eps_retry = list(
       step_init       = 10,
-      grow            = (1 + sqrt(5)) / 2,   # ~1.618
+      grow            = (1 + sqrt(5)) / 2,   # ~1.618 (golden ratio)
       max_expand_iter = 20L,
       bisect_iter_max = 30L,
       bisect_tol      = 1e-6    

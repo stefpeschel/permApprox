@@ -2,20 +2,36 @@
 % Please edit documentation in R/dot_compute_pvals_gpd.R
 \name{.compute_pvals_gpd}
 \alias{.compute_pvals_gpd}
-\title{Compute p-values via GPD tail approximation}
+\title{Compute p-values via GPD tail approximation (constrained or unconstrained)}
 \usage{
 .compute_pvals_gpd(
-  p_empirical,
   obs_stats,
   perm_stats,
-  n_test,
+  p_empirical,
   fit_thresh,
-  alternative,
   control,
   ...
 )
 }
+\arguments{
+\item{obs_stats}{Numeric vector of observed statistics (length = n_test).}
+
+\item{perm_stats}{Numeric matrix of permutation statistics with shape B x n_test.
+If `control$include_obs` is TRUE, `obs_stats` will be row-bound to `perm_stats`
+before thresholding / fitting.}
+
+\item{p_empirical}{Numeric vector of empirical p-values (length = n_test).}
+
+\item{fit_thresh}{Numeric scalar; threshold under which GPD fit is attempted.}
+
+\item{control}{List created by `make_gpd_ctrl()`.}
+}
+\value{
+A data.frame with columns p_empirical, p_value (final), thresh, n_exceed,
+  shape, scale, epsilon, gof_p_value, status (factor), discrete (logical).
+  The list of exceedances used for fitting is attached as attribute `perm_stats_fit`.
+}
 \description{
-Compute p-values via GPD tail approximation
+Compute p-values via GPD tail approximation (constrained or unconstrained)
 }
 \keyword{internal}

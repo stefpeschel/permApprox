@@ -291,10 +291,10 @@ compute_p_values <- function(
                                   control = gpd_ctrl,
                                   ...)
     browser()
-    p_values <- gpd_fit$p_value
-    idx_gpd <- idx_fit[gpd_fit$status == "success"]
-    p_values[idx_gamma] <- gamma_fit$p_values[gamma_fit$method_used == "gamma"]
-    method_used[idx_gamma] <- "gamma"
+    p_values <- p_empirical
+    idx_gpd <- gpd_fit$status == "success"
+    p_values[idx_gpd] <- gpd_fit$p_value[idx_gpd]
+    method_used[idx_gpd] <- "gpd"
   }
   
   ## ---------------------------------------------------------------------------

@@ -9,8 +9,7 @@ fit_gpd(
   thresh = NULL,
   fit_method = "MLE1D",
   tol = 1e-08,
-  eps_fun = eps_power,
-  eps_par = list(),
+  epsilon = 0,
   constraint = "unconstrained",
   support_boundary = NULL,
   gof_test = "ad",
@@ -28,14 +27,6 @@ Must be one of \code{"LME"}, \code{"MLE1D"}, \code{"MLE2D"}, \code{"MOM"},
 
 \item{tol}{Numeric. Convergence tolerance (default 1e-8).}
 
-\item{eps_fun}{Function that returns the ε to use. Possible options are 
-\code{\link{eps_fixed}}, \code{\link{eps_fixed}}, \code{\link{eps_fixed}},
-or a user-defined function. It is called as
-     `eps_fun(data = data, support_boundary = support_boundary,
-              thresh = thresh, !!!eps_par)`.}
-
-\item{eps_par}{List of additional named arguments forwarded to `eps_fun`.}
-
 \item{constraint}{Character. Type of constraint to enforce during GPD fitting.
 Options are \code{"unconstrained"}, \code{"shape_nonneg"},
 \code{"support_at_obs"}, and \code{"support_at_max"}.}
@@ -49,6 +40,14 @@ Options are \code{"ad"} (Anderson-Darling), \code{"cvm"} (Cramér-von Mises),
 or \code{"none"}. Default is \code{"ad"}.}
 
 \item{...}{Further arguments passed to low-level fitting helpers.}
+
+\item{eps_fun}{Function that returns the ε to use. Possible options are 
+\code{\link{eps_fixed}}, \code{\link{eps_fixed}}, \code{\link{eps_fixed}},
+or a user-defined function. It is called as
+     `eps_fun(data = data, support_boundary = support_boundary,
+              thresh = thresh, !!!eps_par)`.}
+
+\item{eps_par}{List of additional named arguments forwarded to `eps_fun`.}
 }
 \value{
 A named list with components:

@@ -8,8 +8,12 @@ make_gpd_ctrl(
   fit_method = "LME",
   include_obs = FALSE,
   constraint = "support_at_max",
-  eps_fun = eps_power,
-  eps_par = list(),
+  eps_rule = "slls",
+  eps_par = 0.25,
+  zero_guard = TRUE,
+  eps_retry = list(step_init = 10, grow = (1 + sqrt(5))/2, max_expand_iter = 20L,
+    bisect_iter_max = 30L, bisect_tol = 1e-06),
+  sample_size = NULL,
   tol = 1e-08,
   thresh_method = "ftr_min5",
   thresh0 = NULL,
@@ -40,14 +44,36 @@ Default: "support_at_max". Options:
   observed test statistics (in the multiple testing case).}
 }}
 
-\item{eps_fun}{Function that returns the ε to use. Possible options are 
-\code{\link{eps_fixed}}, \code{\link{eps_factor}}, \code{\link{eps_power}},
-or a user-defined function. It is called as
-     `eps_fun(n = length(data), data = data,
-              support_boundary = support_boundary,
-              thresh = thresh, !!!eps_par)`.}
+\item{eps_rule}{Choice of rule for computing \eqn{\varepsilon}. 
+Allowed character values are:
+\itemize{
+  \item \code{"constant"}: Use a fixed \eqn{\varepsilon}. 
+    The constant is defined via \code{eps_par}.
+  \item \code{"factor"}: Set \eqn{\varepsilon = c \cdot |t_{\mathrm{obs}}|} 
+    with \code{c} provided via \code{eps_par}.
+  \item \code{"slls"}: Use the Standardized Lifted Log-Saturation (SLLS) 
+    rule on the \emph{Z}-scale with permutation-based cap; \code{eps_par} 
+    controls its conservativeness via \code{target_factor}. The sample 
+    size must be provided via \code{sample_size} for this rule.
+}}
 
-\item{eps_par}{List of additional named arguments forwarded to `eps_fun`.}
+\item{eps_par}{Adaptive parameterization for \code{eps_rule}. Its meaning
+depends on \code{eps_rule}:
+\itemize{
+  \item \code{"constant"}: numeric. If length 1, the same constant 
+    \eqn{\varepsilon} is used for all tests; if length equals the number of 
+    tests, values are applied per test.
+  \item \code{"factor"}: numeric scalar \code{c} used as 
+    \eqn{\varepsilon = c \cdot |t_{\mathrm{obs}}|}.
+  \item \code{"slls"}: Numeric scalar that is used as \code{target_factor} 
+    of the epsilon function (higher \code{target_factor}
+        \textrightarrow{} more conservative plateau).
+}}
+
+\item{sample_size}{Optional numeric giving the sample size. Needed for the 
+"slls" rule. For groups with different sample sizes use the smaller one. 
+If the sample size is unknown, use a small value (e.g., 30) to be 
+conservative.}
 
 \item{tol}{Numeric. Convergence tolerance for fitting GPD parameters.
 Default: 1e-8.}

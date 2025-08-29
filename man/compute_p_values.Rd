@@ -21,9 +21,9 @@ compute_p_values(
 \arguments{
 \item{obs_stats}{Numeric vector of observed test statistic(s).}
 
-\item{perm_stats}{Numeric vector or matrix of permutation test statistics.
-For a single test, supply a vector; for multiple tests, supply a matrix
-with one row per test.}
+\item{perm_stats}{Permutation test statistics. Should be provided as a 
+numeric matrix or data frame with permutations in rows and tests in 
+columns.}
 
 \item{method}{Character. Method used to compute p-values. Default is
 \code{"gpd"}. Options are:

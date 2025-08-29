@@ -4,15 +4,7 @@
 \alias{.compute_pvals_gamma}
 \title{Compute p-values via Gamma approximation}
 \usage{
-.compute_pvals_gamma(
-  p_empirical,
-  perm_stats,
-  obs_stats,
-  n_test,
-  fit_thresh,
-  alternative,
-  control
-)
+.compute_pvals_gamma(perm_stats, obs_stats, n_test, alternative, control)
 }
 \description{
 Compute p-values via Gamma approximation
