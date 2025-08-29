@@ -7,12 +7,12 @@
 make_gpd_ctrl(
   fit_method = "LME",
   include_obs = FALSE,
-  constraint = "support_at_max",
+  constraint = "support_at_obs",
   eps_rule = "slls",
   eps_par = 0.25,
   zero_guard = TRUE,
   eps_retry = list(step_init = 10, grow = (1 + sqrt(5))/2, max_expand_iter = 20L,
-    bisect_iter_max = 30L, bisect_tol = 0.01),
+    bisect_iter_max = 30L, bisect_tol = 0.1),
   sample_size = NULL,
   tol = 1e-08,
   thresh_method = "ftr_min5",
@@ -21,101 +21,96 @@ make_gpd_ctrl(
   exceed0 = 0.25,
   exceed_min = 10,
   gof_test = "ad",
-  gof_alpha = 0.05,
+  gof_alpha = 0.05
 )
 }
 \arguments{
 \item{fit_method}{Character. Method for GPD fitting. Options: "LME", "MLE1D",
 "MLE2D", "MOM", "NLS2", "WNLLSM", "ZSE". Default: "LME".}
 
-\item{include_obs}{Logical. If \code{TRUE}, the observed test statistic is
-included into the tail approximation (considered as permutation test
-statistic). Default: \code{FALSE}.}
+\item{include_obs}{Logical scalar. If \code{TRUE}, the observed test statistic is
+included into the tail approximation (considered as permutation test statistic).
+Default: \code{FALSE}.}
 
-\item{constraint}{Character. Constraint for the fitting process.
-Default: "support_at_max". Options:
+\item{constraint}{Character. Constraint for the fitting process. Default:
+\code{"support_at_obs"}. Options:
 \describe{
-  \item{\code{"unconstrained"}}{No constraint.}
+  \item{\code{"unconstrained"}}{No constraint (epsilon is not used).}
   \item{\code{"shape_nonneg"}}{Shape parameter must be non-negative.}
-  \item{\code{"support_at_obs"}}{Positive density for observed test statistic.}
-  \item{\code{"support_at_max"}}{Positive density for maximum of all
-  observed test statistics (in the multiple testing case).}
+  \item{\code{"support_at_obs"}}{Positive density at the observed test statistic.}
+  \item{\code{"support_at_max"}}{Positive density at the maximum observed
+    test statistic (multiple testing case).}
 }}
 
-\item{eps_rule}{Choice of rule for computing \eqn{\varepsilon}. 
-Allowed character values are:
+\item{eps_rule}{Character. Rule for computing \eqn{\varepsilon}. Used only if
+\code{constraint != "unconstrained"}. One of:
 \itemize{
-  \item \code{"constant"}: Use a fixed \eqn{\varepsilon}. 
-    The constant is defined via \code{eps_par}.
-  \item \code{"factor"}: Set \eqn{\varepsilon = c \cdot |t_{\mathrm{obs}}|} 
-    with \code{c} provided via \code{eps_par}.
-  \item \code{"slls"}: Use the Standardized Lifted Log-Saturation (SLLS) 
-    rule on the \emph{Z}-scale with permutation-based cap; \code{eps_par} 
-    controls its conservativeness via \code{target_factor}. The sample 
-    size must be provided via \code{sample_size} for this rule.
+  \item \code{"constant"}: fixed \eqn{\varepsilon}, set by \code{eps_par}.
+  \item \code{"factor"}: \eqn{\varepsilon = c\,|t_{\mathrm{obs}}|} with \code{c = eps_par}.
+  \item \code{"slls"}: Standardized Lifted Log-Saturation (Z-scale with
+        permutation-based cap); \code{eps_par} acts as \emph{target_factor}.
 }}
 
-\item{eps_par}{Adaptive parameterization for \code{eps_rule}. Its meaning
-depends on \code{eps_rule}:
-\itemize{
-  \item \code{"constant"}: numeric. If length 1, the same constant 
-    \eqn{\varepsilon} is used for all tests; if length equals the number of 
-    tests, values are applied per test.
-  \item \code{"factor"}: numeric scalar \code{c} used as 
-    \eqn{\varepsilon = c \cdot |t_{\mathrm{obs}}|}.
-  \item \code{"slls"}: Numeric scalar that is used as \code{target_factor} 
-    of the epsilon function (higher \code{target_factor}
-        \textrightarrow{} more conservative plateau).
+\item{eps_par}{Numeric. Parameter for \code{eps_rule}. If \code{eps_rule = "constant"},
+this may be a scalar (same \eqn{\varepsilon} for all tests) or a vector (per-test).
+For \code{"factor"} and \code{"slls"} this must be a non-negative scalar.}
+
+\item{zero_guard}{Logical. If \code{TRUE}, enable adaptive epsilon refinement to
+eliminate machine-underflow p-values during GPD fitting (guarding at
+\code{.Machine$double.xmin}). Only used if \code{constraint != "unconstrained"}.}
+
+\item{eps_retry}{List of tuning parameters for the adaptive epsilon refinement.
+Only used when \code{zero_guard = TRUE} and \code{constraint != "unconstrained"}.
+Recognized fields (defaults in parentheses):
+\describe{
+  \item{\code{step_init}}{Initial additive step for the target factor (10).}
+  \item{\code{grow}}{Geometric growth factor for the step (>1; default
+                     \eqn{(1+\sqrt{5})/2 \approx 1.618}).}
+  \item{\code{max_expand_iter}}{Max expansion iterations (20).}
+  \item{\code{bisect_iter_max}}{Max bisection iterations (30).}
+  \item{\code{bisect_tol}}{Bisection tolerance (0.1).}
 }}
 
-\item{sample_size}{Optional numeric giving the sample size. Needed for the 
-"slls" rule. For groups with different sample sizes use the smaller one. 
-If the sample size is unknown, use a small value (e.g., 30) to be 
-conservative.}
+\item{sample_size}{Optional numeric. Required for \code{eps_rule = "slls"} when
+\code{constraint != "unconstrained"}. For groups with different sizes, use the
+smaller one.}
 
-\item{tol}{Numeric. Convergence tolerance for fitting GPD parameters.
+\item{tol}{Numeric > 0. Convergence tolerance for fitting GPD parameters.
 Default: 1e-8.}
 
-\item{thresh_method}{Character. Method for threshold detection.
-Default: "ftr_min5". Options:
-\describe{
-  \item{\code{"fix"}}{Fix threshold (defined via \code{thresh0}).}
-  \item{\code{"ftr"}}{Failure to reject.}
-  \item{\code{"ftr_min5"}}{Failure to reject (min 5 subsequent acceptances).}
-  \item{\code{"pr_below_alpha"}}{Proportion of rejections below alpha.}
-  \item{\code{"fwd_stop"}}{Forward Stop}
-  \item{\code{"gof_cp"}}{GOF change point}
-}}
+\item{thresh_method}{Character. Method for threshold detection. Default:
+\code{"ftr_min5"}. Options: \code{"fix"}, \code{"ftr"}, \code{"ftr_min5"},
+\code{"pr_below_alpha"}, \code{"fwd_stop"}, \code{"gof_cp"}.}
 
-\item{thresh0}{Numeric or NULL. Initial threshold for defining exceedances
-in the GPD fitting. Is used as fixed threshold when
-\code{thresh_method = "fix"}. Set to \code{NULL} if \code{exceed0} is
-provided instead. Default is \code{NULL}.
-Either \code{thresh0} or \code{exceed0} must be specified (non-NULL).}
+\item{thresh0}{Numeric or NULL. Initial threshold (fixed when
+\code{thresh_method = "fix"}). Must be NULL if \code{exceed0} is provided.}
 
-\item{thresh_step}{Integer. Step size for adaptive threshold search.
-If \code{thresh_step} is 2, for instance, every second possible threshold
-is considered to save runtime.}
+\item{thresh_step}{Integer >= 1. Step size for adaptive threshold search.}
 
-\item{exceed0}{Numeric or NULL. Initial number of exceedances.
-If less than 1, it is interpreted as a proportion of the number of
-permutations. Default is \code{0.25}. Either \code{exceed0} or
-\code{thresh0} must be specified (non-NULL).}
+\item{exceed0}{Numeric or NULL. Initial number (or proportion < 1) of exceedances.
+Must be NULL if \code{thresh0} is provided. Default: 0.25.}
 
-\item{exceed_min}{Integer. Minimum exceedances needed for fitting. Default: 10.}
+\item{exceed_min}{Integer >= 0. Minimum exceedances required for fitting.
+Default: 10.}
 
-\item{gof_test}{Character. Goodness-of-fit test for GPD. Options:
-"ad" (Anderson-Darling), "cvm" (Cramer-von-Mises), "none". Default: "ad".}
+\item{gof_test}{Character. Goodness-of-fit test for GPD: \code{"ad"}, \code{"cvm"},
+or \code{"none"}. Default: \code{"ad"}.}
 
-\item{gof_alpha}{Numeric. Significance level for GOF test (0 < gof_alpha < 1).
-Default: 0.05.}
-
-
+\item{gof_alpha}{Numeric in (0,1). Significance level for GOF test. Default: 0.05.}
 }
 \value{
-A named list of class "gpd_ctrl" containing GPD settings.
+A named list of class \code{"gpd_ctrl"} containing GPD settings.
 }
 \description{
 Constructs a list of control parameters for the Generalized Pareto
 Distribution (GPD) tail approximation method used in permApprox.
 }
+\section{Constraints and epsilon}{
+
+Epsilon-related settings (\code{eps_rule}, \code{eps_par}, \code{sample_size},
+and \code{eps_retry}/\code{zero_guard}) are only relevant when
+\code{constraint != "unconstrained"}. If \code{constraint == "unconstrained"},
+epsilon is not used and these arguments are ignored (\code{eps_rule} is set to
+\code{"constant"} with \code{eps_par = 0}, and \code{zero_guard} is disabled).
+}
+
