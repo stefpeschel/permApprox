@@ -12,9 +12,7 @@
 make_adjust_ctrl <- function(
     true_null_method = "convest",
     p_true_null = NULL,
-    seq_length = 100,
-    cores = 1,
-    verbose = FALSE
+    seq_length = 100
 ) {
   
   true_null_method <- match.arg(true_null_method, c("farco", "lfdr", "mean",
@@ -32,11 +30,6 @@ make_adjust_ctrl <- function(
   }
   seq_length <- as.integer(seq_length)
   
-  if (!is.numeric(cores) || length(cores) != 1 || cores < 1) {
-    stop("'cores' must be an integer >= 1.")
-  }
-  cores <- as.integer(cores)
-  
   if (!is.logical(verbose) || length(verbose) != 1) {
     stop("'verbose' must be a single logical value (TRUE or FALSE)." )
   }
@@ -44,9 +37,7 @@ make_adjust_ctrl <- function(
   control <- list(
     true_null_method = true_null_method,
     p_true_null = p_true_null,
-    seq_length = seq_length,
-    cores = cores,
-    verbose = verbose
+    seq_length = seq_length
   )
   class(control) <- "adjust_ctrl"
   return(control)

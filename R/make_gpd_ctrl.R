@@ -88,11 +88,7 @@
 #' @param gof_alpha Numeric. Significance level for GOF test (0 < gof_alpha < 1).
 #'   Default: 0.05.
 #'
-#' @param cores Integer. Number of CPU cores to use for parallel computations.
-#'   Must be >=1. Default: \code{1}.
 #'
-#' @param verbose Logical. If \code{TRUE}, progress messages are printed.
-#'   Default: \code{TRUE}.
 #'
 #' @return A named list of class "gpd_ctrl" containing GPD settings.
 #'
@@ -121,8 +117,6 @@ make_gpd_ctrl <- function(
     exceed_min = 10,
     gof_test = "ad",
     gof_alpha = 0.05,
-    cores = 1,
-    verbose = TRUE
 ) {
   
   fit_method <- match.arg(fit_method,
@@ -230,8 +224,6 @@ make_gpd_ctrl <- function(
     exceed_min = exceed_min,
     gof_test = gof_test,
     gof_alpha = gof_alpha,
-    cores = cores,
-    verbose = verbose
   )
   class(control) <- "gpd_ctrl"
   control

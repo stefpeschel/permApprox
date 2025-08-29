@@ -22,8 +22,6 @@ make_gpd_ctrl(
   exceed_min = 10,
   gof_test = "ad",
   gof_alpha = 0.05,
-  cores = 1,
-  verbose = TRUE
 )
 }
 \arguments{
@@ -112,11 +110,7 @@ permutations. Default is \code{0.25}. Either \code{exceed0} or
 \item{gof_alpha}{Numeric. Significance level for GOF test (0 < gof_alpha < 1).
 Default: 0.05.}
 
-\item{cores}{Integer. Number of CPU cores to use for parallel computations.
-Must be >=1. Default: \code{1}.}
 
-\item{verbose}{Logical. If \code{TRUE}, progress messages are printed.
-Default: \code{TRUE}.}
 }
 \value{
 A named list of class "gpd_ctrl" containing GPD settings.

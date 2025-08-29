@@ -7,9 +7,7 @@
 make_adjust_ctrl(
   true_null_method = "convest",
   p_true_null = NULL,
-  seq_length = 100,
-  cores = 1,
-  verbose = FALSE
+  seq_length = 100
 )
 }
 \arguments{
@@ -30,12 +28,6 @@ for \code{adaptBH}. If \code{NULL}, it is estimated using
 
 \item{seq_length}{Integer. Number of grid points when computing FDR curves in
 \code{"rbFDR"} method. Default: \code{100}.}
-
-\item{cores}{Integer. Number of CPU cores to use for parallel computations
-(e.g., in \code{"rbFDR"}). Must be >=1. Default: \code{1}.}
-
-\item{verbose}{Logical. If \code{TRUE}, progress messages are printed.
-Default: \code{FALSE}.}
 }
 \value{
 A named list (class \code{"adjust_ctrl"}) with the specified settings.

@@ -10,6 +10,8 @@
   p_empirical,
   fit_thresh,
   control,
+  cores,
+  verbose,
   ...
 )
 }

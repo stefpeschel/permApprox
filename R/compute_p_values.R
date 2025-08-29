@@ -49,6 +49,12 @@
 #'     "BY").
 #'   }
 #'
+#' @param cores Integer >= 1. Number of CPU cores for parallel computations.
+#'   Default: 1.
+#'
+#' @param verbose Logical scalar. If \code{TRUE}, progress messages are printed.
+#'   Default: TRUE.
+#'
 #' @param gpd_ctrl A control object created by \code{\link{make_gpd_ctrl}}.
 #'   Contains settings for the GPD approximation, such as the fitting method,
 #'   constraints, and thresholding strategy. Defaults to \code{make_gpd_ctrl()}.
@@ -159,6 +165,8 @@ compute_p_values <- function(
     alternative = "two_sided",
     null_center = 0,
     adjust_method = "BH",
+    cores = 1,
+    verbose = TRUE,
     gpd_ctrl = make_gpd_ctrl(),
     gamma_ctrl = make_gamma_ctrl(),
     adjust_ctrl = make_adjust_ctrl(),
@@ -172,6 +180,16 @@ compute_p_values <- function(
   # Validate 'method'
   method <- match.arg(method,
                       choices = c("gpd", "gamma", "empirical"))
+  
+  # Validate 'cores'
+  if (!(is.numeric(cores) && length(cores) == 1L && is.finite(cores) && cores >= 1))
+    stop("'cores' must be a single integer >= 1.")
+  
+  cores <- as.integer(cores)
+  
+  # Validate 'verbose'
+  if (!is.logical(verbose) || length(verbose) != 1L || is.na(verbose))
+    stop("'verbose' must be a single logical.")
   
   # Validate control arguments
   if (!inherits(gpd_ctrl, "gpd_ctrl")) {
@@ -289,6 +307,8 @@ compute_p_values <- function(
                                   p_empirical = p_empirical,
                                   fit_thresh = fit_thresh,
                                   control = gpd_ctrl,
+                                  cores = cores,
+                                  verbose = verbose,
                                   ...)
     
     p_values <- p_empirical
@@ -315,8 +335,8 @@ compute_p_values <- function(
                                  p_true_null = adjust_ctrl$p_true_null,
                                  seq_length = adjust_ctrl$seq_length,
                                  perm_stats = adjust_ctrl$perm_stats,
-                                 cores = adjust_ctrl$cores,
-                                 verbose = adjust_ctrl$verbose)
+                                 cores = cores,
+                                 verbose = verbose)
     
     p_values <- adjust_result$p_adjusted
   }

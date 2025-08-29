@@ -12,6 +12,8 @@ compute_p_values(
   alternative = "two_sided",
   null_center = 0,
   adjust_method = "BH",
+  cores = 1,
+  verbose = TRUE,
   gpd_ctrl = make_gpd_ctrl(),
   gamma_ctrl = make_gamma_ctrl(),
   adjust_ctrl = make_adjust_ctrl(),
@@ -61,6 +63,12 @@ Options include:
   \item Any method supported by \code{stats::p.adjust} (e.g., "holm", "BH",
   "BY").
 }}
+
+\item{cores}{Integer >= 1. Number of CPU cores for parallel computations.
+Default: 1.}
+
+\item{verbose}{Logical scalar. If \code{TRUE}, progress messages are printed.
+Default: TRUE.}
 
 \item{gpd_ctrl}{A control object created by \code{\link{make_gpd_ctrl}}.
 Contains settings for the GPD approximation, such as the fitting method,

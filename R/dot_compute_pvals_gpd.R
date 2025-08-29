@@ -17,6 +17,8 @@
                                p_empirical,
                                fit_thresh,
                                control,
+                               cores,
+                               verbose,
                                ...) {
   ## Sizes
   n_test <- ncol(perm_stats)
@@ -97,9 +99,9 @@
     )
   }
   
-  if (isTRUE(control$verbose)) message("Run threshold detection ...")
+  if (isTRUE(verbose)) message("Run threshold detection ...")
   
-  n_workers <- min(max(1L, control$cores), max(1L, length(idx_non_dis)))
+  n_workers <- min(max(1L, cores), max(1L, length(idx_non_dis)))
   run_parallel_thresh <- (n_workers > 1L)
   
   if (run_parallel_thresh) {
@@ -108,16 +110,16 @@
       future::multicore else future::multisession
     
     old_plan <- future::plan(strategy, 
-                             workers = min(control$cores, length(idx_non_dis)))
+                             workers = min(cores, length(idx_non_dis)))
     on.exit(future::plan(old_plan), add = TRUE)
     
     res_list_thr <- progressr::with_progress({
-      if (control$verbose) p <- progressr::progressor(along = idx_non_dis)
+      if (verbose) p <- progressr::progressor(along = idx_non_dis)
       future.apply::future_lapply(
         idx_non_dis,
         function(j) {
           res <- find_thresh_one(j)
-          if (control$verbose) p()
+          if (verbose) p()
           res
         },
         future.packages = c("permApprox","progressr"),
@@ -126,10 +128,10 @@
     })
   } else {
     res_list_thr <- with_progress({
-      if (control$verbose) p <- progressr::progressor(along = idx_non_dis)
+      if (verbose) p <- progressr::progressor(along = idx_non_dis)
       lapply(idx_non_dis, function(j) {
         res <- find_thresh_one(j)
-        if (control$verbose) p()
+        if (verbose) p()
         res
       })
     })
@@ -146,7 +148,7 @@
   idx_no_thr <- idx_non_dis[is.na(thresh_vec[idx_non_dis])]
   res_df$status[idx_no_thr] <- "no_threshold"
   
-  if (isTRUE(control$verbose)) message("Done.")
+  if (isTRUE(verbose)) message("Done.")
   
   idx_valid <- idx_non_dis[!is.na(thresh_vec[idx_non_dis])]
   
@@ -224,10 +226,10 @@
     eps_par      = control$eps_par
   )
   
-  if (isTRUE(control$verbose)) message("Run GPD fit ...")
+  if (isTRUE(verbose)) message("Run GPD fit ...")
   
-  n_workers_fit <- if (control$cores > 1L && length(idx_valid) > control$cores) {
-    min(control$cores, length(idx_valid))
+  n_workers_fit <- if (cores > 1L && length(idx_valid) > cores) {
+    min(cores, length(idx_valid))
   } else {
     1L
   }
@@ -240,13 +242,13 @@
     on.exit(future::plan(old_plan), add = TRUE)
     
     res_list <- progressr::with_progress({
-      if (control$verbose) p <- progressr::progressor(along = idx_valid)
+      if (verbose) p <- progressr::progressor(along = idx_valid)
       
       future.apply::future_lapply(
         idx_valid, 
         function(j) {
           res <- fit_one_gpd(j, eps = epsilons)
-          if (control$verbose) p()
+          if (verbose) p()
           res
         },
         future.packages = c("permApprox","progressr"),
@@ -256,16 +258,16 @@
     
   } else {
     res_list <- progressr::with_progress({
-      if (control$verbose) p <- progressr::progressor(along = idx_valid)
+      if (verbose) p <- progressr::progressor(along = idx_valid)
       lapply(idx_valid, function(j) {
         res <- fit_one_gpd(j, eps = epsilons)
-        if (control$verbose) p()
+        if (verbose) p()
         res
       })
     })
   }
   
-  if (isTRUE(control$verbose)) message("Done.")
+  if (isTRUE(verbose)) message("Done.")
   
   ## -------------------------------------------------------------------------
   ## Optional: Adaptive epsilon refinement
@@ -299,8 +301,8 @@
       # Run GPD fit for a subset without progress bar
       .run_gpd_fit <- function(epsilons, idx_subset = idx_valid) {
         
-        n_workers_fit <- if (control$cores > 1L && length(idx_subset) > control$cores) {
-          min(control$cores, length(idx_subset))
+        n_workers_fit <- if (cores > 1L && length(idx_subset) > cores) {
+          min(cores, length(idx_subset))
         } else {
           1L
         }
@@ -371,7 +373,7 @@
       # Work only on the subset that currently underflows
       need_idx <- zero_idx
       
-      if (isTRUE(control$verbose)) {
+      if (isTRUE(verbose)) {
         message(sprintf(
           "Zero-guard: start with tf=%s; zeros: %d (of %d selected tests)",
           tf_fmt(tf0), length(zero_idx), length(idx_valid)
@@ -379,7 +381,7 @@
       }
       
       # --- EXPANSION PHASE (large increasing steps) -------------------------
-      if (isTRUE(control$verbose)) message("Zero-guard: expanding target_factor ...")
+      if (isTRUE(verbose)) message("Zero-guard: expanding target_factor ...")
       tf_curr <- tf0
       tf_lo   <- tf0            # last tf that still produces zeros
       tf_hi   <- NA_real_       # first tf with no zeros in need_idx
@@ -390,14 +392,14 @@
         tf_try <- tf_curr + step
         ev <- .eval_tf_subset(tf_try, need_idx)
         zeros_now <- .count_zeros(ev$pvals)
-        if (isTRUE(control$verbose)) {
+        if (isTRUE(verbose)) {
           message(sprintf("  expand %02d: tf=%s; zeros in subset: %d",
                           exp_it, tf_fmt(tf_try), zeros_now))
         }
         
         if (zeros_now == 0L) {
           tf_hi <- tf_try   # bracket found
-          if (isTRUE(control$verbose)) {
+          if (isTRUE(verbose)) {
             message(sprintf("  bracket found at tf=%s (subset zeros=0)", tf_fmt(tf_hi)))
           }
           break
@@ -412,11 +414,11 @@
           need_idx <- need_idx[which(is.finite(ev$pvals) & 
                                        ev$pvals <= .Machine$double.xmin)]
           
-          if (isTRUE(control$verbose) && length(need_idx) != length(need_idx_old)) {
+          if (isTRUE(verbose) && length(need_idx) != length(need_idx_old)) {
             message(sprintf("    refining subset to the %d zero(s)", length(need_idx)))
           }
           if (exp_it >= max_exp || length(need_idx) == 0L) {
-            if (isTRUE(control$verbose)) {
+            if (isTRUE(verbose)) {
               message("  expansion stop: reached limit or no subset left")
             }
             break
@@ -429,7 +431,7 @@
       
       # --- BISECTION PHASE (minimal safe tf) --------------------------------
       if (!is.na(tf_hi)) {
-        if (isTRUE(control$verbose)) 
+        if (isTRUE(verbose)) 
           message("Zero-guard: bisecting target_factor ...")
         tf_left  <- tf_lo   # zeros occur
         tf_right <- tf_hi   # no zeros
@@ -441,7 +443,7 @@
           tf_mid <- 0.5 * (tf_left + tf_right)
           ev <- .eval_tf_subset(tf_mid, ref_idx)
           zeros_mid <- .count_zeros(ev$pvals)
-          if (isTRUE(control$verbose)) {
+          if (isTRUE(verbose)) {
             message(sprintf("  bisect %02d: tf=%s; zeros in subset: %d",
                             bis_it, tf_fmt(tf_mid), zeros_mid))
           }
@@ -452,7 +454,7 @@
             ref_idx_old <- ref_idx
             ref_idx <- ref_idx[which(is.finite(ev$pvals) & 
                                        ev$pvals <= .Machine$double.xmin)]
-            if (isTRUE(control$verbose) && length(ref_idx) != length(ref_idx_old)) {
+            if (isTRUE(verbose) && length(ref_idx) != length(ref_idx_old)) {
               message(sprintf("    refining subset to the %d zero(s)", 
                               length(ref_idx)))
             }
@@ -473,7 +475,7 @@
         eps_rule     = control$eps_rule,
         eps_par      = final_tf
       )
-      if (isTRUE(control$verbose)) {
+      if (isTRUE(verbose)) {
         message("Zero-guard: refitting all selected tests with target_factor = ", 
                 tf_fmt(final_tf))
       }
@@ -485,13 +487,13 @@
         on.exit(future::plan(old_plan), add = TRUE)
         
         res_list <- progressr::with_progress({
-          if (control$verbose) p <- progressr::progressor(along = idx_valid)
+          if (verbose) p <- progressr::progressor(along = idx_valid)
           
           future.apply::future_lapply(
             idx_valid, 
             function(j) {
               res <- fit_one_gpd(j, eps = eps_final)
-              if (control$verbose) p()
+              if (verbose) p()
               res
             },
             future.packages = c("permApprox","progressr"),
@@ -501,10 +503,10 @@
         
       } else {
         res_list <- progressr::with_progress({
-          if (control$verbose) p <- progressr::progressor(along = idx_valid)
+          if (verbose) p <- progressr::progressor(along = idx_valid)
           lapply(idx_valid, function(j) {
             res <- fit_one_gpd(j, eps = eps_final)
-            if (control$verbose) p()
+            if (verbose) p()
             res
           })
         })
@@ -512,7 +514,7 @@
       
       pvals_tmp[idx_valid] <- vapply(res_list, `[[`, numeric(1), "p_value")
       
-      if (isTRUE(control$verbose)) {
+      if (isTRUE(verbose)) {
         zeros_final <- .count_zeros(pvals_tmp[idx_valid])
         message(sprintf("Zero-guard: %d zeros (of %d tests) after refit", 
                         zeros_final, length(idx_valid)))
