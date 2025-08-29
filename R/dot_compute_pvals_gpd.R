@@ -170,10 +170,10 @@
   ## Helper to run GPD fit with given epsilon vector on an index subset
   ## -------------------------------------------------------------------------
   
-  fit_one_gpd <- function(i) {
+  fit_one_gpd <- function(i, eps) {
     obs_i    <- obs_stats[i]
     perm_i   <- perm_stats[, i]
-    eps_i    <- epsilons[i]
+    eps_i    <- eps[i]
     thr_i    <- thresh_vec[i]
     exceed_i <- perm_i[perm_i > thr_i]
     bound_i  <- support_boundaries[i]
@@ -212,62 +212,6 @@
     )
   }
   
-  run_gpd_fit <- function(epsilons, idx_subset = idx_valid, use_progress = control$verbose) {
-    
-    n_workers_fit <- if (control$cores > 1L && length(idx_subset) > control$cores) {
-      min(control$cores, length(idx_subset))
-    } else {
-      1L
-    }
-    run_parallel_fit <- (n_workers_fit > 1L)
-    
-    if (run_parallel_fit) {
-      strategy <- if (.Platform$OS.type != "windows" && future::supportsMulticore()) 
-        future::multicore else future::multisession
-      old_plan <- future::plan(strategy, workers = n_workers_fit)
-      on.exit(future::plan(old_plan), add = TRUE)
-      
-      if (isTRUE(use_progress)) {
-        res_list <- progressr::with_progress({
-          future.apply::future_lapply(
-            idx_subset, 
-            function(i) { 
-              if (control$verbose) {
-                p <- progressr::progressor(steps = 1)
-                on.exit(p(), add = TRUE)
-              }
-              fit_one_gpd(i)
-            },
-            future.packages = c("permApprox","progressr"),
-            future.seed = TRUE
-          )
-        })
-      } else {
-        res_list <- future.apply::future_lapply(
-          idx_subset, 
-          function(i) fit_one_gpd(i), 
-          future.packages = c("permApprox","progressr"),
-          future.seed = TRUE
-        )
-      }
-    } else {
-      if (isTRUE(use_progress)) {
-        res_list <- progressr::with_progress({
-          lapply(idx_subset, function(i) {
-            if (control$verbose) {
-              p <- progressr::progressor(steps = 1)
-              on.exit(p(), add = TRUE)
-            }
-            fit_one_gpd(i)
-          })
-        })
-      } else {
-        res_list <- lapply(idx_subset, function(i) fit_one_gpd(i))
-      }
-    }
-    res_list
-  }
-  
   ## -------------------------------------------------------------------------
   ## Initial epsilon definition and fit (subset)
   ## -------------------------------------------------------------------------
@@ -282,16 +226,14 @@
   
   if (isTRUE(control$verbose)) message("Run GPD fit ...")
   
-  use_progress = isTRUE(control$verbose)
-  
   n_workers_fit <- if (control$cores > 1L && length(idx_valid) > control$cores) {
     min(control$cores, length(idx_valid))
   } else {
     1L
   }
-  run_parallel_fit <- (n_workers_fit > 1L)
+  run_parallel_fit_all <- (n_workers_fit > 1L)
   
-  if (run_parallel_fit) {
+  if (run_parallel_fit_all) {
     strategy <- if (.Platform$OS.type != "windows" && future::supportsMulticore()) 
       future::multicore else future::multisession
     old_plan <- future::plan(strategy, workers = n_workers_fit)
@@ -303,7 +245,7 @@
       future.apply::future_lapply(
         idx_valid, 
         function(j) {
-          res <- fit_one_gpd(j)
+          res <- fit_one_gpd(j, eps = epsilons)
           if (control$verbose) p()
           res
         },
@@ -316,186 +258,265 @@
     res_list <- progressr::with_progress({
       if (control$verbose) p <- progressr::progressor(along = idx_valid)
       lapply(idx_valid, function(j) {
-        res <- fit_one_gpd(j)
+        res <- fit_one_gpd(j, eps = epsilons)
         if (control$verbose) p()
         res
       })
     })
   }
   
-  #res_list <- run_gpd_fit(epsilons, use_progress = isTRUE(control$verbose))
   if (isTRUE(control$verbose)) message("Done.")
+  
   ## -------------------------------------------------------------------------
-  ## Adaptive epsilon refinement (fit subset during search; full refit at end)
-  ## now with per-iteration reporting of target_factor (eps_par) and zero counts
-  ## and dynamic formatting of target_factor based on bisect tolerance
+  ## Optional: Adaptive epsilon refinement
   ## -------------------------------------------------------------------------
   
-  get_pvals_from_res <- function(res, idxs) vapply(res, `[[`, numeric(1), "p_value")
-  
-  pvals_tmp <- res_df$p_value
-  pvals_tmp[idx_valid] <- get_pvals_from_res(res_list, idx_valid)
-  
-  .get_zero_idx <- function(pv, idx) {
-    min_pos <- .Machine$double.xmin
-    z <- idx[which(!is.na(pv[idx]) & pv[idx] <= min_pos)]
-    as.integer(z)
-  }
-  
-  .count_zeros <- function(pv) {
-    min_pos <- .Machine$double.xmin
-    sum(is.finite(pv) & pv <= min_pos)
-  }
-  
-  # digits to show for target_factor based on bisect tolerance
-  .digits_from_tol <- function(tol) {
-    if (!is.finite(tol) || tol <= 0) return(6L)
-    d <- ceiling(-log10(tol)) + 1L  # +1 to make changes at the tolerance visible
-    d <- max(0L, min(16L, d))       # clamp to sane bounds
-    as.integer(d)
-  }
-  
-  zero_idx <- .get_zero_idx(pvals_tmp, idx_valid)
-  
-  if (isTRUE(control$zero_guard) && length(zero_idx) > 0L) {
+  if (isTRUE(control$zero_guard)) {
     
-    # --- helpers: evaluate a candidate target_factor on a subset only ---
-    eval_tf_subset <- function(tf, idx_subset) {
-      eps_try <- .define_eps(
+    # Index of zero (or underflow) p-values
+    .get_zero_idx <- function(pv, idx) {
+      min_pos <- .Machine$double.xmin
+      z <- idx[which(!is.na(pv[idx]) & pv[idx] <= min_pos)]
+      as.integer(z)
+    }
+    
+    # Extract p-values from results data frame
+    .get_pvals_from_res <- function(res, idxs) {
+      vapply(res, `[[`, numeric(1), "p_value")
+    } 
+    
+    # Identify current number of zero p-values
+    pvals_tmp <- res_df$p_value
+    pvals_tmp[idx_valid] <- .get_pvals_from_res(res_list, idx_valid)
+    
+    # Indices of zero p-values
+    zero_idx <- .get_zero_idx(pvals_tmp, idx_valid)
+    
+    if (length(zero_idx) > 0L) {
+      
+      ## --- Helpers ---------------------------------------------------------
+      
+      # Run GPD fit for a subset without progress bar
+      .run_gpd_fit <- function(epsilons, idx_subset = idx_valid) {
+        
+        n_workers_fit <- if (control$cores > 1L && length(idx_subset) > control$cores) {
+          min(control$cores, length(idx_subset))
+        } else {
+          1L
+        }
+        run_parallel_fit <- (n_workers_fit > 1L)
+        
+        if (run_parallel_fit) {
+          strategy <- if (.Platform$OS.type != "windows" && future::supportsMulticore()) 
+            future::multicore else future::multisession
+          old_plan <- future::plan(strategy, workers = n_workers_fit)
+          on.exit(future::plan(old_plan), add = TRUE)
+          
+          res_list <- future.apply::future_lapply(
+            idx_subset, 
+            function(i) fit_one_gpd(i, eps = epsilons), 
+            future.packages = c("permApprox","progressr"),
+            future.seed = TRUE
+          )
+        } else {
+          
+          res_list <- lapply(idx_subset,
+                             function(i) fit_one_gpd(i, eps = epsilons))
+          
+        }
+        res_list
+      }
+      
+      # Count the number of zeros 
+      # (or values below the machine's smalles possible floating-point number)
+      .count_zeros <- function(pv) {
+        min_pos <- .Machine$double.xmin
+        sum(is.finite(pv) & pv <= min_pos)
+      }
+      
+      ## Digits to show for target_factor based on bisect tolerance
+      .digits_from_tol <- function(tol) {
+        if (!is.finite(tol) || tol <= 0) return(6L)
+        d <- ceiling(-log10(tol)) + 1L  # +1 to make changes at the tolerance visible
+        d <- max(0L, min(16L, d))       # clamp to sane bounds
+        as.integer(d)
+      }
+      
+      ## Evaluate a candidate target_factor on a subset only
+      .eval_tf_subset <- function(tf, idx_subset) {
+        eps_try <- .define_eps(
+          perm_stats   = perm_stats,
+          obs_stats    = obs_stats,
+          sample_size  = control$sample_size,
+          constraint   = control$constraint,
+          eps_rule     = control$eps_rule,
+          eps_par      = tf
+        )
+        res_sub <- .run_gpd_fit(eps_try, idx_subset = idx_subset)
+        pv_sub  <- vapply(res_sub, `[[`, numeric(1), "p_value")
+        list(res = res_sub, pvals = pv_sub)
+      }
+      
+      ## --- Configuration parameters ----------------------------------------
+      tf0     <- control$eps_par
+      step    <- control$eps_retry$step_init
+      grow    <- control$eps_retry$grow
+      max_exp <- control$eps_retry$max_expand_iter
+      max_bis <- control$eps_retry$bisect_iter_max
+      bis_tol <- control$eps_retry$bisect_tol
+      
+      tf_digits <- .digits_from_tol(bis_tol)
+      tf_fmt    <- function(x) sprintf(paste0("%.", tf_digits, "f"), x)
+      
+      # Work only on the subset that currently underflows
+      need_idx <- zero_idx
+      
+      if (isTRUE(control$verbose)) {
+        message(sprintf(
+          "Zero-guard: start with tf=%s; zeros: %d (of %d selected tests)",
+          tf_fmt(tf0), length(zero_idx), length(idx_valid)
+        ))
+      }
+      
+      # --- EXPANSION PHASE (large increasing steps) -------------------------
+      if (isTRUE(control$verbose)) message("Zero-guard: expanding target_factor ...")
+      tf_curr <- tf0
+      tf_lo   <- tf0            # last tf that still produces zeros
+      tf_hi   <- NA_real_       # first tf with no zeros in need_idx
+      exp_it  <- 0L
+      
+      repeat {
+        exp_it <- exp_it + 1L
+        tf_try <- tf_curr + step
+        ev <- .eval_tf_subset(tf_try, need_idx)
+        zeros_now <- .count_zeros(ev$pvals)
+        if (isTRUE(control$verbose)) {
+          message(sprintf("  expand %02d: tf=%s; zeros in subset: %d",
+                          exp_it, tf_fmt(tf_try), zeros_now))
+        }
+        
+        if (zeros_now == 0L) {
+          tf_hi <- tf_try   # bracket found
+          if (isTRUE(control$verbose)) {
+            message(sprintf("  bracket found at tf=%s (subset zeros=0)", tf_fmt(tf_hi)))
+          }
+          break
+        } else {
+          # still zeros → move forward and inflate step
+          tf_lo   <- tf_try
+          tf_curr <- tf_try
+          step    <- step * grow
+          
+          # shrink subset to those still zero to save runtime
+          need_idx_old <- need_idx
+          need_idx <- need_idx[which(is.finite(ev$pvals) & 
+                                       ev$pvals <= .Machine$double.xmin)]
+          
+          if (isTRUE(control$verbose) && length(need_idx) != length(need_idx_old)) {
+            message(sprintf("    refining subset to the %d zero(s)", length(need_idx)))
+          }
+          if (exp_it >= max_exp || length(need_idx) == 0L) {
+            if (isTRUE(control$verbose)) {
+              message("  expansion stop: reached limit or no subset left")
+            }
+            break
+          }
+        }
+      }
+      
+      # If expansion never cleared zeros, we stop here with best effort tf_curr
+      final_tf <- tf_curr
+      
+      # --- BISECTION PHASE (minimal safe tf) --------------------------------
+      if (!is.na(tf_hi)) {
+        if (isTRUE(control$verbose)) 
+          message("Zero-guard: bisecting target_factor ...")
+        tf_left  <- tf_lo   # zeros occur
+        tf_right <- tf_hi   # no zeros
+        bis_it   <- 0L
+        ref_idx  <- zero_idx  # start from original zero set; subset fits only
+        
+        while ((tf_right - tf_left > bis_tol) && bis_it < max_bis && length(ref_idx) > 0L) {
+          bis_it <- bis_it + 1L
+          tf_mid <- 0.5 * (tf_left + tf_right)
+          ev <- .eval_tf_subset(tf_mid, ref_idx)
+          zeros_mid <- .count_zeros(ev$pvals)
+          if (isTRUE(control$verbose)) {
+            message(sprintf("  bisect %02d: tf=%s; zeros in subset: %d",
+                            bis_it, tf_fmt(tf_mid), zeros_mid))
+          }
+          
+          if (zeros_mid > 0L) {
+            tf_left <- tf_mid
+            # keep only those still zero at tf_mid to reduce work further
+            ref_idx_old <- ref_idx
+            ref_idx <- ref_idx[which(is.finite(ev$pvals) & 
+                                       ev$pvals <= .Machine$double.xmin)]
+            if (isTRUE(control$verbose) && length(ref_idx) != length(ref_idx_old)) {
+              message(sprintf("    refining subset to the %d zero(s)", 
+                              length(ref_idx)))
+            }
+          } else {
+            tf_right <- tf_mid
+            # no need to persist interim fits here; we will refit all at the end
+          }
+        }
+        final_tf <- tf_right
+      }
+      
+      # --- Final refit for ALL selected tests with final_tf -----------------
+      eps_final <- .define_eps(
         perm_stats   = perm_stats,
         obs_stats    = obs_stats,
         sample_size  = control$sample_size,
         constraint   = control$constraint,
         eps_rule     = control$eps_rule,
-        eps_par      = tf
+        eps_par      = final_tf
       )
-      res_sub <- run_gpd_fit(eps_try, idx_subset = idx_subset, use_progress = FALSE)
-      pv_sub  <- vapply(res_sub, `[[`, numeric(1), "p_value")
-      list(res = res_sub, pvals = pv_sub)
-    }
-    
-    any_zeros <- function(pvals_vec) {
-      min_pos <- .Machine$double.xmin
-      any(is.finite(pvals_vec) & pvals_vec <= min_pos)
-    }
-    
-    # --- configuration knobs ---
-    tf0     <- control$eps_par
-    step    <- control$eps_retry$step_init
-    grow    <- control$eps_retry$grow
-    max_exp <- control$eps_retry$max_expand_iter
-    max_bis <- control$eps_retry$bisect_iter_max
-    bis_tol <- control$eps_retry$bisect_tol
-    
-    tf_digits <- .digits_from_tol(bis_tol)
-    tf_fmt    <- function(x) sprintf(paste0("%.", tf_digits, "f"), x)
-    
-    # Work only on the subset that currently underflows
-    need_idx <- zero_idx
-    
-    if (isTRUE(control$verbose)) {
-      message(sprintf(
-        "Zero-guard: start — tf0=%s, zeros=%d (of %d selected)",
-        tf_fmt(tf0), length(zero_idx), length(idx_valid)
-      ))
-    }
-    
-    # ---------- EXPANSION PHASE (large increasing steps) ----------
-    if (isTRUE(control$verbose)) message("Zero-guard: expanding target_factor ...")
-    tf_curr <- tf0
-    tf_lo   <- tf0            # last tf that still produces zeros
-    tf_hi   <- NA_real_       # first tf with no zeros in need_idx
-    exp_it  <- 0L
-    
-    repeat {
-      exp_it <- exp_it + 1L
-      tf_try <- tf_curr + step
-      ev <- eval_tf_subset(tf_try, need_idx)
-      zeros_now <- .count_zeros(ev$pvals)
       if (isTRUE(control$verbose)) {
-        message(sprintf("  expand %02d: tf=%s → zeros in subset=%d / %d",
-                        exp_it, tf_fmt(tf_try), zeros_now, length(need_idx)))
+        message("Zero-guard: refitting all selected tests with target_factor = ", 
+                tf_fmt(final_tf))
       }
       
-      if (!any_zeros(ev$pvals)) {
-        tf_hi <- tf_try   # bracket found
-        if (isTRUE(control$verbose)) {
-          message(sprintf("  bracket found at tf=%s (subset zeros=0)", tf_fmt(tf_hi)))
-        }
-        break
-      } else {
-        # still zeros → move forward and inflate step
-        tf_lo   <- tf_try
-        tf_curr <- tf_try
-        step    <- step * grow
-        # shrink subset to those still zero to save runtime
-        need_idx <- need_idx[which(is.finite(ev$pvals) & ev$pvals <= .Machine$double.xmin)]
-        if (isTRUE(control$verbose)) {
-          message(sprintf("    shrinking subset → %d still zero", length(need_idx)))
-        }
-        if (exp_it >= max_exp || length(need_idx) == 0L) {
-          if (isTRUE(control$verbose)) {
-            message("  expansion stop: reached limit or no subset left")
-          }
-          break
-        }
-      }
-    }
-    
-    # If expansion never cleared zeros, we stop here with best effort tf_curr
-    final_tf <- tf_curr
-    
-    # ---------- BISECTION PHASE (minimal safe tf) ----------
-    if (!is.na(tf_hi)) {
-      if (isTRUE(control$verbose)) message("Zero-guard: bisecting target_factor ...")
-      tf_left  <- tf_lo   # zeros occur
-      tf_right <- tf_hi   # no zeros
-      bis_it   <- 0L
-      ref_idx  <- zero_idx  # start from original zero set; subset fits only
-      
-      while ((tf_right - tf_left > bis_tol) && bis_it < max_bis && length(ref_idx) > 0L) {
-        bis_it <- bis_it + 1L
-        tf_mid <- 0.5 * (tf_left + tf_right)
-        ev <- eval_tf_subset(tf_mid, ref_idx)
-        zeros_mid <- .count_zeros(ev$pvals)
-        if (isTRUE(control$verbose)) {
-          message(sprintf("  bisect %02d: tf=%s → zeros in subset=%d / %d",
-                          bis_it, tf_fmt(tf_mid), zeros_mid, length(ref_idx)))
-        }
+      if (run_parallel_fit_all) {
+        strategy <- if (.Platform$OS.type != "windows" && future::supportsMulticore()) 
+          future::multicore else future::multisession
+        old_plan <- future::plan(strategy, workers = n_workers_fit)
+        on.exit(future::plan(old_plan), add = TRUE)
         
-        if (any_zeros(ev$pvals)) {
-          tf_left <- tf_mid
-          # keep only those still zero at tf_mid to reduce work further
-          ref_idx <- ref_idx[which(is.finite(ev$pvals) & ev$pvals <= .Machine$double.xmin)]
-          if (isTRUE(control$verbose)) {
-            message(sprintf("    refining subset → %d still zero", length(ref_idx)))
-          }
-        } else {
-          tf_right <- tf_mid
-          # no need to persist interim fits here; we will refit all at the end
-        }
+        res_list <- progressr::with_progress({
+          if (control$verbose) p <- progressr::progressor(along = idx_valid)
+          
+          future.apply::future_lapply(
+            idx_valid, 
+            function(j) {
+              res <- fit_one_gpd(j, eps = eps_final)
+              if (control$verbose) p()
+              res
+            },
+            future.packages = c("permApprox","progressr"),
+            future.seed = TRUE
+          )
+        })
+        
+      } else {
+        res_list <- progressr::with_progress({
+          if (control$verbose) p <- progressr::progressor(along = idx_valid)
+          lapply(idx_valid, function(j) {
+            res <- fit_one_gpd(j, eps = eps_final)
+            if (control$verbose) p()
+            res
+          })
+        })
       }
-      final_tf <- tf_right
-    }
-    
-    # ---------- Final refit for ALL selected tests with final_tf ----------
-    eps_final <- .define_eps(
-      perm_stats   = perm_stats,
-      obs_stats    = obs_stats,
-      sample_size  = control$sample_size,
-      constraint   = control$constraint,
-      eps_rule     = control$eps_rule,
-      eps_par      = final_tf
-    )
-    if (isTRUE(control$verbose)) {
-      message("Zero-guard: refitting all selected tests with target_factor = ", tf_fmt(final_tf))
-    }
-    res_list <- run_gpd_fit(eps_final, idx_subset = idx_valid, use_progress = FALSE)
-    pvals_tmp[idx_valid] <- vapply(res_list, `[[`, numeric(1), "p_value")
-    
-    if (isTRUE(control$verbose)) {
-      zeros_final <- .count_zeros(pvals_tmp[idx_valid])
-      message(sprintf("Zero-guard: after refit → zeros=%d (of %d)", zeros_final, length(idx_valid)))
+      
+      pvals_tmp[idx_valid] <- vapply(res_list, `[[`, numeric(1), "p_value")
+      
+      if (isTRUE(control$verbose)) {
+        zeros_final <- .count_zeros(pvals_tmp[idx_valid])
+        message(sprintf("Zero-guard: %d zeros (of %d tests) after refit", 
+                        zeros_final, length(idx_valid)))
+      }
     }
   }
   
