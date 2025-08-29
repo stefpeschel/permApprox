@@ -30,10 +30,6 @@ make_adjust_ctrl <- function(
   }
   seq_length <- as.integer(seq_length)
   
-  if (!is.logical(verbose) || length(verbose) != 1) {
-    stop("'verbose' must be a single logical value (TRUE or FALSE)." )
-  }
-  
   control <- list(
     true_null_method = true_null_method,
     p_true_null = p_true_null,

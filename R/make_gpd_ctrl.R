@@ -256,9 +256,7 @@ make_gpd_ctrl <- function(
     exceed0       = exceed0,
     exceed_min    = as.integer(exceed_min),
     gof_test      = gof_test,
-    gof_alpha     = gof_alpha,
-    cores         = cores,
-    verbose       = verbose
+    gof_alpha     = gof_alpha
   )
   
   class(control) <- "gpd_ctrl"
