@@ -6,7 +6,7 @@
 \usage{
 .find_gpd_thresh(
   perm_stats,
-  obs_stats,
+  obs_stat,
   tol,
   thresh_method = "pr_below_alpha",
   thresh0 = NULL,

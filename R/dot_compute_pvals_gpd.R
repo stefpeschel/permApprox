@@ -20,6 +20,7 @@
                                cores,
                                verbose,
                                ...) {
+  
   ## Sizes
   n_test <- ncol(perm_stats)
   
@@ -86,7 +87,7 @@
   find_thresh_one <- function(j) {
     .find_gpd_thresh(
       perm_stats    = perm_stats[, j],
-      obs_stats     = obs_stats[j],
+      obs_stat      = obs_stats[j],
       tol           = control$tol,
       thresh_method = control$thresh_method,
       thresh0       = control$thresh0,
