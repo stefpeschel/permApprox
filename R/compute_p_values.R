@@ -167,8 +167,8 @@ compute_p_values <- function(
     adjust_method = "BH",
     cores = 1,
     verbose = TRUE,
-    gpd_ctrl = make_gpd_ctrl(),
-    gamma_ctrl = make_gamma_ctrl(),
+    gpd_ctrl = NULL,
+    gamma_ctrl = NULL,
     adjust_ctrl = make_adjust_ctrl(),
     ...
 ) {
@@ -192,12 +192,22 @@ compute_p_values <- function(
     stop("'verbose' must be a single logical.")
   
   # Validate control arguments
-  if (!inherits(gpd_ctrl, "gpd_ctrl")) {
-    stop("'gpd_ctrl' must be created with make_gpd_ctrl().")
-  }
-  
-  if (!inherits(gamma_ctrl, "gamma_ctrl")) {
-    stop("'gamma_ctrl' must be created with make_gamma_ctrl().")
+  if (method == "gpd") {
+    if (is.null(gpd_ctrl)) {
+      gpd_ctrl <- make_gpd_ctrl()
+    } else {
+      if (!inherits(gpd_ctrl, "gpd_ctrl")) {
+        stop("'gpd_ctrl' must be created with make_gpd_ctrl().")
+      }
+    }
+  } else if (method == "gamma") {
+    if (is.null(gpd_ctrl)) {
+      gamma_ctrl <- make_gamma_ctrl()
+    } else {
+      if (!inherits(gamma_ctrl, "gamma_ctrl")) {
+        stop("'gamma_ctrl' must be created with make_gamma_ctrl().")
+      }
+    }
   }
   
   if (!inherits(adjust_ctrl, "adjust_ctrl")) {

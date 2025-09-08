@@ -14,8 +14,8 @@ compute_p_values(
   adjust_method = "BH",
   cores = 1,
   verbose = TRUE,
-  gpd_ctrl = make_gpd_ctrl(),
-  gamma_ctrl = make_gamma_ctrl(),
+  gpd_ctrl = NULL,
+  gamma_ctrl = NULL,
   adjust_ctrl = make_adjust_ctrl(),
   ...
 )
