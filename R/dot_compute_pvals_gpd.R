@@ -20,7 +20,6 @@
                                cores,
                                verbose,
                                ...) {
-  
   ## Sizes
   n_test <- ncol(perm_stats)
   
@@ -100,42 +99,48 @@
     )
   }
   
-  if (isTRUE(verbose)) message("Run threshold detection ...")
+  if (isTRUE(verbose)) writeLines("Run threshold detection ...")
   
   n_workers <- min(max(1L, cores), max(1L, length(idx_non_dis)))
   run_parallel_thresh <- (n_workers > 1L)
   
   if (run_parallel_thresh) {
-    strategy <- if (.Platform$OS.type != "windows" && 
-                    future::supportsMulticore())
+    strategy <- if (.Platform$OS.type != "windows" && future::supportsMulticore())
       future::multicore else future::multisession
-    
-    old_plan <- future::plan(strategy, 
-                             workers = min(cores, length(idx_non_dis)))
+    old_plan <- future::plan(strategy, workers = min(cores, length(idx_non_dis)))
     on.exit(future::plan(old_plan), add = TRUE)
     
-    res_list_thr <- progressr::with_progress({
-      if (verbose) p <- progressr::progressor(along = idx_non_dis)
-      future.apply::future_lapply(
-        idx_non_dis,
-        function(j) {
+    res_list_thr <- progressr::with_progress(
+      handlers = list(progressr::handler_txtprogressbar(clear = TRUE)),
+      {
+        if (verbose) p <- progressr::progressor(along = idx_non_dis)
+        
+        future.apply::future_lapply(
+          idx_non_dis,
+          function(j) {
+            res <- find_thresh_one(j)
+            if (verbose) p()
+            res
+          },
+          future.packages = c("permApprox","progressr"),
+          future.seed = TRUE
+        )
+      }
+    )
+    
+  } else {
+    res_list_thr <- progressr::with_progress(
+      handlers = list(progressr::handler_txtprogressbar(clear = TRUE)),
+      {
+        if (verbose) p <- progressr::progressor(along = idx_non_dis)
+        
+        lapply(idx_non_dis, function(j) {
           res <- find_thresh_one(j)
           if (verbose) p()
           res
-        },
-        future.packages = c("permApprox","progressr"),
-        future.seed = TRUE
-      )
-    })
-  } else {
-    res_list_thr <- with_progress({
-      if (verbose) p <- progressr::progressor(along = idx_non_dis)
-      lapply(idx_non_dis, function(j) {
-        res <- find_thresh_one(j)
-        if (verbose) p()
-        res
-      })
-    })
+        })
+      }
+    )
   }
   
   thresh_vec   <- res_df$thresh
@@ -149,7 +154,7 @@
   idx_no_thr <- idx_non_dis[is.na(thresh_vec[idx_non_dis])]
   res_df$status[idx_no_thr] <- "no_threshold"
   
-  if (isTRUE(verbose)) message("Done.")
+  if (isTRUE(verbose)) writeLines("Done.")
   
   idx_valid <- idx_non_dis[!is.na(thresh_vec[idx_non_dis])]
   
@@ -228,7 +233,7 @@
     eps_par      = control$eps_par
   )
   
-  if (isTRUE(verbose)) message("Run GPD fit ...")
+  if (isTRUE(verbose)) writeLines("Run GPD fit ...")
   
   n_workers_fit <- if (cores > 1L && length(idx_valid) > cores) {
     min(cores, length(idx_valid))
@@ -238,38 +243,43 @@
   run_parallel_fit_all <- (n_workers_fit > 1L)
   
   if (run_parallel_fit_all) {
-    strategy <- if (.Platform$OS.type != "windows" && future::supportsMulticore()) 
+    strategy <- if (.Platform$OS.type != "windows" && future::supportsMulticore())
       future::multicore else future::multisession
     old_plan <- future::plan(strategy, workers = n_workers_fit)
     on.exit(future::plan(old_plan), add = TRUE)
     
-    res_list <- progressr::with_progress({
-      if (verbose) p <- progressr::progressor(along = idx_valid)
-      
-      future.apply::future_lapply(
-        idx_valid, 
-        function(j) {
+    res_list <- progressr::with_progress(
+      handlers = list(progressr::handler_txtprogressbar(clear = TRUE)),
+      {
+        if (verbose) p <- progressr::progressor(along = idx_valid)
+        future.apply::future_lapply(
+          idx_valid,
+          function(j) {
+            res <- .fit_one_gpd(j, eps = epsilons)
+            if (verbose) p()
+            res
+          },
+          future.packages = c("permApprox", "progressr"),
+          future.seed = TRUE
+        )
+      }
+    )
+    
+  } else {
+    res_list <- progressr::with_progress(
+      handlers = list(progressr::handler_txtprogressbar(clear = TRUE)),
+      {
+        if (verbose) p <- progressr::progressor(along = idx_valid)
+        lapply(idx_valid, function(j) {
           res <- .fit_one_gpd(j, eps = epsilons)
           if (verbose) p()
           res
-        },
-        future.packages = c("permApprox","progressr"),
-        future.seed = TRUE
-      )
-    })
-    
-  } else {
-    res_list <- progressr::with_progress({
-      if (verbose) p <- progressr::progressor(along = idx_valid)
-      lapply(idx_valid, function(j) {
-        res <- .fit_one_gpd(j, eps = epsilons)
-        if (verbose) p()
-        res
-      })
-    })
+        })
+      }
+    )
   }
   
-  if (isTRUE(verbose)) message("Done.")
+  if (isTRUE(verbose)) writeLines("Done.")
   
   ## -------------------------------------------------------------------------
   ## Optional: Adaptive epsilon refinement
@@ -485,35 +495,40 @@
       }
       
       if (run_parallel_fit_all) {
-        strategy <- if (.Platform$OS.type != "windows" && future::supportsMulticore()) 
+        strategy <- if (.Platform$OS.type != "windows" && future::supportsMulticore())
           future::multicore else future::multisession
         old_plan <- future::plan(strategy, workers = n_workers_fit)
         on.exit(future::plan(old_plan), add = TRUE)
         
-        res_list <- progressr::with_progress({
-          if (verbose) p <- progressr::progressor(along = idx_valid)
-          
-          future.apply::future_lapply(
-            idx_valid, 
-            function(j) {
+        res_list <- progressr::with_progress(
+          handlers = list(progressr::handler_txtprogressbar(clear = TRUE)),
+          {
+            if (verbose) p <- progressr::progressor(along = idx_valid)
+            future.apply::future_lapply(
+              idx_valid,
+              function(j) {
+                res <- .fit_one_gpd(j, eps = eps_final)
+                if (verbose) p()
+                res
+              },
+              future.packages = c("permApprox", "progressr"),
+              future.seed = TRUE
+            )
+          }
+        )
+        
+      } else {
+        res_list <- progressr::with_progress(
+          handlers = list(progressr::handler_txtprogressbar(clear = TRUE)),
+          {
+            if (verbose) p <- progressr::progressor(along = idx_valid)
+            lapply(idx_valid, function(j) {
               res <- .fit_one_gpd(j, eps = eps_final)
               if (verbose) p()
               res
-            },
-            future.packages = c("permApprox","progressr"),
-            future.seed = TRUE
-          )
-        })
-        
-      } else {
-        res_list <- progressr::with_progress({
-          if (verbose) p <- progressr::progressor(along = idx_valid)
-          lapply(idx_valid, function(j) {
-            res <- .fit_one_gpd(j, eps = eps_final)
-            if (verbose) p()
-            res
-          })
-        })
+            })
+          }
+        )
       }
       
       pvals_tmp[idx_valid] <- vapply(res_list, `[[`, numeric(1), "p_value")

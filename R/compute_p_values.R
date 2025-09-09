@@ -201,7 +201,7 @@ compute_p_values <- function(
       }
     }
   } else if (method == "gamma") {
-    if (is.null(gpd_ctrl)) {
+    if (is.null(gamma_ctrl)) {
       gamma_ctrl <- make_gamma_ctrl()
     } else {
       if (!inherits(gamma_ctrl, "gamma_ctrl")) {
