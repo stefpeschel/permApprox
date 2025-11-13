@@ -7,7 +7,7 @@
 fit_gpd(
   data,
   thresh = NULL,
-  fit_method = "MLE1D",
+  fit_method = "mle1d",
   tol = 1e-08,
   epsilon = 0,
   constraint = "unconstrained",
@@ -22,8 +22,8 @@ fit_gpd(
 \item{thresh}{Numeric scalar; exceedance threshold.}
 
 \item{fit_method}{Character string specifying the fitting method to be used.
-Must be one of \code{"LME"}, \code{"MLE1D"}, \code{"MLE2D"}, \code{"MOM"},
-\code{"NLS2"}, \code{"WNLLSM"}, or \code{"ZSE"}.}
+Must be one of \code{"lme"}, \code{"mle1d"}, \code{"mle2d"}, \code{"mom"},
+\code{"nls2"}, \code{"wnllsm"}, or \code{"zse"}.}
 
 \item{tol}{Numeric. Convergence tolerance (default 1e-8).}
 

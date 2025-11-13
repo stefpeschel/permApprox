@@ -51,11 +51,13 @@
 #'
 #' @details
 #'   The PWM estimators are computed using the plotting positions
-#'   \eqn{p_i = (i - 0.35) / n} proposed by \insertCite{Hosking1987parameter;textual}{permApprox}.
+#'   \eqn{p_i = (i - 0.35) / n} proposed by 
+#'   \insertCite{Hosking1987parameter;textual}{permApprox}.
 #'   Let \eqn{a_0 = \bar{x}} and
 #'   \eqn{a_1 = \frac{1}{n} \sum_{i=1}^{n} x_{(i)} (1 - p_i)}, where
 #'   \eqn{x_{(i)}} are the order statistics of \eqn{x}.
-#'   The estimators for the shape (\eqn{\xi}) and scale (\eqn{\sigma}) parameters are then
+#'   The estimators for the shape (\eqn{\xi}) and scale (\eqn{\sigma}) 
+#'   parameters are then
 #'   \deqn{
 #'     \hat{\xi} = 2 - \frac{a_0}{a_0 - 2 a_1}, \qquad
 #'     \hat{\sigma} = \frac{2 a_0 a_1}{a_0 - 2 a_1}.
@@ -200,42 +202,8 @@
   return(out)
 }
 
-
-# #-------------------------------------------------------------------------------
-# # positive shape
-# scale <- 1
-# shape <- 0.25
-#
-# set.seed(123456)
-# x <- eva::rgpd(n = 1000, scale = scale, shape = shape)
-#
-# gpdfit <- .fit_gpd_lme(x, boundary = NULL)
-# gpdfit
-#
-# gpdfit <- .fit_gpd_lme(x, boundary = 8)
-# gpdfit
-#
-# # -> fit is independent of boundary for positive shape
-#
-#
-# # negative shape
-# shape <- -0.25
-#
-# set.seed(123456)
-# x <- eva::rgpd(n = 1000, scale = scale, shape = shape)
-#
-# gpdfit <- .fit_gpd_lme(x, boundary = NULL, r = 0.25)
-# gpdfit
-#
-# gpdfit <- .fit_gpd_lme(x, boundary = 8)
-# gpdfit
-#
-# -gpdfit$scale / gpdfit$shape
-#
-# # -> works perfectly
-
 ################################################################################
-# MLE1D
+# mle1d
 ################################################################################
 
 #' @title One-dimensional MLE for the GPD
@@ -324,47 +292,8 @@
 }
 
 
-
-# #-------------------------------------------------------------------------------
-# # positive shape
-# scale <- 1
-# shape <- 0.25
-#
-# set.seed(123456)
-# x <- eva::rgpd(n = 1000, scale = scale, shape = shape)
-#
-# gpdfit <- .fit_gpd_mle1d(x, boundary = NULL, shapePos = FALSE)
-# gpdfit$shape
-#
-# gpdfit <- .fit_gpd_mle1d(x, boundary = 5, shapePos = FALSE)
-# gpdfit$shape
-#
-# gpdfit <- .fit_gpd_mle1d(x, boundary = 5, shapePos = TRUE)
-# gpdfit$shape
-#
-# # -> fit is independent of xobs and shapePos constraint for positive shape
-#
-#
-# # negative shape
-# shape <- -0.25
-#
-# set.seed(123456)
-# x <- eva::rgpd(n = 1000, scale = scale, shape = shape)
-#
-# gpdfit <- .fit_gpd_mle1d(x, boundary = NULL, shapePos = FALSE)
-# gpdfit
-#
-# gpdfit <- .fit_gpd_mle1d(x, boundary = 5, shapePos = FALSE)
-# gpdfit
-# -gpdfit$scale / gpdfit$shape
-#
-# gpdfit <- .fit_gpd_mle1d(x, boundary = 5, shapePos = TRUE)
-# gpdfit
-#
-# # -> works perfectly
-
 ################################################################################
-# MLE2D
+# mle2d
 ################################################################################
 
 #' @title Two-dimensional MLE for the GPD
@@ -503,45 +432,6 @@
   }
   return(nll)
 }
-
-
-#-------------------------------------------------------------------------------
-# # positive shape
-# scale <- 1
-# shape <- 0.25
-#
-# set.seed(123456)
-# x <- eva::rgpd(n = 1000, scale = scale, shape = shape)
-#
-# gpdfit <- .fit_gpd_mle2d(x, boundary = NULL)
-# gpdfit$shape
-#
-# gpdfit <- .fit_gpd_mle2d(x, boundary = 5)
-# gpdfit$shape
-#
-# gpdfit <- .fit_gpd_mle2d(x, boundary = 5, shapeMin = 0)
-# gpdfit$shape
-#
-# # -> fit is nearly independent of boundary and shapePos constraint for positive shape
-#
-#
-# # negative shape
-# shape <- -0.25
-#
-# set.seed(123456)
-# x <- eva::rgpd(n = 1000, scale = scale, shape = shape)
-#
-# gpdfit <- .fit_gpd_mle2d(x, boundary = NULL)
-# gpdfit
-#
-# gpdfit <- .fit_gpd_mle2d(x, boundary = 5)
-# gpdfit
-# -gpdfit$scale / gpdfit$shape
-#
-# gpdfit <- .fit_gpd_mle2d(x, boundary = 5, shapeMin = 0)
-# gpdfit
-#
-# # -> works perfectly
 
 ################################################################################
 # NLS2
@@ -762,63 +652,6 @@
 }
 
 
-################################################
-
-
-# # positive shape
-# scale <- 1
-# shape <- 0.25
-#
-# set.seed(123456)
-# x <- eva::rgpd(n = 1000, scale = scale, shape = shape)
-#
-# gpdfit <- .fit_gpd_nls2(x = x, q = 0,
-#                boundary = NULL, twosteps = TRUE,
-#                shapeMin = -Inf, scaleMin = -Inf,
-#                shapeMax = Inf, scaleMax = Inf)
-# gpdfit
-#
-# gpdfit <- .fit_gpd_nls2(x = x, q = 0,
-#                boundary = NULL, twosteps = TRUE,
-#                shapeMin = 0, scaleMin = -Inf,
-#                shapeMax = Inf, scaleMax = Inf)
-# gpdfit
-#
-# gpdfit <- .fit_gpd_nls2(x = x, q = 0,
-#                boundary = 8, twosteps = TRUE,
-#                shapeMin = -Inf, scaleMin = -Inf,
-#                shapeMax = Inf, scaleMax = Inf)
-# gpdfit
-#
-#
-#
-# # negative shape
-# shape <- -0.25
-#
-# set.seed(123456)
-# x <- eva::rgpd(n = 1000, scale = scale, shape = shape)
-#
-# gpdfit <- .fit_gpd_nls2(x = x, q = 0,
-#                boundary = NULL, twosteps = TRUE,
-#                shapeMin = -Inf, scaleMin = -Inf,
-#                shapeMax = Inf, scaleMax = Inf)
-# gpdfit
-#
-# gpdfit <- .fit_gpd_nls2(x = x, q = 0,
-#                boundary = NULL, twosteps = TRUE,
-#                shapeMin = 0, scaleMin = -Inf,
-#                shapeMax = Inf, scaleMax = Inf)
-# gpdfit
-#
-# gpdfit <- .fit_gpd_nls2(x = x, q = 0,
-#                boundary = 8, twosteps = TRUE,
-#                shapeMin = -Inf, scaleMin = -Inf,
-#                shapeMax = Inf, scaleMax = Inf)
-# gpdfit
-#
-# -gpdfit$scale / gpdfit$shape
-# # -> works well
-
 ################################################################################
 # WNLLSM
 ################################################################################
@@ -852,7 +685,7 @@
 .fit_gpd_wnllsm <- function(x,
                             boundary = NULL,
                             eval_point = NULL,
-                            method = "WNLLSM",
+                            method = "wnllsm",
                             tol =  1e-9,
                             shapeIni = 0.01,
                             scaleIni = 0.01,
@@ -888,7 +721,7 @@
   # Exceedances
   z <- x[x>u]
   
-  if (method == "WNLLSM"){
+  if (method == "wnllsm"){
     
     #---------------------------------------------------------------------------
     # Original code proposed by Zhao et al.:
@@ -1094,62 +927,6 @@
 }
 
 
-# #-------------------------------------------------------------------------------
-# # positive shape
-# scale <- 1
-# shape <- 0.25
-#
-# set.seed(123456)
-# x <- eva::rgpd(n = 1000, scale = scale, shape = shape)
-#
-# gpdfit <- .fit_gpd_wnllsm(x = x, boundary = NULL, method = "WNLLSM")
-# gpdfit$shape
-#
-# gpdfit <- .fit_gpd_wnllsm(x = x, boundary = 8,  method = "WNLLSM")
-# gpdfit$shape
-#
-# gpdfit <- .fit_gpd_wnllsm(x = x, boundary = NULL, method = "WNLSM")
-# gpdfit$shape
-#
-# gpdfit <- .fit_gpd_wnllsm(x = x, boundary = 8,  method = "WNLSM")
-# gpdfit$shape
-#
-# # -> fit is not effected for positive shapes
-#
-#
-# # negative shape
-# shape <- -0.25
-#
-# set.seed(123456)
-# x <- eva::rgpd(n = 1000, scale = scale, shape = shape)
-#
-# gpdfit <- .fit_gpd_wnllsm(x = x, boundary = NULL, method = "WNLLSM")
-# gpdfit$shape
-# gpdfit$densMax
-#
-# gpdfit <- .fit_gpd_wnllsm(x = x, boundary = 8,  method = "WNLLSM")
-# gpdfit$shape
-# gpdfit$densMax
-#
-# gpdfit <- .fit_gpd_wnllsm(x = x, boundary = 8, eps = 1e-5,  method = "WNLLSM")
-# gpdfit$shape
-# gpdfit$densMax
-# # density depends on eps
-#
-# gpdfit <- .fit_gpd_wnllsm(x = x, boundary = NULL, method = "WNLSM")
-# gpdfit$shape
-# gpdfit$densMax
-#
-# gpdfit <- .fit_gpd_wnllsm(x = x, boundary = 8, eps = 1e-8, method = "WNLSM")
-# gpdfit$shape
-# gpdfit$densMax
-#
-# gpdfit <- .fit_gpd_wnllsm(x = x, boundary = 8, eps = 1e-5, method = "WNLSM")
-# gpdfit$shape
-# gpdfit$densMax
-#
-# -gpdfit$scale / gpdfit$shape
-
 ################################################################################
 # ZSE
 ################################################################################
@@ -1230,44 +1007,6 @@
   k <- -mean(log(1 - b * x))
   log(b / k) + k - 1
 }
-
-
-# library(POT)
-#
-# # positive shape
-# scale <- 1
-# shape <- 0.25
-#
-# set.seed(123456)
-# x <- rgpd(n = 100, scale = scale, shape = shape)
-#
-# gpdfit <- ZSE(x, constr = "none", boundary = NULL)
-# gpdfit
-#
-# gpdfit <- ZSE(x, constr = "boundary", boundary = 8)
-# gpdfit
-#
-# # -> fit is independent of boundary for positive shape
-#
-#
-# # negative shape
-# shape <- -0.25
-#
-# set.seed(123456)
-# x <- rgpd(n = 100, scale = scale, shape = shape)
-#
-# gpdfit <- ZSE(x, constr = "none", boundary = NULL)
-# gpdfit
-#
-# gpdfit <- ZSE(x, constr = "shapePos", boundary = NULL)
-# gpdfit
-# # shapePos constraint doesn't work
-#
-# gpdfit <- ZSE(x, constr = "boundary", boundary = 8)
-# gpdfit
-#
-# -gpdfit$scale / gpdfit$shape
-# # -> much larger than boundary
 
 
 

@@ -16,8 +16,8 @@
 #' \code{0}, \code{eps_args} is cleared, and \code{zero_guard} is disabled.
 #'
 #' @param fit_method Character. Method for GPD fitting.
-#'   Options: \code{"LME"}, \code{"MLE1D"}, \code{"MLE2D"}, \code{"MOM"},
-#'   \code{"NLS2"}, \code{"WNLLSM"}, \code{"ZSE"}. Default: \code{"LME"}.
+#'   Options: \code{"lme"}, \code{"mle1d"}, \code{"mle2d"}, \code{"mom"},
+#'   \code{"nls2"}, \code{"wnllsm"}, \code{"zse"}. Default: \code{"lme"}.
 #'
 #' @param include_obs Logical scalar. If \code{TRUE}, the observed test
 #'   statistic is included into the tail approximation (treated as an additional
@@ -113,7 +113,7 @@
 #'
 #' @export
 make_gpd_ctrl <- function(
-    fit_method    = "LME",
+    fit_method    = "lme",
     include_obs   = FALSE,
     constraint    = "support_at_obs",
     eps_fun       = eps_slls,
@@ -143,7 +143,7 @@ make_gpd_ctrl <- function(
   ## ------------------------------------------------------------------------
   fit_method <- match.arg(
     fit_method,
-    c("LME", "MLE1D", "MLE2D", "MOM", "NLS2", "WNLLSM", "ZSE")
+    c("lme", "mle1d", "mle2d", "mom", "nls2", "wnllsm", "zse")
   )
   
   if (!is.logical(include_obs) || length(include_obs) != 1L || is.na(include_obs))
@@ -170,9 +170,9 @@ make_gpd_ctrl <- function(
     stop("'exceed_min' must be a single numeric >= 0.")
   
   ## constraint-specific check
-  if (constraint == "shape_nonneg" && !fit_method %in% c("MLE1D", "MLE2D", "NLS2")) {
+  if (constraint == "shape_nonneg" && !fit_method %in% c("mle1d", "mle2d", "nls2")) {
     stop("Constraint 'shape_nonneg' only available for methods ",
-         "MLE1D, MLE2D, and NLS2.")
+         "mle1d, mle2d, and NLS2.")
   }
   
   ## ------------------------------------------------------------------------

@@ -221,7 +221,7 @@
     res <- fit_gpd(
       data = t_sort,
       thresh = thresh,
-      fit_method = "LME",
+      fit_method = "lme",
       constraint = "unconstrained",
       gof_test = gof_test
     )

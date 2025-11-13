@@ -5,7 +5,7 @@
 \title{Create a control list for GPD approximation}
 \usage{
 make_gpd_ctrl(
-  fit_method = "LME",
+  fit_method = "lme",
   include_obs = FALSE,
   constraint = "support_at_obs",
   eps_fun = eps_slls,
@@ -28,8 +28,8 @@ make_gpd_ctrl(
 }
 \arguments{
 \item{fit_method}{Character. Method for GPD fitting.
-Options: \code{"LME"}, \code{"MLE1D"}, \code{"MLE2D"}, \code{"MOM"},
-\code{"NLS2"}, \code{"WNLLSM"}, \code{"ZSE"}. Default: \code{"LME"}.}
+Options: \code{"lme"}, \code{"mle1d"}, \code{"mle2d"}, \code{"mom"},
+\code{"nls2"}, \code{"wnllsm"}, \code{"zse"}. Default: \code{"lme"}.}
 
 \item{include_obs}{Logical scalar. If \code{TRUE}, the observed test
 statistic is included into the tail approximation (treated as an additional

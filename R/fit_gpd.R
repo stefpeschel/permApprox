@@ -10,8 +10,8 @@
 #' @param thresh Numeric scalar; exceedance threshold.
 #'
 #' @param fit_method Character string specifying the fitting method to be used.
-#'   Must be one of \code{"LME"}, \code{"MLE1D"}, \code{"MLE2D"}, \code{"MOM"},
-#'   \code{"NLS2"}, \code{"WNLLSM"}, or \code{"ZSE"}.
+#'   Must be one of \code{"lme"}, \code{"mle1d"}, \code{"mle2d"}, \code{"mom"},
+#'   \code{"nls2"}, \code{"wnllsm"}, or \code{"zse"}.
 #'
 #' @param tol Numeric. Convergence tolerance (default 1e-8).
 #'
@@ -49,7 +49,7 @@
 
 fit_gpd <- function(data,
                     thresh = NULL,
-                    fit_method = "MLE1D",
+                    fit_method = "mle1d",
                     tol = 1e-8,
                     epsilon = 0,
                     constraint = "unconstrained",
@@ -61,14 +61,14 @@ fit_gpd <- function(data,
   stopifnot(is.numeric(thresh) & length(thresh) == 1)
   
   fit_method <- match.arg(fit_method,
-                          choices = c("LME",
-                                      "MLE1D",
-                                      "MLE2D",
-                                      "MOM",
-                                      "NLS2",
-                                      "PWM",
-                                      "WNLLSM",
-                                      "ZSE"))
+                          choices = c("lme",
+                                      "mle1d",
+                                      "mle2d",
+                                      "mom",
+                                      "nls2",
+                                      "pwm",
+                                      "wnllsm",
+                                      "zse"))
   
   constraint <- match.arg(constraint,
                           choices = c("unconstrained",
@@ -97,8 +97,8 @@ fit_gpd <- function(data,
   #-----------------------------------------------------------------------------
   
   if (constraint == "shape_nonneg" &&
-      !fit_method %in% c("MLE1D","MLE2D","NLS2"))
-    stop("Constraint 'shape_nonneg' only available for MLE1D, MLE2D, NLS2.")
+      !fit_method %in% c("mle1d","mle2d","nls2"))
+    stop("Constraint 'shape_nonneg' only available for mle1d, mle2d, nls2.")
   
   shapeMin <- if (constraint == "shape_nonneg") 0 else -Inf
   shapePos <- identical(shapeMin, 0)
@@ -108,32 +108,32 @@ fit_gpd <- function(data,
   #-----------------------------------------------------------------------------
   
   fit <- switch(fit_method,
-                MLE2D  = try(.fit_gpd_mle2d(excess, boundary = excess_boundary, 
+                mle2d  = try(.fit_gpd_mle2d(excess, boundary = excess_boundary, 
                                             eval_point = eval_point,
                                             tol = tol, shapeMin = shapeMin), 
                              silent = TRUE),
-                MLE1D  = try(.fit_gpd_mle1d(excess, boundary = excess_boundary, 
+                mle1d  = try(.fit_gpd_mle1d(excess, boundary = excess_boundary, 
                                             eval_point = eval_point,
                                             tol = tol, shapePos = shapePos), 
                              silent = TRUE),
-                LME    = try(.fit_gpd_lme  (excess, boundary = excess_boundary, 
+                lme    = try(.fit_gpd_lme  (excess, boundary = excess_boundary, 
                                             eval_point = eval_point,
                                             tol = tol), 
                              silent = TRUE),
-                NLS2   = try(.fit_gpd_nls2 (excess, boundary = excess_boundary, 
+                nls2   = try(.fit_gpd_nls2 (excess, boundary = excess_boundary, 
                                             eval_point = eval_point,
                                             tol = tol, shapeMin = shapeMin), 
                              silent = TRUE),
-                WNLLSM = try(.fit_gpd_wnllsm(excess, boundary = excess_boundary, 
+                wnllsm = try(.fit_gpd_wnllsm(excess, boundary = excess_boundary, 
                                              eval_point = eval_point,
                                              tol = tol), 
                              silent = TRUE),
-                ZSE    = try(.fit_gpd_zse  (excess, boundary = excess_boundary, 
+                zse    = try(.fit_gpd_zse  (excess, boundary = excess_boundary, 
                                             eval_point = eval_point),
                              silent = TRUE),
-                MOM    = try(.fit_gpd_mom  (excess), 
+                mom    = try(.fit_gpd_mom  (excess), 
                              silent = TRUE),
-                PWM    = try(.fit_gpd_pwm  (excess), 
+                pwm    = try(.fit_gpd_pwm  (excess), 
                              silent = TRUE)
   )
   

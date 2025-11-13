@@ -21,11 +21,13 @@ Probability Weighted Moments (PWM) estimation for the two-parameter
 }
 \details{
 The PWM estimators are computed using the plotting positions
-  \eqn{p_i = (i - 0.35) / n} proposed by \insertCite{Hosking1987parameter;textual}{permApprox}.
+  \eqn{p_i = (i - 0.35) / n} proposed by 
+  \insertCite{Hosking1987parameter;textual}{permApprox}.
   Let \eqn{a_0 = \bar{x}} and
   \eqn{a_1 = \frac{1}{n} \sum_{i=1}^{n} x_{(i)} (1 - p_i)}, where
   \eqn{x_{(i)}} are the order statistics of \eqn{x}.
-  The estimators for the shape (\eqn{\xi}) and scale (\eqn{\sigma}) parameters are then
+  The estimators for the shape (\eqn{\xi}) and scale (\eqn{\sigma}) 
+  parameters are then
   \deqn{
     \hat{\xi} = 2 - \frac{a_0}{a_0 - 2 a_1}, \qquad
     \hat{\sigma} = \frac{2 a_0 a_1}{a_0 - 2 a_1}.

@@ -74,7 +74,7 @@ test_that("compute_p_values accepts custom control parameters without errors", {
   perm_mat <- matrix(rnorm(4 * 1000), nrow = 4)
 
   # Custom GPD control (non-default fit method and include_obs)
-  gpd_ctrl_custom <- make_gpd_ctrl(fit_method = "MOM",
+  gpd_ctrl_custom <- make_gpd_ctrl(fit_method = "mom",
                                    include_obs = TRUE)
 
   # Custom Gamma control (include observed, no GOF test, different alpha)
