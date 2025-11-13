@@ -11,6 +11,7 @@ compute_p_values(
   fit_thresh = 0.1,
   alternative = "two_sided",
   null_center = 0,
+  power = 1,
   adjust_method = "BH",
   cores = 1,
   verbose = TRUE,
@@ -52,6 +53,11 @@ null distribution is centered. If set to \code{"mean"} or \code{"median"},
 the per-row mean or median of \code{perm_stats} is used instead.
 This allows testing against a null hypothesis other than zero or centering
 based on the empirical distribution.}
+
+\item{power}{Numeric scalar. Optional monotone power transformation applied
+to both permutation statistics and the observed statistic before threshold
+detection and GPD fitting. Must be positive. 
+Default: 1 (no transformation).}
 
 \item{adjust_method}{Character. Method for multiple testing adjustment.
 Options include:

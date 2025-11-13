@@ -37,6 +37,11 @@
 #'   the per-row mean or median of \code{perm_stats} is used instead.
 #'   This allows testing against a null hypothesis other than zero or centering
 #'   based on the empirical distribution.
+#'   
+#' @param power Numeric scalar. Optional monotone power transformation applied
+#'   to both permutation statistics and the observed statistic before threshold
+#'   detection and GPD fitting. Must be positive. 
+#'   Default: 1 (no transformation).
 #'
 #' @param adjust_method Character. Method for multiple testing adjustment.
 #'   Options include:
@@ -164,6 +169,7 @@ compute_p_values <- function(
     fit_thresh = 0.1,
     alternative = "two_sided",
     null_center = 0,
+    power = 1,
     adjust_method = "BH",
     cores = 1,
     verbose = TRUE,
@@ -180,6 +186,9 @@ compute_p_values <- function(
   # Validate 'method'
   method <- match.arg(method,
                       choices = c("gpd", "gamma", "empirical"))
+  
+  # Validate 'power'
+  stopifnot(is.numeric(power))
   
   # Validate 'cores'
   if (!(is.numeric(cores) && length(cores) == 1L && is.finite(cores) && cores >= 1))
@@ -262,6 +271,14 @@ compute_p_values <- function(
   
   # Center observed statistic(s)
   obs_stats <- obs_stats - center_vec
+  
+  ## ---------------------------------------------------------------------------
+  ## Power transformation
+  ## ---------------------------------------------------------------------------
+  if (power != 1) {
+    perm_stats <- perm_stats^power
+    obs_stats <- obs_stats^power
+  }
   
   ## ---------------------------------------------------------------------------
   ## Empirical p-values
