@@ -35,6 +35,70 @@
 }
 
 ################################################################################
+# PWM
+################################################################################
+
+# Probability Weighted Moments estimator for the GPD
+
+#' @title Probability Weighted Moments estimation for the GPD
+#'
+#' @description
+#'   Probability Weighted Moments (PWM) estimation for the two-parameter
+#'   Generalized Pareto Distribution (GPD) as described by
+#'   \insertCite{Hosking1987parameter;textual}{permApprox}.
+#'
+#' @param x data vector
+#'
+#' @details
+#'   The PWM estimators are computed using the plotting positions
+#'   \eqn{p_i = (i - 0.35) / n} proposed by \insertCite{Hosking1987parameter;textual}{permApprox}.
+#'   Let \eqn{a_0 = \bar{x}} and
+#'   \eqn{a_1 = \frac{1}{n} \sum_{i=1}^{n} x_{(i)} (1 - p_i)}, where
+#'   \eqn{x_{(i)}} are the order statistics of \eqn{x}.
+#'   The estimators for the shape (\eqn{\xi}) and scale (\eqn{\sigma}) parameters are then
+#'   \deqn{
+#'     \hat{\xi} = 2 - \frac{a_0}{a_0 - 2 a_1}, \qquad
+#'     \hat{\sigma} = \frac{2 a_0 a_1}{a_0 - 2 a_1}.
+#'   }
+#'
+#' @return A list containing
+#'   \item{shape}{Estimated shape parameter \eqn{\xi}.}
+#'   \item{scale}{Estimated scale parameter \eqn{\sigma}.}
+#'
+#' @references
+#'   \insertRef{Hosking1987parameter}{permApprox}
+#'
+#' @importFrom Rdpack reprompt
+#' @export
+#' @keywords internal
+.fit_gpd_pwm <- function(x) {
+  
+  # x must be numeric
+  x <- as.numeric(x)
+  n <- length(x)
+  
+  if (n < 2L) {
+    return(list(shape = NA_real_, scale = NA_real_))
+  }
+  
+  # Sort and compute PWMs
+  x_sorted <- sort(x)
+  pvec <- (seq_len(n) - 0.35) / n
+  a0 <- mean(x_sorted)
+  a1 <- mean(x_sorted * (1 - pvec))
+  
+  denom <- a0 - 2 * a1
+  if (!is.finite(denom) || abs(denom) < .Machine$double.eps) {
+    return(list(shape = NA_real_, scale = NA_real_))
+  }
+  
+  shape <- 2 - a0 / denom
+  scale <- (2 * a0 * a1) / denom
+  
+  return(list(shape = shape, scale = scale))
+}
+
+################################################################################
 # LME
 ################################################################################
 
@@ -350,23 +414,37 @@
     optcontr <- list(reltol = tol)
   }
   
-  # Method of moments estimator
-  momEst <- .fit_gpd_mom(x)
+  # --- Start values (PWM-based with simple fallback) --------------------------
+  eps <- 1e-8
   
-  # Set start values for shape and scale (use method of moments)
-  if (is.null(shapeIni)) {
-    if (momEst$shape < 0) {
-      shapeIni <- -0.1
-    } else {
-      shapeIni <- 0.1
+  if (is.null(shapeIni) || is.null(scaleIni)) {
+    
+    # 1) Try PWM 
+    # (boundary is included to get more reliable start values in constrained case)
+    initEst <- .fit_gpd_pwm(c(x, boundary))
+    
+    # 2) If PWM degenerate, fall back to Method of Moments
+    if (anyNA(unlist(initEst)) || !is.finite(initEst$shape) ||
+        !is.finite(initEst$scale) || initEst$scale <= 0) {
+      initEst <- .fit_gpd_mom(c(x, boundary))
     }
+    
+    shapeIni <- initEst$shape
+    scaleIni <- initEst$scale
   }
   
-  if (is.null(scaleIni)) {
-    scaleIni <- 1
-  }
+  # Final sanity + box constraints
+  if (!is.finite(shapeIni)) shapeIni <- 0
+  if (!is.finite(scaleIni) || scaleIni <= 0)
+    scaleIni <- max(mean(pmax(x, 0)), eps)
+  
+  shapeIni <- min(max(shapeIni, shapeMin), shapeMax)
+  scaleIni <- min(max(scaleIni, scaleMin, eps),
+                  if (is.finite(scaleMax)) scaleMax else scaleIni)
   
   params <- c(shapeIni, scaleIni)
+  
+  # ----------------------------------------------------------------------------
   
   # Actual maximum value (GPD density must be non-zero at this value)
   actual_boundary <- max(c(x, boundary))
@@ -783,8 +861,6 @@
   # sigma: scale
   # b: xi/sigma
   # beta: (xi, b)
-  
-  #stopifnot(eps > 0)
   
   x <- sort(x)
   n <- length(x)
