@@ -37,8 +37,31 @@
 #'
 #' @keywords internal
 
-.pgpd_upper_tail <- function(q, location = 0, shape, scale){
-  zedd <- (q - location)/scale
-  use.zedd <- pmax(zedd, 0)
-  pmax(1 + shape * use.zedd, 0)^(-1/shape)
+.pgpd_upper_tail <- function(q, location = 0, shape, scale) {
+  if (!is.numeric(scale) || any(scale <= 0)) stop("scale must be > 0")
+  z <- (q - location) / scale
+  z <- pmax(z, 0)  # support lower bound: q < location => survival = 1
+  
+  tiny <- 1e-12
+  res <- numeric(length(z))
+  
+  # Valid region mask (avoid log1p() on invalid inputs)
+  if (shape < 0) {
+    mask <- (1 + shape * z) > 0  # within support
+  } else {
+    mask <- rep(TRUE, length(z)) # no finite upper endpoint
+  }
+  
+  if (abs(shape) < tiny) {
+    # Exponential limit
+    res[mask] <- exp(-z[mask])
+  } else {
+    # Stable computation via log1p, only on valid indices
+    res[mask] <- exp((-1/shape) * log1p(shape * z[mask]))
+  }
+  
+  # Outside support (shape < 0 and beyond endpoint): survival = 0
+  res[!mask] <- 0
+  
+  res
 }
