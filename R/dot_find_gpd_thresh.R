@@ -101,6 +101,7 @@
                              thresh_method = "rpc",
                              thresh0 = NULL,
                              exceed0 = NULL,
+                             exceed0_min = NULL,
                              exceed_min = 1,
                              thresh_step = 1,
                              gof_test = "ad",
@@ -130,6 +131,9 @@
     } else {
       as.integer(exceed0)
     }
+    
+    exceed0 <- max(exceed0, exceed0_min)
+    
     if (exceed0 > n_perm) {
       stop("'exceed0' larger than number of permutations in use (", n_perm, ").")
     }

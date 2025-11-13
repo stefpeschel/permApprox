@@ -72,8 +72,13 @@
 #'
 #' @param thresh_step Integer >= 1. Step size for adaptive threshold search.
 #'
-#' @param exceed0 Numeric or NULL. Initial number (or proportion < 1) of exceedances.
-#'   Must be NULL if \code{thresh0} is provided. Default: 0.25.
+#' @param exceed0 Numeric or NULL. Initial number (or proportion < 1) of 
+#'   exceedances. Must be NULL if \code{thresh0} is provided. Default: 0.25.
+#'   
+#' @param exceed0_min Integer. Minimum initial number of exceedances. The actual 
+#'   exceed0 value is the maximum of \code{exceed0} and \code{exceed0_min}.
+#'   If \code{NULL}, no minimum is enforced.
+#'   Default: 250 (threshold search starts with at least 250 exceedances).
 #'
 #' @param exceed_min Integer >= 0. Minimum exceedances required for fitting.
 #'   Default: 10.
@@ -106,6 +111,7 @@ make_gpd_ctrl <- function(
     thresh0 = NULL,
     thresh_step = 10,
     exceed0 = 0.25,
+    exceed0_min = 250,
     exceed_min = 10,
     gof_test = "ad",
     gof_alpha = 0.05
@@ -156,6 +162,17 @@ make_gpd_ctrl <- function(
     if (!(is.numeric(exceed0) && length(exceed0) == 1L && is.finite(exceed0)))
       stop("'exceed0' must be a single numeric or NULL.")
     if (exceed0 < 0) stop("'exceed0' must be non-negative (count) or proportion < 1.")
+  }
+  
+  ## exceed0_min: may be NULL or a single non-negative numeric
+  if (!is.null(exceed0_min)) {
+    if (!(is.numeric(exceed0_min) &&
+          length(exceed0_min) == 1L &&
+          is.finite(exceed0_min) &&
+          exceed0_min >= 0))
+      stop("'exceed0_min' must be NULL or a single non-negative numeric.")
+    
+    exceed0_min <- as.integer(exceed0_min)
   }
   
   ## GOF
@@ -254,6 +271,7 @@ make_gpd_ctrl <- function(
     thresh0       = thresh0,
     thresh_step   = as.integer(thresh_step),
     exceed0       = exceed0,
+    exceed0_min   = exceed0_min,
     exceed_min    = as.integer(exceed_min),
     gof_test      = gof_test,
     gof_alpha     = gof_alpha

@@ -19,6 +19,7 @@ make_gpd_ctrl(
   thresh0 = NULL,
   thresh_step = 10,
   exceed0 = 0.25,
+  exceed0_min = 250,
   exceed_min = 10,
   gof_test = "ad",
   gof_alpha = 0.05
@@ -87,8 +88,13 @@ Default: 1e-8.}
 
 \item{thresh_step}{Integer >= 1. Step size for adaptive threshold search.}
 
-\item{exceed0}{Numeric or NULL. Initial number (or proportion < 1) of exceedances.
-Must be NULL if \code{thresh0} is provided. Default: 0.25.}
+\item{exceed0}{Numeric or NULL. Initial number (or proportion < 1) of 
+exceedances. Must be NULL if \code{thresh0} is provided. Default: 0.25.}
+
+\item{exceed0_min}{Integer. Minimum initial number of exceedances. The actual 
+exceed0 value is the maximum of \code{exceed0} and \code{exceed0_min}.
+If \code{NULL}, no minimum is enforced.
+Default: 250 (threshold search starts with at least 250 exceedances).}
 
 \item{exceed_min}{Integer >= 0. Minimum exceedances required for fitting.
 Default: 10.}

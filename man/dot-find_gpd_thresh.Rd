@@ -11,6 +11,7 @@
   thresh_method = "rpc",
   thresh0 = NULL,
   exceed0 = NULL,
+  exceed0_min = NULL,
   exceed_min = 1,
   thresh_step = 1,
   gof_test = "ad",
