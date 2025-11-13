@@ -11,7 +11,7 @@
   eval_point = NULL,
   twosteps = TRUE,
   optimMethod = "Nelder-Mead",
-  tol = 1e-08,
+  tol = 1e-09,
   shapeIni = NULL,
   scaleIni = NULL,
   shapeMin = -Inf,

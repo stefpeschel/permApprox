@@ -9,7 +9,7 @@
   boundary = NULL,
   eval_point = NULL,
   optimMethod = "Nelder-Mead",
-  tol = 1e-08,
+  tol = 1e-10,
   shapeIni = NULL,
   scaleIni = NULL,
   shapeMin = -Inf,

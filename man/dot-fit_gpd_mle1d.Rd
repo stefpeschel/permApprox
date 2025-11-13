@@ -9,7 +9,7 @@
   boundary = NULL,
   eval_point = NULL,
   shapePos = FALSE,
-  tol = 1e-08
+  tol = 1e-10
 )
 }
 \arguments{

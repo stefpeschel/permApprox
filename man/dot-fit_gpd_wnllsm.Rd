@@ -9,7 +9,7 @@
   boundary = NULL,
   eval_point = NULL,
   method = "WNLLSM",
-  tol = 1e-08,
+  tol = 1e-09,
   shapeIni = 0.01,
   scaleIni = 0.01,
   F0 = 0,

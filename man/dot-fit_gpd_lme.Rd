@@ -4,7 +4,7 @@
 \alias{.fit_gpd_lme}
 \title{Likelihood Moment Estimation for the GPD}
 \usage{
-.fit_gpd_lme(x, boundary = NULL, eval_point = NULL, r = -1/2, tol = 1e-08)
+.fit_gpd_lme(x, boundary = NULL, eval_point = NULL, r = -1/2, tol = 1e-07)
 }
 \arguments{
 \item{x}{data vector}

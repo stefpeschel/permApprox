@@ -132,7 +132,11 @@
 #' @importFrom eva dgpd
 #' @keywords internal
 
-.fit_gpd_lme <- function(x, boundary = NULL, eval_point = NULL, r = -1/2, tol = 1e-8) {
+.fit_gpd_lme <- function(x, 
+                         boundary = NULL, 
+                         eval_point = NULL, 
+                         r = -1/2, 
+                         tol = 1e-7) {
   
   # Starting value for b
   b <- -1
@@ -259,7 +263,7 @@
                            boundary = NULL,
                            eval_point = NULL,
                            shapePos = FALSE,
-                           tol = 1e-8) {
+                           tol = 1e-10) {
   
   # Positive-shape constraint
   if (shapePos) {
@@ -390,7 +394,7 @@
                            boundary = NULL,
                            eval_point = NULL,
                            optimMethod = "Nelder-Mead",
-                           tol = 1e-8,
+                           tol = 1e-10,
                            shapeIni = NULL,
                            scaleIni = NULL,
                            shapeMin = -Inf,
@@ -576,7 +580,7 @@
                           eval_point = NULL,
                           twosteps = TRUE,
                           optimMethod = "Nelder-Mead",
-                          tol = 1e-8,
+                          tol = 1e-9,
                           shapeIni = NULL,
                           scaleIni = NULL,
                           shapeMin = -Inf,
@@ -849,7 +853,7 @@
                             boundary = NULL,
                             eval_point = NULL,
                             method = "WNLLSM",
-                            tol =  1e-8,
+                            tol =  1e-9,
                             shapeIni = 0.01,
                             scaleIni = 0.01,
                             F0 = 0,
