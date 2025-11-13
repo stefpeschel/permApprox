@@ -26,8 +26,8 @@
 #'   }
 #'
 #' @param fit_thresh Numeric. Threshold on empirical p-values below which
-#'   parametric fitting is applied. Default: \code{0.2} (parametric
-#'   approximation if the empirical p-value is smaller than 0.2).
+#'   parametric fitting is applied. Default: \code{0.1} (parametric
+#'   approximation if the empirical p-value is smaller than 0.1).
 #'
 #' @param alternative Character. One of \code{"greater"}, \code{"less"}, or
 #'   \code{"two_sided"} (default), indicating the tail of the test.
@@ -161,7 +161,7 @@ compute_p_values <- function(
     obs_stats,
     perm_stats,
     method = "gpd",
-    fit_thresh = 0.2,
+    fit_thresh = 0.1,
     alternative = "two_sided",
     null_center = 0,
     adjust_method = "BH",
