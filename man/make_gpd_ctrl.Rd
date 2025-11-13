@@ -14,7 +14,7 @@ make_gpd_ctrl(
   eps_retry = list(step_init = 10, grow = (1 + sqrt(5))/2, max_expand_iter = 20L,
     bisect_iter_max = 30L, bisect_tol = 0.1),
   sample_size = NULL,
-  tol = 1e-08,
+  tol = 1e-07,
   thresh_method = "rob_ftr",
   thresh0 = NULL,
   thresh_step = 10,
@@ -29,39 +29,44 @@ make_gpd_ctrl(
 \item{fit_method}{Character. Method for GPD fitting. Options: "LME", "MLE1D",
 "MLE2D", "MOM", "NLS2", "WNLLSM", "ZSE". Default: "LME".}
 
-\item{include_obs}{Logical scalar. If \code{TRUE}, the observed test statistic is
-included into the tail approximation (considered as permutation test statistic).
+\item{include_obs}{Logical scalar. If \code{TRUE}, the observed test 
+statistic is included into the tail approximation (considered as 
+permutation test statistic).
 Default: \code{FALSE}.}
 
 \item{constraint}{Character. Constraint for the fitting process. Default:
 \code{"support_at_obs"}. Options:
 \describe{
-  \item{\code{"unconstrained"}}{No constraint (epsilon is not used).}
+  \item{\code{"none" or "unconstrained"}}{No constraint.}
   \item{\code{"shape_nonneg"}}{Shape parameter must be non-negative.}
-  \item{\code{"support_at_obs"}}{Positive density at the observed test statistic.}
+  \item{\code{"support_at_obs"}}{Positive density at the observed test 
+        statistic.}
   \item{\code{"support_at_max"}}{Positive density at the maximum observed
     test statistic (multiple testing case).}
 }}
 
 \item{eps_rule}{Character. Rule for computing \eqn{\varepsilon}. Used only if
-\code{constraint != "unconstrained"}. One of:
+fitted with support constraint. One of:
 \itemize{
   \item \code{"constant"}: fixed \eqn{\varepsilon}, set by \code{eps_par}.
-  \item \code{"factor"}: \eqn{\varepsilon = c\,|t_{\mathrm{obs}}|} with \code{c = eps_par}.
+  \item \code{"factor"}: \eqn{\varepsilon = c\,|t_{\mathrm{obs}}|} with 
+        \code{c = eps_par}.
   \item \code{"slls"}: Standardized Lifted Log-Saturation (Z-scale with
         permutation-based cap); \code{eps_par} acts as \emph{target_factor}.
 }}
 
-\item{eps_par}{Numeric. Parameter for \code{eps_rule}. If \code{eps_rule = "constant"},
-this may be a scalar (same \eqn{\varepsilon} for all tests) or a vector (per-test).
+\item{eps_par}{Numeric. Parameter for \code{eps_rule}. 
+If \code{eps_rule = "constant"}, this may be a scalar 
+(same \eqn{\varepsilon} for all tests) or a vector (per-test).
 For \code{"factor"} and \code{"slls"} this must be a non-negative scalar.}
 
-\item{zero_guard}{Logical. If \code{TRUE}, enable adaptive epsilon refinement to
-eliminate machine-underflow p-values during GPD fitting (guarding at
-\code{.Machine$double.xmin}). Only used if \code{constraint != "unconstrained"}.}
+\item{zero_guard}{Logical. If \code{TRUE}, enable adaptive epsilon refinement 
+to eliminate machine-underflow p-values during GPD fitting (guarding at
+\code{.Machine$double.xmin}). 
+Only used if fitted with support constraint.}
 
 \item{eps_retry}{List of tuning parameters for the adaptive epsilon refinement.
-Only used when \code{zero_guard = TRUE} and \code{constraint != "unconstrained"}.
+Only used when \code{zero_guard = TRUE} and fitted with support constraint.
 Recognized fields (defaults in parentheses):
 \describe{
   \item{\code{step_init}}{Initial additive step for the target factor (10).}
@@ -72,12 +77,12 @@ Recognized fields (defaults in parentheses):
   \item{\code{bisect_tol}}{Bisection tolerance (0.1).}
 }}
 
-\item{sample_size}{Optional numeric. Required for \code{eps_rule = "slls"} when
-\code{constraint != "unconstrained"}. For groups with different sizes, use the
-smaller one.}
+\item{sample_size}{Optional numeric. Required for \code{eps_rule = "slls"} 
+when fitted with support constraint. For groups with different sizes, 
+use the smaller one.}
 
 \item{tol}{Numeric > 0. Convergence tolerance for fitting GPD parameters.
-Default: 1e-8.}
+Default: 1e-7.}
 
 \item{thresh_method}{Character. Method for threshold detection. Default:
 \code{"rob_ftr"}. Options: \code{"fix"}, \code{"ftr"}, \code{"rob_ftr"},
@@ -99,10 +104,11 @@ Default: 250 (threshold search starts with at least 250 exceedances).}
 \item{exceed_min}{Integer >= 0. Minimum exceedances required for fitting.
 Default: 10.}
 
-\item{gof_test}{Character. Goodness-of-fit test for GPD: \code{"ad"}, \code{"cvm"},
-or \code{"none"}. Default: \code{"ad"}.}
+\item{gof_test}{Character. Goodness-of-fit test for GPD: 
+\code{"ad"}, \code{"cvm"}, or \code{"none"}. Default: \code{"ad"}.}
 
-\item{gof_alpha}{Numeric in (0,1). Significance level for GOF test. Default: 0.05.}
+\item{gof_alpha}{Numeric in (0,1). Significance level for GOF test. 
+Default: 0.05.}
 }
 \value{
 A named list of class \code{"gpd_ctrl"} containing GPD settings.
@@ -114,8 +120,9 @@ Distribution (GPD) tail approximation method used in permApprox.
 \section{Constraints and epsilon}{
 
 Epsilon-related settings (\code{eps_rule}, \code{eps_par}, \code{sample_size},
-and \code{eps_retry}/\code{zero_guard}) are only relevant when
-\code{constraint != "unconstrained"}. If \code{constraint == "unconstrained"},
+and \code{eps_retry}/\code{zero_guard}) are only relevant for fitting with
+support constraint. If \code{constraint == "unconstrained"} or 
+\code{constraint == "shape_nonneg"},
 epsilon is not used and these arguments are ignored (\code{eps_rule} is set to
 \code{"constant"} with \code{eps_par = 0}, and \code{zero_guard} is disabled).
 }
