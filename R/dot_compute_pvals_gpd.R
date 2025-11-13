@@ -1,17 +1,89 @@
 #' Compute p-values via GPD tail approximation (constrained or unconstrained)
 #'
-#' @keywords internal
-#' @param obs_stats Numeric vector of observed statistics (length = n_test).
-#' @param perm_stats Numeric matrix of permutation statistics with shape B x n_test.
-#'   If `control$include_obs` is TRUE, `obs_stats` will be row-bound to `perm_stats`
-#'   before thresholding / fitting.
-#' @param p_empirical Numeric vector of empirical p-values (length = n_test).
-#' @param fit_thresh Numeric scalar; threshold under which GPD fit is attempted.
-#' @param control List created by `make_gpd_ctrl()`.
-#' @return A data.frame with columns p_empirical, p_value (final), thresh, n_exceed,
-#'   shape, scale, epsilon, gof_p_value, status (factor), discrete (logical).
-#'   The list of exceedances used for fitting is attached as attribute `perm_stats_fit`.
+#' @description
+#' Internal workhorse for computing permutation p-values using the
+#' Generalized Pareto Distribution (GPD) tail approximation.  
+#' For each test, the function:
+#' \enumerate{
+#'   \item identifies tests eligible for GPD fitting based on empirical
+#'         p-values (\code{p_empirical < fit_thresh}) and sign constraints,
+#'   \item performs discreteness screening,
+#'   \item detects a GPD threshold using \code{\link{.find_gpd_thresh}},
+#'   \item evaluates the appropriate support boundary
+#'         (depending on the constraint in \code{control}),
+#'   \item computes \eqn{\varepsilon}-values via the epsilon function
+#'         defined in \code{control} (\code{eps_fun}, \code{eps_tune},
+#'         \code{eps_args}),
+#'   \item fits the GPD tail using \code{\link{fit_gpd}},
+#'   \item optionally performs adaptive epsilon refinement
+#'         (zero-guard) to avoid numerical underflow, and
+#'   \item returns final p-values combining empirical and fitted results.
+#' }
 #'
+#' The function supports parallel execution for threshold detection and
+#' GPD fitting through the \pkg{future} framework.
+#'
+#' @param obs_stats Numeric vector of observed test statistics
+#'   (\code{length = n_test}).
+#'
+#' @param perm_stats Numeric matrix of permutation statistics with dimension
+#'   \code{B x n_test}.  
+#'   If \code{control$include_obs = TRUE}, the vector \code{obs_stats} is
+#'   appended as an additional row prior to threshold detection and fitting.
+#'
+#' @param p_empirical Numeric vector of empirical permutation p-values
+#'   (\code{length = n_test}). These determine which tests undergo GPD
+#'   approximation (those with \code{p_empirical < fit_thresh}).
+#'
+#' @param fit_thresh Numeric scalar. Empirical p-values below this value
+#'   trigger GPD tail approximation.
+#'
+#' @param control A control list created by \code{\link{make_gpd_ctrl}}.
+#'   It contains GPD fitting options, threshold detection settings,
+#'   constraint mode, epsilon function (\code{eps_fun}),
+#'   epsilon tuning parameter (\code{eps_tune}),
+#'   optional epsilon arguments (\code{eps_args}),
+#'   and zero-guard configuration.
+#'
+#' @param cores Integer. Number of CPU cores to use for parallel evaluation
+#'   via \pkg{future.apply}. Values \code{<= 1} enforce sequential execution.
+#'
+#' @param verbose Logical. If \code{TRUE}, progress messages are printed using
+#'   the \pkg{progressr} handlers.
+#'
+#' @param ... Additional arguments passed downstream to internal fitting
+#'   functions such as \code{fit_gpd}.
+#'
+#' @return
+#' A \code{data.frame} with one row per test and the following columns:
+#' \describe{
+#'   \item{\code{p_value}}{Final p-value (GPD-approximated if available,
+#'         otherwise empirical).}
+#'   \item{\code{p_empirical}}{Empirical permutation p-value.}
+#'   \item{\code{thresh}}{Selected GPD threshold (or \code{NA} if none found).}
+#'   \item{\code{n_exceed}}{Number of exceedances used for the GPD fit.}
+#'   \item{\code{shape}}{Estimated GPD shape parameter (\code{NA} if no fit).}
+#'   \item{\code{scale}}{Estimated GPD scale parameter (\code{NA} if no fit).}
+#'   \item{\code{epsilon}}{Final epsilon used in the GPD fit (after refinement
+#'         if zero-guard was active).}
+#'   \item{\code{gof_p_value}}{Goodness-of-fit p-value (Anderson–Darling or
+#'         Cramér–von Mises depending on \code{control$gof_test}).}
+#'   \item{\code{status}}{Factor describing per-test fitting outcome:
+#'     \code{"not_selected"}, \code{"success"}, \code{"discrete"},
+#'     \code{"no_threshold"}, \code{"gof_reject"}, \code{"fit_failed"}.}
+#'   \item{\code{discrete}}{Logical flag indicating whether the permutation
+#'         distribution was too discrete for reliable tail fitting.}
+#' }
+#'
+#' The returned object also carries an attribute:
+#' \itemize{
+#'   \item \code{"perm_stats_fit"}: a list of length \code{n_test} containing
+#'         the exceedances used for each successful GPD fit (empty for tests
+#'         not fitted or not successful).
+#' }
+#'
+#' @keywords internal
+
 .compute_pvals_gpd <- function(obs_stats,
                                perm_stats,
                                p_empirical,
@@ -229,8 +301,9 @@
     obs_stats    = obs_stats,
     sample_size  = control$sample_size,
     constraint   = control$constraint,
-    eps_rule     = control$eps_rule,
-    eps_par      = control$eps_par
+    eps_fun      = control$eps_fun,
+    eps_tune     = control$eps_tune,
+    eps_args     = control$eps_args
   )
   
   if (isTRUE(verbose)) writeLines("Run GPD fit ...")
@@ -350,7 +423,7 @@
         sum(is.finite(pv) & pv <= min_pos)
       }
       
-      ## Digits to show for target_factor based on bisect tolerance
+      ## Digits to show for the tuning parameter based on bisect tolerance
       .digits_from_tol <- function(tol) {
         if (!is.finite(tol) || tol <= 0) return(6L)
         d <- ceiling(-log10(tol)) + 1L  # +1 to make changes at the tolerance visible
@@ -358,15 +431,16 @@
         as.integer(d)
       }
       
-      ## Evaluate a candidate target_factor on a subset only
-      .eval_tf_subset <- function(tf, idx_subset) {
+      ## Evaluate a candidate tuning parameter on a subset only
+      .eval_tp_subset <- function(tf, idx_subset) {
         eps_try <- .define_eps(
           perm_stats   = perm_stats,
           obs_stats    = obs_stats,
           sample_size  = control$sample_size,
           constraint   = control$constraint,
-          eps_rule     = control$eps_rule,
-          eps_par      = tf
+          eps_fun      = control$eps_fun,
+          eps_tune     = tf,
+          eps_args     = control$eps_args
         )
         res_sub <- .run_gpd_fit(eps_try, idx_subset = idx_subset)
         pv_sub  <- vapply(res_sub, `[[`, numeric(1), "p_value")
@@ -381,8 +455,8 @@
       max_bis <- control$eps_retry$bisect_iter_max
       bis_tol <- control$eps_retry$bisect_tol
       
-      tf_digits <- .digits_from_tol(bis_tol)
-      tf_fmt    <- function(x) sprintf(paste0("%.", tf_digits, "f"), x)
+      tp_digits <- .digits_from_tol(bis_tol)
+      tp_fmt    <- function(x) sprintf(paste0("%.", tp_digits, "f"), x)
       
       # Work only on the subset that currently underflows
       need_idx <- zero_idx
@@ -390,37 +464,37 @@
       if (isTRUE(verbose)) {
         message(sprintf(
           "Zero-guard: start with tf=%s; zeros: %d (of %d selected tests)",
-          tf_fmt(tf0), length(zero_idx), length(idx_valid)
+          tp_fmt(tf0), length(zero_idx), length(idx_valid)
         ))
       }
       
       # --- EXPANSION PHASE (large increasing steps) -------------------------
-      if (isTRUE(verbose)) message("Zero-guard: expanding target_factor ...")
-      tf_curr <- tf0
-      tf_lo   <- tf0            # last tf that still produces zeros
-      tf_hi   <- NA_real_       # first tf with no zeros in need_idx
+      if (isTRUE(verbose)) message("Zero-guard: expanding tuning parameter ...")
+      tp_curr <- tf0
+      tp_lo   <- tf0            # last tf that still produces zeros
+      tp_hi   <- NA_real_       # first tf with no zeros in need_idx
       exp_it  <- 0L
       
       repeat {
         exp_it <- exp_it + 1L
-        tf_try <- tf_curr + step
-        ev <- .eval_tf_subset(tf_try, need_idx)
+        tp_try <- tp_curr + step
+        ev <- .eval_tp_subset(tp_try, need_idx)
         zeros_now <- .count_zeros(ev$pvals)
         if (isTRUE(verbose)) {
           message(sprintf("  expand %02d: tf=%s; zeros in subset: %d",
-                          exp_it, tf_fmt(tf_try), zeros_now))
+                          exp_it, tp_fmt(tp_try), zeros_now))
         }
         
         if (zeros_now == 0L) {
-          tf_hi <- tf_try   # bracket found
+          tp_hi <- tp_try   # bracket found
           if (isTRUE(verbose)) {
-            message(sprintf("  bracket found at tf=%s (subset zeros=0)", tf_fmt(tf_hi)))
+            message(sprintf("  bracket found at tf=%s (subset zeros=0)", tp_fmt(tp_hi)))
           }
           break
         } else {
           # still zeros → move forward and inflate step
-          tf_lo   <- tf_try
-          tf_curr <- tf_try
+          tp_lo   <- tp_try
+          tp_curr <- tp_try
           step    <- step * grow
           
           # shrink subset to those still zero to save runtime
@@ -440,31 +514,31 @@
         }
       }
       
-      # If expansion never cleared zeros, we stop here with best effort tf_curr
-      final_tf <- tf_curr
+      # If expansion never cleared zeros, we stop here with best effort tp_curr
+      final_tp <- tp_curr
       
       # --- BISECTION PHASE (minimal safe tf) --------------------------------
-      if (!is.na(tf_hi)) {
+      if (!is.na(tp_hi)) {
         if (isTRUE(verbose)) 
-          message("Zero-guard: bisecting target_factor ...")
-        tf_left  <- tf_lo   # zeros occur
-        tf_right <- tf_hi   # no zeros
+          message("Zero-guard: bisecting tuning parameter ...")
+        tp_left  <- tp_lo   # zeros occur
+        tp_right <- tp_hi   # no zeros
         bis_it   <- 0L
         ref_idx  <- zero_idx  # start from original zero set; subset fits only
         
-        while ((tf_right - tf_left > bis_tol) && bis_it < max_bis && length(ref_idx) > 0L) {
+        while ((tp_right - tp_left > bis_tol) && bis_it < max_bis && length(ref_idx) > 0L) {
           bis_it <- bis_it + 1L
-          tf_mid <- 0.5 * (tf_left + tf_right)
-          ev <- .eval_tf_subset(tf_mid, ref_idx)
+          tp_mid <- 0.5 * (tp_left + tp_right)
+          ev <- .eval_tp_subset(tp_mid, ref_idx)
           zeros_mid <- .count_zeros(ev$pvals)
           if (isTRUE(verbose)) {
             message(sprintf("  bisect %02d: tf=%s; zeros in subset: %d",
-                            bis_it, tf_fmt(tf_mid), zeros_mid))
+                            bis_it, tp_fmt(tp_mid), zeros_mid))
           }
           
           if (zeros_mid > 0L) {
-            tf_left <- tf_mid
-            # keep only those still zero at tf_mid to reduce work further
+            tp_left <- tp_mid
+            # keep only those still zero at tp_mid to reduce work further
             ref_idx_old <- ref_idx
             ref_idx <- ref_idx[which(is.finite(ev$pvals) & 
                                        ev$pvals <= .Machine$double.xmin)]
@@ -473,25 +547,26 @@
                               length(ref_idx)))
             }
           } else {
-            tf_right <- tf_mid
+            tp_right <- tp_mid
             # no need to persist interim fits here; we will refit all at the end
           }
         }
-        final_tf <- tf_right
+        final_tp <- tp_right
       }
       
-      # --- Final refit for ALL selected tests with final_tf -----------------
+      # --- Final refit for ALL selected tests with final_tp -----------------
       eps_final <- .define_eps(
         perm_stats   = perm_stats,
         obs_stats    = obs_stats,
         sample_size  = control$sample_size,
         constraint   = control$constraint,
-        eps_rule     = control$eps_rule,
-        eps_par      = final_tf
+        eps_fun      = control$eps_fun,
+        eps_tune     = final_tp,
+        eps_args     = control$eps_args
       )
       if (isTRUE(verbose)) {
-        message("Zero-guard: refitting all selected tests with target_factor = ", 
-                tf_fmt(final_tf))
+        message("Zero-guard: refitting all selected tests with tuning parameter = ", 
+                tp_fmt(final_tp))
       }
       
       if (run_parallel_fit_all) {

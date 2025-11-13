@@ -16,24 +16,86 @@
 )
 }
 \arguments{
-\item{obs_stats}{Numeric vector of observed statistics (length = n_test).}
+\item{obs_stats}{Numeric vector of observed test statistics
+(\code{length = n_test}).}
 
-\item{perm_stats}{Numeric matrix of permutation statistics with shape B x n_test.
-If `control$include_obs` is TRUE, `obs_stats` will be row-bound to `perm_stats`
-before thresholding / fitting.}
+\item{perm_stats}{Numeric matrix of permutation statistics with dimension
+\code{B x n_test}.  
+If \code{control$include_obs = TRUE}, the vector \code{obs_stats} is
+appended as an additional row prior to threshold detection and fitting.}
 
-\item{p_empirical}{Numeric vector of empirical p-values (length = n_test).}
+\item{p_empirical}{Numeric vector of empirical permutation p-values
+(\code{length = n_test}). These determine which tests undergo GPD
+approximation (those with \code{p_empirical < fit_thresh}).}
 
-\item{fit_thresh}{Numeric scalar; threshold under which GPD fit is attempted.}
+\item{fit_thresh}{Numeric scalar. Empirical p-values below this value
+trigger GPD tail approximation.}
 
-\item{control}{List created by `make_gpd_ctrl()`.}
+\item{control}{A control list created by \code{\link{make_gpd_ctrl}}.
+It contains GPD fitting options, threshold detection settings,
+constraint mode, epsilon function (\code{eps_fun}),
+epsilon tuning parameter (\code{eps_tune}),
+optional epsilon arguments (\code{eps_args}),
+and zero-guard configuration.}
+
+\item{cores}{Integer. Number of CPU cores to use for parallel evaluation
+via \pkg{future.apply}. Values \code{<= 1} enforce sequential execution.}
+
+\item{verbose}{Logical. If \code{TRUE}, progress messages are printed using
+the \pkg{progressr} handlers.}
+
+\item{...}{Additional arguments passed downstream to internal fitting
+functions such as \code{fit_gpd}.}
 }
 \value{
-A data.frame with columns p_empirical, p_value (final), thresh, n_exceed,
-  shape, scale, epsilon, gof_p_value, status (factor), discrete (logical).
-  The list of exceedances used for fitting is attached as attribute `perm_stats_fit`.
+A \code{data.frame} with one row per test and the following columns:
+\describe{
+  \item{\code{p_value}}{Final p-value (GPD-approximated if available,
+        otherwise empirical).}
+  \item{\code{p_empirical}}{Empirical permutation p-value.}
+  \item{\code{thresh}}{Selected GPD threshold (or \code{NA} if none found).}
+  \item{\code{n_exceed}}{Number of exceedances used for the GPD fit.}
+  \item{\code{shape}}{Estimated GPD shape parameter (\code{NA} if no fit).}
+  \item{\code{scale}}{Estimated GPD scale parameter (\code{NA} if no fit).}
+  \item{\code{epsilon}}{Final epsilon used in the GPD fit (after refinement
+        if zero-guard was active).}
+  \item{\code{gof_p_value}}{Goodness-of-fit p-value (Anderson–Darling or
+        Cramér–von Mises depending on \code{control$gof_test}).}
+  \item{\code{status}}{Factor describing per-test fitting outcome:
+    \code{"not_selected"}, \code{"success"}, \code{"discrete"},
+    \code{"no_threshold"}, \code{"gof_reject"}, \code{"fit_failed"}.}
+  \item{\code{discrete}}{Logical flag indicating whether the permutation
+        distribution was too discrete for reliable tail fitting.}
+}
+
+The returned object also carries an attribute:
+\itemize{
+  \item \code{"perm_stats_fit"}: a list of length \code{n_test} containing
+        the exceedances used for each successful GPD fit (empty for tests
+        not fitted or not successful).
+}
 }
 \description{
-Compute p-values via GPD tail approximation (constrained or unconstrained)
+Internal workhorse for computing permutation p-values using the
+Generalized Pareto Distribution (GPD) tail approximation.  
+For each test, the function:
+\enumerate{
+  \item identifies tests eligible for GPD fitting based on empirical
+        p-values (\code{p_empirical < fit_thresh}) and sign constraints,
+  \item performs discreteness screening,
+  \item detects a GPD threshold using \code{\link{.find_gpd_thresh}},
+  \item evaluates the appropriate support boundary
+        (depending on the constraint in \code{control}),
+  \item computes \eqn{\varepsilon}-values via the epsilon function
+        defined in \code{control} (\code{eps_fun}, \code{eps_tune},
+        \code{eps_args}),
+  \item fits the GPD tail using \code{\link{fit_gpd}},
+  \item optionally performs adaptive epsilon refinement
+        (zero-guard) to avoid numerical underflow, and
+  \item returns final p-values combining empirical and fitted results.
+}
+
+The function supports parallel execution for threshold detection and
+GPD fitting through the \pkg{future} framework.
 }
 \keyword{internal}

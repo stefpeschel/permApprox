@@ -4,7 +4,15 @@
 \alias{.define_eps}
 \title{Define epsilon values based on the user-defined rule}
 \usage{
-.define_eps(perm_stats, obs_stats, sample_size, constraint, eps_rule, eps_par)
+.define_eps(
+  perm_stats,
+  obs_stats,
+  sample_size,
+  constraint,
+  eps_fun,
+  eps_tune,
+  eps_args
+)
 }
 \description{
 Define epsilon values based on the user-defined rule

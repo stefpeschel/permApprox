@@ -8,78 +8,115 @@ eps_slls(
   obs_stats,
   perm_stats,
   sample_size,
-  k_factor = 1000,
-  target_factor = 0.25,
-  rho_lift = 3,
-  floor_epsZ = 1e-06,
+  tune = 0.25,
+  cap_base = c("perm", "tmax"),
+  alpha = 0.5,
   q_ref = 0.99,
-  n_ref = 100,
-  anchor_mult = 5,
-  beta = 0.5,
+  rho_lift = 3,
+  k_factor = 1000,
+  floor_epsZ = 1e-06,
   ...
 )
 }
 \arguments{
-\item{obs_stats}{Numeric vector of observed test statistics.}
+\item{obs_stats}{Numeric vector of observed test statistics (one per test).}
 
-\item{perm_stats}{Matrix of permutation test statistics with one column per test 
-and one row per permutation replicate.}
+\item{perm_stats}{Numeric matrix of permutation test statistics with one
+column per test and one row per permutation replicate. A numeric vector
+is allowed for a single test and will be internally reshaped to a
+matrix with one column.}
 
-\item{sample_size}{Per-group sample size of the test (used to scale curvature and plateau).}
+\item{sample_size}{Positive numeric scalar giving an effective sample size
+per test (typically the smaller group size). Controls the curvature and
+plateau height via simple \eqn{n}-dependent scaling.}
 
-\item{k_factor}{Numeric scalar. Controls the curvature of the saturation curve.
-Larger values bend the curve earlier. Default is \code{1000}.}
+\item{tune}{Numeric scalar. Global tuning parameter controlling the target
+plateau height of the saturation curve. Larger values yield more
+conservative (larger) \eqn{\varepsilon}-values. This corresponds to the
+\emph{target factor} and is the quantity adapted by the zero-guard
+procedure in \code{\link{make_gpd_ctrl}}.}
 
-\item{target_factor}{Numeric scalar. Controls the plateau height at the anchor 
-point. Larger values yield more conservative \eqn{\varepsilon}. Default is \code{0.25}.}
+\item{cap_base}{Character string specifying how the saturation cap is
+constructed on the standardized Z-scale. One of:
+\itemize{
+  \item \code{"perm"} (default): cap based on a high quantile of
+    \eqn{|Z_{\text{perm}}|} inflated by a sample-size dependent factor.
+  \item \code{"tmax"}: cap based on the maximum of \eqn{|Z_{\text{obs}}|}
+    across tests (common cap).
+}}
 
-\item{rho_lift}{Numeric scalar. Multiplier for the Wendland-\eqn{C^2} lift term, 
-which prevents underestimation of \eqn{\varepsilon} for small and moderate test 
-statistics. Default is \code{3}.}
+\item{alpha}{Numeric scalar controlling the inflation factor
+\eqn{g(n) = \max(1, \alpha \sqrt{n})} applied to the permutation-based
+cap. Larger values produce a higher cap and therefore a slower
+saturation. Default is \code{0.5}.}
 
-\item{floor_epsZ}{Numeric scalar. Minimum allowed value on the \emph{Z}-scale 
-to avoid vanishingly small \eqn{\varepsilon}. Default is \code{1e-6}.}
+\item{q_ref}{Numeric scalar between 0 and 1. Quantile of the absolute
+standardized permutation statistics \eqn{|Z_{\text{perm}}|} used as the
+baseline cap when \code{cap_base = "perm"}. Default is \code{0.99}.}
 
-\item{q_ref}{Numeric scalar between 0 and 1. Quantile of the absolute standardized 
-permutation statistics used as the baseline cap. Default is \code{0.99}.}
+\item{rho_lift}{Numeric scalar. Multiplier for the Wendland-\eqn{C^2} lift
+term, which prevents underestimation of \eqn{\varepsilon} for small and
+moderate test statistics. Default is \code{3}.}
 
-\item{n_ref}{Reference sample size used to anchor the inflation factor. 
-Default is \code{100}.}
+\item{k_factor}{Numeric scalar. Base curvature parameter of the saturation
+curve. The effective curvature scales as \code{k_factor * (500 / n)},
+where \code{n = sample_size}. Larger values bend the curve earlier.
+Default is \code{1000}.}
 
-\item{anchor_mult}{Numeric scalar. Multiplier at the reference sample size 
-(\code{n_ref}). Default is \code{5}.}
+\item{floor_epsZ}{Numeric scalar. Minimum allowed value on the Z-scale to
+avoid vanishingly small \eqn{\varepsilon}. Default is \code{1e-6}.}
 
-\item{beta}{Numeric scalar. Growth exponent for the inflation factor. 
-\code{beta = 0.5} corresponds to \eqn{\sqrt{n}} scaling. Default is \code{0.5}.}
-
-\item{...}{Further arguments passed to internal methods (currently unused).}
+\item{...}{Further arguments passed to internal helpers (currently unused).}
 }
 \value{
-Numeric vector of \eqn{\varepsilon}-values on the scale of the original 
-  test statistics (same length as \code{obs_stats}).
+Numeric vector of \eqn{\varepsilon}-values on the scale of the original
+test statistics, with the same length as \code{obs_stats}.
 }
 \description{
-Computes \eqn{\varepsilon}-values using the 
-\emph{Standardized Lifted Log-Saturation (SLLS)} 
-rule. The rule operates on the standardized \emph{Z}-scale, combines 
-logarithmic saturation with a sample-size–dependent plateau, and adds a 
-smooth Wendland-\eqn{C^2} lift term to stabilize small and moderate test 
-statistics. The saturation anchor is defined by a high quantile of the 
-permutation distribution, inflated by a simple sample-size dependent scaling.
+Computes \eqn{\varepsilon}-values using the
+\emph{Standardized Lifted Log-Saturation (SLLS)} rule. The construction
+operates on a standardized \emph{Z}-scale, combines a logarithmic
+saturation curve with a sample-size–dependent plateau, and adds a smooth
+Wendland-\eqn{C^2} lift term to stabilize \eqn{\varepsilon} for small and
+moderate test statistics. The saturation anchor is defined by a high
+quantile of the (standardized) permutation distribution, inflated by a
+simple sample-size dependent factor.
+
+This function is the default epsilon generator (\code{eps_fun}) in
+\code{\link{make_gpd_ctrl}} when a support constraint is active.
 }
 \details{
-The SLLS rule first standardizes test statistics using the mean and standard 
-deviation of their permutation distribution. It then defines a reference point 
-\eqn{Z_\mathrm{cap}} as a high quantile of the standardized permutation values, 
-inflated by a sample-size dependent factor. A log-saturation curve is calibrated 
-to this anchor, and a Wendland-\eqn{C^2} kernel is added as a lift term for 
-small and moderate values. The result is mapped back to the original test 
-statistic scale.
+The SLLS rule proceeds in four steps:
+\enumerate{
+  \item Standardize each test statistic using the mean and standard
+    deviation of its permutation distribution, yielding
+    \eqn{Z_{\text{obs}}} and \eqn{Z_{\text{perm}}}.
+  \item Construct a cap \eqn{T_{\text{cap}}} on the Z-scale via
+    \code{cap_base}. For \code{"perm"}, this uses a high quantile
+    \eqn{Q_{q_{\mathrm{ref}}}(|Z_{\text{perm}}|)} inflated by
+    \eqn{g(n) = \max(1, \alpha \sqrt{n})}; for \code{"tmax"}, it uses
+    \eqn{\max |Z_{\text{obs}}|}.
+  \item Calibrate a log-saturation curve such that its plateau height is
+    proportional to \code{tune * (500 / sample_size)}, and add a
+    Wendland-\eqn{C^2} lift term for small and moderate standardized
+    statistics. The resulting \eqn{\varepsilon_Z} is bounded below by
+    \code{floor_epsZ}.
+  \item Map \eqn{\varepsilon_Z} back to the original test statistic scale
+    via the per-test standard deviation of the permutation distribution.
+}
+
+This construction yields a smooth, monotone epsilon that grows with the
+magnitude of the test statistic and can be tuned globally via \code{tune}.
+It is particularly suited for enforcing support constraints in GPD-based
+tail approximation under limited numbers of permutations.
 }
 \examples{
 set.seed(123)
 perm <- matrix(rnorm(1000 * 5), nrow = 1000, ncol = 5)
 obs  <- rnorm(5, mean = 2)
-eps_slls(obs, perm, sample_size = 50)
+eps  <- eps_slls(obs_stats = obs,
+                 perm_stats = perm,
+                 sample_size = 50,
+                 tune = 0.25)
 
 }
