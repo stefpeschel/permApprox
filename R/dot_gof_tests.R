@@ -202,7 +202,9 @@
 #'
 gpdAdGen <- function(n, theta) {
   data1 <- rgpd(n, loc = 0, scale = theta[1], shape = theta[2])
-  fit1 <- tryCatch(gpdFit(data1, nextremes = n, method = "mle"), error = function(w) {return(NULL)}, warning = function(w) {return(NULL)})
+  fit1 <- tryCatch(gpdFit(data1, nextremes = n, method = "mle"), 
+                   error = function(w) {return(NULL)}, 
+                   warning = function(w) {return(NULL)})
   if(is.null(fit1)) {
     teststat <- NA
   } else {
@@ -225,7 +227,9 @@ gpdAdGen <- function(n, theta) {
 #'
 gpdCvmGen <- function(n, theta) {
   data1 <- rgpd(n, loc = 0, scale = theta[1], shape = theta[2])
-  fit1 <- tryCatch(gpdFit(data1, nextremes = n, method = "mle"), error = function(w) {return(NULL)}, warning = function(w) {return(NULL)})
+  fit1 <- tryCatch(gpdFit(data1, nextremes = n, method = "mle"), 
+                   error = function(w) {return(NULL)}, 
+                   warning = function(w) {return(NULL)})
   if(is.null(fit1)) {
     teststat <- NA
   } else {

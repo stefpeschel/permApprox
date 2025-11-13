@@ -64,8 +64,8 @@
 #'   Default: 1e-8.
 #'
 #' @param thresh_method Character. Method for threshold detection. Default:
-#'   \code{"ftr_min5"}. Options: \code{"fix"}, \code{"ftr"}, \code{"ftr_min5"},
-#'   \code{"pr_below_alpha"}, \code{"fwd_stop"}, \code{"gof_cp"}.
+#'   \code{"rob_ftr"}. Options: \code{"fix"}, \code{"ftr"}, \code{"rob_ftr"},
+#'   \code{"rpc"}, \code{"fwd_stop"}, \code{"gof_cp"}.
 #'
 #' @param thresh0 Numeric or NULL. Initial threshold (fixed when
 #'   \code{thresh_method = "fix"}). Must be NULL if \code{exceed0} is provided.
@@ -102,7 +102,7 @@ make_gpd_ctrl <- function(
     ),
     sample_size = NULL,
     tol = 1e-8,
-    thresh_method = "ftr_min5",
+    thresh_method = "rob_ftr",
     thresh0 = NULL,
     thresh_step = 10,
     exceed0 = 0.25,
@@ -139,7 +139,7 @@ make_gpd_ctrl <- function(
   
   ## threshold method
   thresh_method <- match.arg(thresh_method, 
-                             c("fix", "ftr", "ftr_min5", "pr_below_alpha",
+                             c("fix", "ftr", "rob_ftr", "rpc",
                                "fwd_stop", "gof_cp"))
   if (is.null(thresh0) && is.null(exceed0)) {
     stop("You must specify either 'thresh0' or 'exceed0'. Both are currently NULL.")

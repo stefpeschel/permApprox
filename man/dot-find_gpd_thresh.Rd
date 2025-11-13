@@ -2,25 +2,129 @@
 % Please edit documentation in R/dot_find_gpd_thresh.R
 \name{.find_gpd_thresh}
 \alias{.find_gpd_thresh}
-\title{Adapted version of gpdAd from eva package}
+\title{GPD threshold detection}
 \usage{
 .find_gpd_thresh(
   perm_stats,
   obs_stat,
   tol,
-  thresh_method = "pr_below_alpha",
+  thresh_method = "rpc",
   thresh0 = NULL,
   exceed0 = NULL,
   exceed_min = 1,
   thresh_step = 1,
   gof_test = "ad",
   gof_alpha = 0.05,
+  shape_var_window = 7L,
   seed = NULL,
   doPlot = FALSE,
   ...
 )
 }
+\arguments{
+\item{perm_stats}{Numeric vector of permutation test statistics.}
+
+\item{obs_stat}{Numeric scalar. Observed test statistic. The threshold is
+restricted to values strictly smaller than \code{obs_stat} so that the
+observed statistic is included in the exceedance region.}
+
+\item{tol}{Numeric scalar. Tolerance parameter reserved for internal use
+(currently not used).}
+
+\item{thresh_method}{Character string specifying the threshold selection
+rule. Supported methods are
+\itemize{
+  \item \code{"fix"}: Use a fixed threshold \code{thresh0} or a fixed
+    number of exceedances \code{exceed0}.
+  \item \code{"ftr"}: Failure-to-reject rule. Select the first
+    threshold at which the GOF null hypothesis is not rejected
+    (\code{p\_value > gof_alpha}).
+  \item \code{"rob_ftr"} (default): 
+    Robust variant of \code{"ftr"} requiring that the 
+    GOF test is not rejected for at least 3 consecutive thresholds.
+  \item \code{"fwd_stop"}: ForwardStop rule based on transformed GOF
+    p-values as proposed by Bader et al. (2018).
+  \item \code{"gof_cp"}: Changepoint detection on GOF p-values (with 100
+    small pseudo p-values at the start) to identify a shift from non-GPD to 
+    GPD behavior.
+  \item \code{"shape_var"}: Among thresholds where the GOF test is
+    accepted, choose the one with minimal rolling variance of the shape
+    estimate over a window of length \code{shape_var_window}.
+  \item \code{"rpc"}: "Rejection proportion control" rule. 
+    Among candidate thresholds for
+    which the GOF test is not rejected, choose the first one such that
+    the proportion of subsequent rejections is below \code{gof_alpha}.
+}}
+
+\item{thresh0}{Numeric scalar or \code{NULL}. Initial (upper) threshold
+candidate. If supplied, candidate thresholds are restricted to be at least
+as large as \code{thresh0}. For \code{thresh_method == "fix"}, this value
+is used as the threshold if \code{exceed0} is \code{NULL}.}
+
+\item{exceed0}{Integer or numeric scalar, or \code{NULL}. Target number of
+exceedances at the initial threshold. If \code{0 < exceed0 <= 1}, it is
+interpreted as a proportion of \code{length(perm_stats)}; otherwise it is
+taken as an absolute count. For \code{thresh_method == "fix"}, this
+determines the threshold via the order statistic if \code{thresh0} is
+\code{NULL}. Exactly one of \code{thresh0} and \code{exceed0} must be
+non-\code{NULL}.}
+
+\item{exceed_min}{Integer or numeric scalar. Minimal number of exceedances
+allowed at the selected threshold. If \code{0 < exceed_min < 1}, it is
+interpreted as a proportion of \code{length(perm_stats)}; otherwise it is
+taken as an absolute count.}
+
+\item{thresh_step}{Integer scalar. Step size for thinning the grid of
+candidate thresholds. Only every \code{thresh_step}-th candidate is
+evaluated, starting from the first.}
+
+\item{gof_test}{Character string specifying the goodness-of-fit test to be
+used in \code{\link{fit_gpd}}. Typically \code{"ad"} for the
+Anderson–Darling test (default).}
+
+\item{gof_alpha}{Numeric scalar in \eqn{(0, 1)}. Significance level used to
+decide whether the GPD GOF test is accepted or rejected.}
+
+\item{shape_var_window}{Integer scalar. Window length used by the
+\code{"shape_var"} threshold selection method to compute the rolling
+variance of the estimated GPD shape parameter over accepted thresholds.}
+
+\item{seed}{Integer scalar or \code{NULL}. Optional random seed to ensure
+reproducibility for methods that involve randomness (e.g., changepoint
+detection with added pseudo p-values).}
+
+\item{doPlot}{Logical. If \code{TRUE}, produce a diagnostic plot of GOF
+p-values against candidate thresholds, marking the selected threshold.}
+
+\item{...}{Additional arguments reserved for internal use (currently
+ignored).}
+}
+\value{
+A list with components:
+\itemize{
+  \item \code{thresh}: Numeric scalar giving the selected threshold, or
+    \code{NA_real_} if no suitable threshold was found.
+  \item \code{n_exceed}: Integer giving the number of permutation statistics
+    exceeding \code{thresh}, or \code{NA_integer_} if no suitable threshold
+    was found.
+}
+}
 \description{
-Adapted version of gpdAd from eva package
+Select a threshold for Generalized Pareto Distribution (GPD) tail fitting
+based on permutation test statistics and a goodness-of-fit driven rule.
+The function evaluates a grid of candidate thresholds and returns the
+selected threshold together with the corresponding number of exceedances.
+}
+\details{
+Candidate thresholds are constructed from the sorted permutation statistics
+and are constrained to be smaller than \code{obs_stat}. For each candidate,
+a GPD is fitted via \code{\link{fit_gpd}} using the LME method without
+boundary constraints, and a GOF p-value is obtained. Depending on
+\code{thresh_method}, these p-values and the corresponding shape estimates
+are combined to select a single threshold.
+
+If no threshold satisfying the method-specific criterion can be found, the
+function returns \code{NA} for both the threshold and the number of
+exceedances.
 }
 \keyword{internal}
