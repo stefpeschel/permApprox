@@ -356,13 +356,11 @@ compute_p_values <- function(
         verbose      = verbose
       )
       
+      # Replace p-values with successful Gamma fit and reset method
       p_values <- p_empirical
-      use_gamma <- which(gamma_fit$method_used == "gamma")
-      
-      if (length(use_gamma) > 0L) {
-        p_values[use_gamma]    <- gamma_fit$p_values[use_gamma]
-        method_used[use_gamma] <- "gamma"
-      }
+      success <- gamma_fit$status == "success"
+      p_values[success]    <- gamma_fit$p_value[success]
+      method_used[success] <- "gpd"
     }
     
   } else if (method == "gpd") { # Tail approximation using the GPD

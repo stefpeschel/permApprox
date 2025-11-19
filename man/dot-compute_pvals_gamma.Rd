@@ -34,7 +34,53 @@ Default: \code{10}.}
 \item{verbose}{Logical scalar. If \code{TRUE}, progress messages are printed.
 Default: TRUE.}
 }
+\value{
+A named \code{list} with one element per output quantity. Except for
+\code{perm_stats_fit}, each element is a vector of length \code{n_test}:
+\describe{
+  \item{\code{p_value}}{Gamma-based tail p-values (or \code{NA_real_} if no
+        valid Gamma fit was obtained or if the goodness-of-fit test rejects
+        the Gamma approximation). These are combined with empirical
+        p-values in \code{\link{compute_p_values}}.}
+  \item{\code{shape}}{Estimated Gamma shape parameter
+        (\code{NA_real_} if no fit was obtained).}
+  \item{\code{rate}}{Estimated Gamma rate parameter
+        (\code{NA_real_} if no fit was obtained).}
+  \item{\code{gof_p_value}}{Goodness-of-fit p-value (Cramér–von Mises test
+        if \code{control$gof_test == "cvm"}, otherwise \code{NA_real_}).}
+  \item{\code{status}}{Factor describing the per-test fitting outcome with
+        levels \code{"not_selected"}, \code{"success"}, \code{"discrete"},
+        \code{"no_threshold"}, \code{"gof_reject"}, \code{"fit_failed"}.
+        For Gamma approximation, the \code{"no_threshold"} level is not
+        used.}
+  \item{\code{discrete}}{Logical flag indicating whether the permutation
+        distribution was classified as too discrete for reliable Gamma
+        approximation.}
+  \item{\code{gof_rejected}}{Logical flag indicating whether the
+        goodness-of-fit test rejected the Gamma approximation at
+        \code{control$gof_alpha}.}
+  \item{\code{method_used}}{Character vector indicating which p-value
+        source should be used downstream for each test (typically
+        \code{"gamma"} for successful Gamma fits and \code{"empirical"}
+        otherwise).}
+  \item{\code{perm_stats_fit}}{List of length \code{n_test} containing the
+        permutation statistics used in the Gamma fit for each test (empty
+        numeric vectors for tests not fitted or not successful).}
+}
+}
 \description{
-Compute p-values via Gamma approximation
+Internal workhorse for computing permutation p-values using a
+Gamma distribution approximation. For each test in \code{idx_fit}, the
+function:
+\enumerate{
+  \item performs a discreteness screening of the permutation distribution,
+  \item fits a Gamma distribution to the (optionally augmented) permutation
+        statistics using \pkg{fitdistrplus},
+  \item optionally evaluates a goodness-of-fit test (currently Cramér–von
+        Mises via \pkg{goftest}),
+  \item computes tail probabilities under the fitted Gamma, scaled to the
+        effective permutation sample size, and
+  \item returns Gamma-based p-values and diagnostics.
+}
 }
 \keyword{internal}
