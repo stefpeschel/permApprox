@@ -1,10 +1,10 @@
 
 # permApprox <img src="man/figures/logo.png" align="right" height="180" />
 
-`permApprox` provides tools to **approximate small permutation
-p-values** when the number of permutations is limited and empirical
-p-values become coarse or problematic (e.g., many ties or values very
-close to zero).
+The `permApprox` (**perm**utation p-value **approx**imation) package
+provides tools to **approximate small permutation p-values** when the
+number of permutations is limited and empirical p-values become coarse
+or problematic (e.g., many ties or values very close to zero).
 
 The core function `perm_approx()` computes empirical p-values and, for
 tests with small empirical p-values, replaces them by parametric

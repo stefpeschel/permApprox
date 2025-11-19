@@ -8,7 +8,8 @@ knitr::opts_chunk$set(fig.path="man/figures/readme/")
 
 # permApprox <img src="man/figures/logo.png" align="right" height="180" />
 
-`permApprox` provides tools to **approximate small permutation p-values**
+The `permApprox` (**perm**utation p-value **approx**imation) package provides 
+tools to **approximate small permutation p-values**
 when the number of permutations is limited and empirical p-values become
 coarse or problematic (e.g., many ties or values very close to zero).
 
