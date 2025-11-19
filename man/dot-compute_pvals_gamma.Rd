@@ -4,7 +4,35 @@
 \alias{.compute_pvals_gamma}
 \title{Compute p-values via Gamma approximation}
 \usage{
-.compute_pvals_gamma(perm_stats, obs_stats, n_test, alternative, control)
+.compute_pvals_gamma(
+  obs_stats,
+  perm_stats,
+  idx_fit,
+  control,
+  cores,
+  parallel_min,
+  verbose
+)
+}
+\arguments{
+\item{obs_stats}{Numeric vector of observed test statistic(s).}
+
+\item{perm_stats}{Permutation test statistics. Should be provided as a 
+numeric matrix or data frame with permutations in rows and tests in 
+columns.}
+
+\item{cores}{Integer >= 1. Number of CPU cores for parallel computations.
+Default: 1.}
+
+\item{parallel_min}{Integer. Minimum number of tests in a given
+computation step (e.g., threshold detection, GPD/Gamma fitting, epsilon
+refinement) for which parallel computation is used when \code{cores > 1}.
+If the number of tests is smaller than \code{parallel_min}, the
+corresponding step is run sequentially to avoid parallel overhead.
+Default: \code{10}.}
+
+\item{verbose}{Logical scalar. If \code{TRUE}, progress messages are printed.
+Default: TRUE.}
 }
 \description{
 Compute p-values via Gamma approximation

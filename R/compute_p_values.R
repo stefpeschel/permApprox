@@ -326,16 +326,32 @@ compute_p_values <- function(
     p_values <- p_empirical
     
   } else if (method == "gamma") { # Gamma approximation
-    gamma_fit <- .compute_pvals_gamma(perm_stats = t_perm,
-                                      obs_stats = t_obs,
-                                      alternative = alternative,
-                                      control = gamma_ctrl)
-    p_values <- p_empirical
-    idx_gamma <- idx_fit[gamma_fit$method_used == "gamma"]
-    p_values[idx_gamma] <- gamma_fit$p_values[gamma_fit$method_used == "gamma"]
-    method_used[idx_gamma] <- "gamma"
     
-  } else if (method == "gpd") { # Tail approximation using the GPD
+    if (length(idx_fit) == 0L) {
+      # nothing to approximate
+      p_values <- p_empirical
+      
+    } else {
+      control$gamma <- gamma_ctrl
+      
+      gamma_fit <- .compute_pvals_gamma(
+        obs_stats    = t_obs,
+        perm_stats   = t_perm,
+        idx_fit      = idx_fit,
+        control      = control$gamma,
+        cores        = cores,
+        parallel_min = parallel_min,
+        verbose      = verbose
+      )
+      
+      p_values <- p_empirical
+      use_gamma <- which(gamma_fit$method_used == "gamma")
+      
+      if (length(use_gamma) > 0L) {
+        p_values[use_gamma]    <- gamma_fit$p_values[use_gamma]
+        method_used[use_gamma] <- "gamma"
+      }
+    }
     
     gpd_fit <- .compute_pvals_gpd(obs_stats = t_obs,
                                   perm_stats = t_perm,
