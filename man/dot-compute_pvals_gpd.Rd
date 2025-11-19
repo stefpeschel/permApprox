@@ -27,7 +27,7 @@ appended as an additional row prior to threshold detection and fitting.}
 \item{idx_fit}{Integer vector of test indices (subset of
 \code{1:length(obs_stats)}) for which GPD approximation should be
 attempted. Typically defined in \code{\link{perm_approx}} as
-those tests with empirical p-values below \code{fit_thresh}.}
+those tests with empirical p-values below \code{approx_thresh}.}
 
 \item{control}{A control list created by \code{\link{make_gpd_ctrl}}.
 It contains GPD fitting options, threshold detection settings,

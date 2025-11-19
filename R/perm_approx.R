@@ -19,13 +19,13 @@
 #'     based on the number of permutation test statistics that are as or
 #'     more extreme than the observed statistic.
 #'     \item \code{"gamma"}: A Gamma distribution is fitted to the permutation
-#'       distribution if the empirical p-value falls below \code{fit_thresh}.
+#'       distribution if the empirical p-value falls below \code{approx_thresh}.
 #'     \item \code{"gpd"}: A Generalized Pareto Distribution (GPD) is fitted
 #'       to the tail of the permutation distribution if the empirical p-value
-#'       falls below \code{fit_thresh}.
+#'       falls below \code{approx_thresh}.
 #'   }
 #'
-#' @param fit_thresh Numeric. Threshold on empirical p-values below which
+#' @param approx_thresh Numeric. Threshold on empirical p-values below which
 #'   parametric fitting is applied. Default: \code{0.1} (parametric
 #'   approximation if the empirical p-value is smaller than 0.1).
 #'
@@ -142,7 +142,7 @@
 #' optionally, transformed permutation distribution and then computes
 #' empirical p-values. Parametric tail approximation (via Gamma or GPD) is
 #' applied only for tests whose empirical p-value falls below
-#' \code{fit_thresh}; all other tests remain purely empirical.
+#' \code{approx_thresh}; all other tests remain purely empirical.
 #'
 #' \subsection{Centering and transformation}{
 #' The input permutation statistics \code{perm_stats} are organized with
@@ -189,7 +189,7 @@
 #' \subsection{Parametric tail approximation}{
 #' If \code{method = "gpd"} or \code{"gamma"}, a parametric approximation
 #' is applied only to tests with empirical p-values below
-#' \code{fit_thresh}. The indices of these tests are passed to the
+#' \code{approx_thresh}. The indices of these tests are passed to the
 #' corresponding internal workhorse:
 #' \itemize{
 #'   \item \code{.compute_pvals_gpd()} for Generalized Pareto (GPD) tail
@@ -205,7 +205,7 @@
 #' \code{fit_result}, and the chosen approximation is indicated by
 #' \code{fit_method} (\code{"gpd"} or \code{"gamma"}). If
 #' \code{method = "empirical"} or no tests satisfy the threshold
-#' \code{fit_thresh}, \code{fit_method = "empirical"} and
+#' \code{approx_thresh}, \code{fit_method = "empirical"} and
 #' \code{fit_result} is \code{NULL}.
 #'
 #' For tests where the parametric fit is deemed successful
@@ -347,7 +347,7 @@ perm_approx <- function(
     obs_stats,
     perm_stats,
     method = "gpd",
-    fit_thresh = 0.1,
+    approx_thresh = 0.1,
     alternative = "two_sided",
     null_center = 0,
     power = 1,
@@ -496,10 +496,10 @@ perm_approx <- function(
   method_used      <- rep("empirical", n_test)
   
   # Decide which tests are candidates for parametric approximation
-  idx_fit <- which(!is.na(p_empirical) & (p_empirical < fit_thresh))
+  idx_fit <- which(!is.na(p_empirical) & (p_empirical < approx_thresh))
   
   if (length(idx_fit) == 0L && method != "empirical" && verbose) {
-    message("No empirical p-values below 'fit_thresh'; returning empirical p-values.")
+    message("No empirical p-values below 'approx_thresh'; returning empirical p-values.")
   }
   
   ## ---------------------------------------------------------------------------
@@ -512,7 +512,7 @@ perm_approx <- function(
   # Control list for output
   control_out <- list(
     adjust        = adjust_ctrl,
-    fit_thresh    = fit_thresh,
+    approx_thresh    = approx_thresh,
     adjust_method = adjust_method
   )
   

@@ -50,7 +50,7 @@ summary.perm_approx <- function(object, digits = 3L, alpha = 0.05, ...) {
   fit_res      <- object$fit_result
   adjust_res   <- object$adjust_result
   ctrl         <- object$control %||% list()
-  fit_thresh   <- ctrl$fit_thresh
+  approx_thresh   <- ctrl$approx_thresh
   adjust_method <- ctrl$adjust_method %||% if (!is.null(adjust_res)) "unspecified" else "none"
   
   # Header ----------------------------------------------------------------
@@ -66,8 +66,8 @@ summary.perm_approx <- function(object, digits = 3L, alpha = 0.05, ...) {
     cat("Approximation method         : empirical (no parametric tail approximation)\n")
   }
   
-  if (!is.null(fit_thresh)) {
-    cat("Approximation threshold      : p-values <", fmt(fit_thresh), "\n", sep = "")
+  if (!is.null(approx_thresh)) {
+    cat("Approximation threshold      : p-values <", fmt(approx_thresh), "\n", sep = "")
   }
   
   if (adjust_method == "none" || is.null(adjust_res)) {

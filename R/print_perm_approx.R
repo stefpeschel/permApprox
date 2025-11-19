@@ -19,7 +19,7 @@ print.perm_approx <- function(x, digits = 3L, ...) {
   fit_res    <- x$fit_result
   
   ctrl          <- x$control %||% list()
-  fit_thresh    <- ctrl$fit_thresh
+  approx_thresh    <- ctrl$approx_thresh
   adjust_method <- ctrl$adjust_method %||% 
     if (!is.null(x$adjust_result)) "unspecified" else "none"
   
@@ -37,8 +37,8 @@ print.perm_approx <- function(x, digits = 3L, ...) {
   }
   
   # Threshold + adjustment
-  if (!is.null(fit_thresh))
-    cat("Approximation threshold      : p-values <", fmt(fit_thresh), "\n", sep = "")
+  if (!is.null(approx_thresh))
+    cat("Approximation threshold      : p-values <", fmt(approx_thresh), "\n", sep = "")
   
   if (adjust_method == "none")
     cat("Multiple testing adjustment  : none\n")
