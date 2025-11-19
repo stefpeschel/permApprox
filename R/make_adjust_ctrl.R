@@ -2,7 +2,7 @@
 #'
 #' Constructs a list of parameters controlling multiple testing correction
 #' methods, so that these options are decoupled from the main
-#' \code{compute_p_values()} function.
+#' \code{perm_approx()} function.
 #'
 #' @inheritParams mult_adjust
 #'

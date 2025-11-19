@@ -34,7 +34,7 @@
 #'   
 #' @param idx_fit Integer vector of test indices (subset of
 #'   \code{1:length(obs_stats)}) for which GPD approximation should be
-#'   attempted. Typically defined in \code{\link{compute_p_values}} as
+#'   attempted. Typically defined in \code{\link{perm_approx}} as
 #'   those tests with empirical p-values below \code{fit_thresh}.
 #'
 #' @param control A control list created by \code{\link{make_gpd_ctrl}}.
@@ -44,7 +44,7 @@
 #'   optional epsilon arguments (\code{eps_args}),
 #'   and zero-guard configuration.
 #'
-#' @inheritParams compute_p_values
+#' @inheritParams perm_approx
 #'
 #' @param ... Additional arguments passed downstream to internal fitting
 #'   functions such as \code{fit_gpd}.
@@ -55,7 +55,7 @@
 #' \describe{
 #'   \item{\code{p_value}}{GPD-based tail p-values (or \code{NA_real_} if no
 #'         valid GPD fit was obtained for a test). These are combined with
-#'         empirical p-values in \code{\link{compute_p_values}}.}
+#'         empirical p-values in \code{\link{perm_approx}}.}
 #'   \item{\code{thresh}}{Selected GPD threshold (or \code{NA_real_} if none
 #'         found).}
 #'   \item{\code{n_exceed}}{Number of exceedances used for the GPD fit.}
@@ -168,6 +168,7 @@
       thresh_method = control$thresh_method,
       thresh0       = control$thresh0,
       exceed0       = control$exceed0,
+      exceed0_min   = control$exceed0_min,
       exceed_min    = control$exceed_min,
       thresh_step   = control$thresh_step,
       gof_test      = control$gof_test,

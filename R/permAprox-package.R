@@ -3,7 +3,7 @@
 #' Approximate p-values in permutation tests using the Generalized Pareto
 #' Distribution (GPD) while strictly avoiding p-values of zero.\cr\cr
 #' The main function for approximating permutation p-values is
-#' \code{\link{compute_p_values}}.
+#' \code{\link{perm_approx}}.
 #'
 #' @author
 #'   \strong{Maintainer:} Stefanie Peschel \email{stefpeschel@@gmail.com}\cr\cr

@@ -26,7 +26,7 @@ appended as an additional row prior to threshold detection and fitting.}
 
 \item{idx_fit}{Integer vector of test indices (subset of
 \code{1:length(obs_stats)}) for which GPD approximation should be
-attempted. Typically defined in \code{\link{compute_p_values}} as
+attempted. Typically defined in \code{\link{perm_approx}} as
 those tests with empirical p-values below \code{fit_thresh}.}
 
 \item{control}{A control list created by \code{\link{make_gpd_ctrl}}.
@@ -58,7 +58,7 @@ A named \code{list} with one element per output quantity. Except for
 \describe{
   \item{\code{p_value}}{GPD-based tail p-values (or \code{NA_real_} if no
         valid GPD fit was obtained for a test). These are combined with
-        empirical p-values in \code{\link{compute_p_values}}.}
+        empirical p-values in \code{\link{perm_approx}}.}
   \item{\code{thresh}}{Selected GPD threshold (or \code{NA_real_} if none
         found).}
   \item{\code{n_exceed}}{Number of exceedances used for the GPD fit.}

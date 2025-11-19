@@ -21,6 +21,13 @@
 numeric matrix or data frame with permutations in rows and tests in 
 columns.}
 
+\item{idx_fit}{Integer vector of test indices (subset of
+\code{1:length(obs_stats)}) for which Gamma approximation should be
+attempted. Typically defined in \code{\link{perm_approx}} as
+those tests with empirical p-values below \code{fit_thresh}.}
+
+\item{control}{A control list created by \code{\link{make_gamma_ctrl}}.}
+
 \item{cores}{Integer >= 1. Number of CPU cores for parallel computations.
 Default: 1.}
 
@@ -41,7 +48,7 @@ A named \code{list} with one element per output quantity. Except for
   \item{\code{p_value}}{Gamma-based tail p-values (or \code{NA_real_} if no
         valid Gamma fit was obtained or if the goodness-of-fit test rejects
         the Gamma approximation). These are combined with empirical
-        p-values in \code{\link{compute_p_values}}.}
+        p-values in \code{\link{perm_approx}}.}
   \item{\code{shape}}{Estimated Gamma shape parameter
         (\code{NA_real_} if no fit was obtained).}
   \item{\code{rate}}{Estimated Gamma rate parameter

@@ -43,27 +43,27 @@ obs <- c(2.0, 3.0, 4.0, 5.0)
 perm <- matrix(rnorm(4000), nrow = 4)
 
 # Empirical p-values
-res_emp <- compute_p_values(obs_stats = obs,
+res_emp <- perm_approx(obs_stats = obs,
                             perm_stats = perm,
                             method = "empirical")
 
 # Gamma approximation
 gamma_ctrl <- make_gamma_ctrl(gof_test = "none")
-res_gamma <- compute_p_values(obs_stats = obs,
+res_gamma <- perm_approx(obs_stats = obs,
                               perm_stats = perm,
                               method = "gamma",
                               gamma_ctrl = gamma_ctrl)
 
 # GPD approximation without constraints
 gpd_ctrl <- make_gpd_ctrl(constraint = "unconstrained")
-res_gpd <- compute_p_values(obs_stats = obs,
+res_gpd <- perm_approx(obs_stats = obs,
                             perm_stats = perm,
                             method = "gpd")
 
 # GPD approximation with constraint
 # (GPD must have support at t_obs + epsilon)
 gpd_ctrl <- make_gpd_ctrl(constraint = "support_at_obs")
-res_gpd_constr <- compute_p_values(obs_stats = obs,
+res_gpd_constr <- perm_approx(obs_stats = obs,
                                    perm_stats = perm,
                                    method = "gpd",
                                    gpd_ctrl = gpd_ctrl)
@@ -73,7 +73,7 @@ gpd_ctrl <- make_gpd_ctrl(constraint = "support_at_max",
                           eps_fun = eps_fixed,
                           eps_par = list(value = 0.1))
 
-res_gpd_constr_eps0.1 <- compute_p_values(obs_stats = obs,
+res_gpd_constr_eps0.1 <- perm_approx(obs_stats = obs,
                                    perm_stats = perm,
                                    method = "gpd",
                                    gpd_ctrl = gpd_ctrl)
@@ -96,13 +96,13 @@ p_values
 
 ## Documentation
 
-- The main function is `compute_p_values()`
+- The main function is `perm_approx()`
 - Control objects can be created using:
   - `make_gpd_ctrl()` for GPD fitting
   - `make_gamma_ctrl()` for Gamma fitting
   - `make_adjust_ctrl()` for multiple testing correction
 
-Use `?compute_p_values` in R to see the full documentation and available
+Use `?perm_approx` in R to see the full documentation and available
 options.
 
 ## License
