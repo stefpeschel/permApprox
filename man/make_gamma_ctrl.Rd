@@ -4,7 +4,12 @@
 \alias{make_gamma_ctrl}
 \title{Create a control list for Gamma approximation in permApprox}
 \usage{
-make_gamma_ctrl(include_obs = FALSE, gof_test = "cvm", gof_alpha = 0.05)
+make_gamma_ctrl(
+  include_obs = FALSE,
+  gof_test = c("none", "cvm"),
+  gof_alpha = 0.05,
+  fit_args = NULL
+)
 }
 \arguments{
 \item{include_obs}{Logical. If \code{TRUE}, the observed test statistic is
@@ -16,6 +21,12 @@ Options: "cvm" (Cramer-von-Mises), "none". Default: "cvm".}
 
 \item{gof_alpha}{Numeric. Significance level for GOF test (0 < gof_alpha < 1).
 Default: 0.05.}
+
+\item{fit_args}{Optional named list of additional arguments passed to
+\code{fitdistrplus::fitdist()} when fitting the Gamma distribution.
+Entries in \code{fit_args} must not include \code{data} or \code{distr},
+which are always set internally. Typical uses are to change the
+\code{method} (e.g., "mle", "mme") or provide \code{start} values.}
 }
 \value{
 A named list of class "gamma_ctrl" containing Gamma settings.

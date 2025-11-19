@@ -137,8 +137,6 @@ distribution for cases where the empirical p-value falls below the threshold
 specified by \code{fit_thresh}.
 In such cases, the returned \code{p_values} vector contains the approximated
 values (empirical for larger p-values, approximated for smaller ones).
-
-If \code{method = "none"}, only empirical p-values are returned.
 }
 \examples{
 # Generate observed and permuted test statistics
