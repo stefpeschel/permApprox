@@ -281,34 +281,42 @@ compute_p_values <- function(
   }
   
   ## ---------------------------------------------------------------------------
+  ## Transform according to the alternative (one-sided scale)
+  ## ---------------------------------------------------------------------------
+  transformed <- lapply(seq_len(n_test), function(i) {
+    .transform_stats(
+      perm_stats  = perm_stats[, i],
+      obs_stats   = obs_stats[i],
+      alternative = alternative
+    )
+  })
+  t_obs       <- vapply(transformed, `[[`, numeric(1), "obs_stats")
+  t_perm_list <- lapply(transformed, `[[`, "perm_stats")
+  t_perm      <- do.call(cbind, t_perm_list)
+  dimnames(t_perm) <- dimnames(perm_stats)
+  
+  ## ---------------------------------------------------------------------------
   ## Empirical p-values
   ## ---------------------------------------------------------------------------
   pvals_emp_list <- .compute_pvals_emp(
-    obs_stats = obs_stats,
-    perm_stats = perm_stats,
-    n_test     = n_test,
-    n_perm     = n_perm,
-    alternative = alternative
+    obs_stats = t_obs,
+    perm_stats = t_perm
   )
   
-  p_empirical        <- pvals_emp_list$pvals
-  n_perm_exceeding   <- pvals_emp_list$n_perm_exceeding
-  method_used <- rep("empirical", n_test)
+  p_empirical      <- pvals_emp_list$pvals
+  n_perm_exceeding <- pvals_emp_list$n_perm_exceeding
+  method_used      <- rep("empirical", n_test)
+  
+  # Decide which tests are candidates for parametric approximation
+  idx_fit <- which(!is.na(p_empirical) & (p_empirical < fit_thresh))
+  
+  if (length(idx_fit) == 0L && method != "empirical" && verbose) {
+    message("No empirical p-values below 'fit_thresh'; returning empirical p-values.")
+  }
   
   ## ---------------------------------------------------------------------------
   ## Approximate p-values
   ## ---------------------------------------------------------------------------
-  
-  # Transform test statisitics according to the alternative
-  transformed <- lapply(seq_len(n_test), function(i) {
-    .transform_stats(perm_stats = perm_stats[, i],
-                     obs_stats  = obs_stats[i],
-                     alternative = alternative)
-  })
-  t_obs  <- vapply(transformed, `[[`, numeric(1), "obs_stats")
-  t_perm_list <- lapply(transformed, `[[`, "perm_stats")
-  t_perm <- do.call(cbind, t_perm_list)
-  dimnames(t_perm) <- dimnames(perm_stats)
   
   # Initialize gamma_fit and gpd_fit
   gamma_fit <- gpd_fit <- NULL
