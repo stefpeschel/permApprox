@@ -1,3 +1,81 @@
+################################################################################
+### Factor of the observed test statistic
+################################################################################
+
+#' Simple multiplicative epsilon rule: eps = tune * |t_obs|
+#'
+#' @description
+#' Computes \eqn{\varepsilon}-values as a simple multiplicative factor of the
+#' absolute observed test statistic:
+#' \deqn{\varepsilon_j = \mathrm{tune} \cdot |T_{\mathrm{obs}, j}|.}
+#'
+#' This is the simplest possible epsilon rule and can be used as an alternative
+#' to \code{\link{eps_slls}}. It is monotone in \code{tune}, making it fully
+#' compatible with the zero-guard refinement mechanism of
+#' \code{\link{make_gpd_ctrl}}.
+#'
+#' @param obs_stats Numeric vector of observed test statistics.
+#' @param perm_stats Numeric matrix of permutation statistics (ignored by this
+#'   epsilon rule; included only for compatibility with the \code{eps_fun}
+#'   interface).
+#' @param sample_size Numeric scalar or \code{NULL}. Ignored by this epsilon
+#'   rule; included only for compatibility.
+#' @param tune Numeric scalar. Multiplicative factor controlling the overall
+#'   size of \eqn{\varepsilon}. Larger values yield more conservative
+#'   (larger) epsilon values.
+#' @param ... Further arguments ignored.
+#'
+#' @return
+#' Numeric vector of \eqn{\varepsilon}-values, one per test.
+#'
+#' @details
+#' This epsilon rule is useful when a simple, interpretable, and fast epsilon
+#' generator is desired. It does not depend on permutation values, sample size,
+#' or shape of the distribution––only on the magnitude of each observed test
+#' statistic.
+#'
+#' For tests where \eqn{T_{\mathrm{obs}} = 0}, a small fallback value
+#' \eqn{\varepsilon = \mathrm{tune} \cdot 1e-12} is returned to avoid
+#' zero-support issues.
+#'
+#' @examples
+#' obs  <- c(0.5, 2.0, 3.5)
+#' perm <- matrix(rnorm(1000 * 3), nrow = 1000)
+#'
+#' # epsilon = 0.1 * |T_obs|
+#' eps_factor(obs_stats = obs, perm_stats = perm, sample_size = NULL, tune = 0.1)
+#'
+#' # use in permApprox control
+#' ctrl <- make_gpd_ctrl(
+#'   constraint = "support_at_obs",
+#'   eps_fun    = eps_factor,
+#'   eps_tune   = 0.05
+#' )
+#' ctrl
+#'
+#' @export
+eps_factor <- function(obs_stats,
+                       perm_stats,
+                       sample_size,
+                       tune = 0.1,
+                       ...) {
+  
+  if (!is.numeric(obs_stats))
+    stop("'obs_stats' must be numeric")
+  
+  if (!(is.numeric(tune) && length(tune) == 1L && is.finite(tune)))
+    stop("'tune' must be a single numeric scalar")
+  
+  # basic rule: epsilon = tune * |t_obs|
+  eps <- tune * abs(obs_stats)
+  
+  eps
+}
+
+################################################################################
+### SLLS
+################################################################################
+
 #' Standardized Lifted Log-Saturation (SLLS) epsilon rule
 #'
 #' @description
@@ -103,6 +181,7 @@ eps_slls <- function(obs_stats,
                      k_factor      = 1000,
                      floor_epsZ    = 1e-6,
                      ...) {
+  
   cap_base <- if (is.character(cap_base)) match.arg(cap_base) else cap_base
   n <- sample_size
   stopifnot(n > 0)
