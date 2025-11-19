@@ -365,19 +365,32 @@ compute_p_values <- function(
       }
     }
     
-    gpd_fit <- .compute_pvals_gpd(obs_stats = t_obs,
-                                  perm_stats = t_perm,
-                                  p_empirical = p_empirical,
-                                  fit_thresh = fit_thresh,
-                                  control = gpd_ctrl,
-                                  cores = cores,
-                                  verbose = verbose,
-                                  ...)
+  } else if (method == "gpd") { # Tail approximation using the GPD
     
-    p_values <- p_empirical
-    idx_gpd <- gpd_fit$status == "success"
-    p_values[idx_gpd] <- gpd_fit$p_value[idx_gpd]
-    method_used[idx_gpd] <- "gpd"
+    if (length(idx_fit) == 0L) {
+      p_values <- p_empirical
+      
+    } else {
+      control$gpd <- gpd_ctrl
+      
+      gpd_fit <- .compute_pvals_gpd(
+        obs_stats    = t_obs,
+        perm_stats   = t_perm,
+        idx_fit      = idx_fit,
+        p_empirical  = p_empirical,
+        control      = control$gpd,
+        cores        = cores,
+        parallel_min = parallel_min,
+        verbose      = verbose,
+        ...
+      )
+      
+      # Replace p-values with successful GPD fit and reset method
+      p_values <- p_empirical
+      success <- gpd_fit$status == "success"
+      p_values[success]    <- gpd_fit$p_value[success]
+      method_used[success] <- "gpd"
+    }
   }
   
   ## ---------------------------------------------------------------------------

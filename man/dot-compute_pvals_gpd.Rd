@@ -7,10 +7,10 @@
 .compute_pvals_gpd(
   obs_stats,
   perm_stats,
-  p_empirical,
-  fit_thresh,
+  idx_fit,
   control,
   cores,
+  parallel_min,
   verbose,
   ...
 )
@@ -24,12 +24,10 @@
 If \code{control$include_obs = TRUE}, the vector \code{obs_stats} is
 appended as an additional row prior to threshold detection and fitting.}
 
-\item{p_empirical}{Numeric vector of empirical permutation p-values
-(\code{length = n_test}). These determine which tests undergo GPD
-approximation (those with \code{p_empirical < fit_thresh}).}
-
-\item{fit_thresh}{Numeric scalar. Empirical p-values below this value
-trigger GPD tail approximation.}
+\item{idx_fit}{Integer vector of test indices (subset of
+\code{1:length(obs_stats)}) for which GPD approximation should be
+attempted. Typically defined in \code{\link{compute_p_values}} as
+those tests with empirical p-values below \code{fit_thresh}.}
 
 \item{control}{A control list created by \code{\link{make_gpd_ctrl}}.
 It contains GPD fitting options, threshold detection settings,
@@ -38,41 +36,48 @@ epsilon tuning parameter (\code{eps_tune}),
 optional epsilon arguments (\code{eps_args}),
 and zero-guard configuration.}
 
-\item{cores}{Integer. Number of CPU cores to use for parallel evaluation
-via \pkg{future.apply}. Values \code{<= 1} enforce sequential execution.}
+\item{cores}{Integer >= 1. Number of CPU cores for parallel computations.
+Default: 1.}
 
-\item{verbose}{Logical. If \code{TRUE}, progress messages are printed using
-the \pkg{progressr} handlers.}
+\item{parallel_min}{Integer. Minimum number of tests in a given
+computation step (e.g., threshold detection, GPD/Gamma fitting, epsilon
+refinement) for which parallel computation is used when \code{cores > 1}.
+If the number of tests is smaller than \code{parallel_min}, the
+corresponding step is run sequentially to avoid parallel overhead.
+Default: \code{10}.}
+
+\item{verbose}{Logical scalar. If \code{TRUE}, progress messages are printed.
+Default: TRUE.}
 
 \item{...}{Additional arguments passed downstream to internal fitting
 functions such as \code{fit_gpd}.}
 }
 \value{
-A \code{data.frame} with one row per test and the following columns:
+A named \code{list} with one element per output quantity. Except for
+\code{perm_stats_fit}, each element is a vector of length \code{n_test}:
 \describe{
-  \item{\code{p_value}}{Final p-value (GPD-approximated if available,
-        otherwise empirical).}
-  \item{\code{p_empirical}}{Empirical permutation p-value.}
-  \item{\code{thresh}}{Selected GPD threshold (or \code{NA} if none found).}
+  \item{\code{p_value}}{GPD-based tail p-values (or \code{NA_real_} if no
+        valid GPD fit was obtained for a test). These are combined with
+        empirical p-values in \code{\link{compute_p_values}}.}
+  \item{\code{thresh}}{Selected GPD threshold (or \code{NA_real_} if none
+        found).}
   \item{\code{n_exceed}}{Number of exceedances used for the GPD fit.}
-  \item{\code{shape}}{Estimated GPD shape parameter (\code{NA} if no fit).}
-  \item{\code{scale}}{Estimated GPD scale parameter (\code{NA} if no fit).}
+  \item{\code{shape}}{Estimated GPD shape parameter (\code{NA_real_} if no
+        fit was obtained).}
+  \item{\code{scale}}{Estimated GPD scale parameter (\code{NA_real_} if no
+        fit was obtained).}
   \item{\code{epsilon}}{Final epsilon used in the GPD fit (after refinement
         if zero-guard was active).}
   \item{\code{gof_p_value}}{Goodness-of-fit p-value (Anderson–Darling or
         Cramér–von Mises depending on \code{control$gof_test}).}
-  \item{\code{status}}{Factor describing per-test fitting outcome:
+  \item{\code{status}}{Factor describing the per-test fitting outcome:
     \code{"not_selected"}, \code{"success"}, \code{"discrete"},
     \code{"no_threshold"}, \code{"gof_reject"}, \code{"fit_failed"}.}
   \item{\code{discrete}}{Logical flag indicating whether the permutation
         distribution was too discrete for reliable tail fitting.}
-}
-
-The returned object also carries an attribute:
-\itemize{
-  \item \code{"perm_stats_fit"}: a list of length \code{n_test} containing
-        the exceedances used for each successful GPD fit (empty for tests
-        not fitted or not successful).
+  \item{\code{perm_stats_fit}}{List of length \code{n_test} containing the
+        exceedances used for each successful GPD fit (empty numeric vectors
+        for tests not fitted or not successful).}
 }
 }
 \description{
@@ -80,8 +85,9 @@ Internal workhorse for computing permutation p-values using the
 Generalized Pareto Distribution (GPD) tail approximation.  
 For each test, the function:
 \enumerate{
-  \item identifies tests eligible for GPD fitting based on empirical
-        p-values (\code{p_empirical < fit_thresh}) and sign constraints,
+  \item receives a set of tests selected for GPD fitting (indices in
+        \code{idx_fit}, typically based on empirical p-values below a
+        threshold in the calling function),
   \item performs discreteness screening,
   \item detects a GPD threshold using \code{\link{.find_gpd_thresh}},
   \item evaluates the appropriate support boundary
@@ -92,7 +98,7 @@ For each test, the function:
   \item fits the GPD tail using \code{\link{fit_gpd}},
   \item optionally performs adaptive epsilon refinement
         (zero-guard) to avoid numerical underflow, and
-  \item returns final p-values combining empirical and fitted results.
+  \item returns GPD-based p-values and diagnostics.
 }
 
 The function supports parallel execution for threshold detection and
