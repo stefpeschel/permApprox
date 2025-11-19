@@ -7,6 +7,6 @@
 # * https://testthat.r-lib.org/articles/special-files.html
 
 library(testthat)
-library(permAprox)
+library(permApprox)
 
-test_check("permAprox")
+test_check("permApprox")
