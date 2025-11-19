@@ -16,8 +16,8 @@ compute_p_values(
   cores = 1,
   parallel_min = 10L,
   verbose = TRUE,
-  gpd_ctrl = NULL,
-  gamma_ctrl = NULL,
+  gpd_ctrl = make_gpd_ctrl(),
+  gamma_ctrl = make_gamma_ctrl(),
   adjust_ctrl = make_adjust_ctrl(),
   ...
 )

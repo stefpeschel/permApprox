@@ -114,8 +114,6 @@
 #' In such cases, the returned \code{p_values} vector contains the approximated
 #' values (empirical for larger p-values, approximated for smaller ones).
 #'
-#' If \code{method = "none"}, only empirical p-values are returned.
-#'
 #' @examples
 #' # Generate observed and permuted test statistics
 #' set.seed(12345)
@@ -181,8 +179,8 @@ compute_p_values <- function(
     cores = 1,
     parallel_min = 10L,
     verbose = TRUE,
-    gpd_ctrl = NULL,
-    gamma_ctrl = NULL,
+    gpd_ctrl = make_gpd_ctrl(),
+    gamma_ctrl = make_gamma_ctrl(),
     adjust_ctrl = make_adjust_ctrl(),
     ...
 ) {
@@ -219,18 +217,14 @@ compute_p_values <- function(
   if (method == "gpd") {
     if (is.null(gpd_ctrl)) {
       gpd_ctrl <- make_gpd_ctrl()
-    } else {
-      if (!inherits(gpd_ctrl, "gpd_ctrl")) {
-        stop("'gpd_ctrl' must be created with make_gpd_ctrl().")
-      }
+    } else if (!inherits(gpd_ctrl, "gpd_ctrl")) {
+      stop("'gpd_ctrl' must be created with make_gpd_ctrl().")
     }
   } else if (method == "gamma") {
     if (is.null(gamma_ctrl)) {
       gamma_ctrl <- make_gamma_ctrl()
-    } else {
-      if (!inherits(gamma_ctrl, "gamma_ctrl")) {
-        stop("'gamma_ctrl' must be created with make_gamma_ctrl().")
-      }
+    } else if (!inherits(gamma_ctrl, "gamma_ctrl")) {
+      stop("'gamma_ctrl' must be created with make_gamma_ctrl().")
     }
   }
   
@@ -336,6 +330,9 @@ compute_p_values <- function(
   # Initialize gamma_fit and gpd_fit
   gamma_fit <- gpd_fit <- NULL
   
+  # Initialize control output list
+  control <- list()
+  
   if (method == "empirical") { # Empirical p-values
     
     p_values <- p_empirical
@@ -407,8 +404,6 @@ compute_p_values <- function(
   }
   
   #-----------------------------------------------------------------------------
-  callArgs <- mget(names(formals()),sys.frame(sys.nframe()))
-  callArgs$gpdEstimate <- NULL
   
   output <- list(p_values = p_values,
                  p_unadjusted = p_unadjusted,
@@ -417,11 +412,7 @@ compute_p_values <- function(
                  gamma_fit = gamma_fit,
                  method_used = method_used,
                  adjust_result = adjust_result,
-                 control = list(
-                   gpd = gpd_ctrl,
-                   gamma = gamma_ctrl,
-                   adjust = adjust_ctrl
-                 )
+                 control = control
   )
   
   return(output)
