@@ -291,13 +291,20 @@ for (b in seq_len(B)) {
                    colMeans(X[grp_perm == 0, , drop = FALSE])
 }
 
-# Empirical p-values only (BH-adjusted by default)
+## ---------------------------------------------------------------------
+## Empirical p-values only (BH-adjusted by default)
+## ---------------------------------------------------------------------
+
 res_emp <- perm_approx(
   obs_stats  = obs_stats,
   perm_stats = perm_mat,
   method     = "empirical",
   verbose    = FALSE
 )
+
+# Print and summary methods
+res_emp
+summary(res_emp)
 
 # Adjusted p-values (BH by default)
 res_emp$p_values
@@ -316,7 +323,7 @@ gpd_ctrl <- make_gpd_ctrl(
   sample_size = n_per_group
 )
 
-# Run p-value approximation
+# Run p-value approximation with GPD
 res_gpd <- perm_approx(
   obs_stats  = obs_stats,
   perm_stats = perm_mat,
@@ -325,9 +332,13 @@ res_gpd <- perm_approx(
   verbose    = FALSE
 )
 
+# Print and summary for GPD-based approximation
+res_gpd
+summary(res_gpd)
+
 # Tail fit details
 fit <- res_gpd$fit_result
-fit$status      # success / discrete / fit_failed / gof_reject
+fit$status      # success / discrete / no_threshold / gof_reject / fit_failed
 fit$shape       # GPD shape estimates per test
 fit$thresh      # thresholds
 fit$n_exceed    # number of exceedances
@@ -341,7 +352,32 @@ emp_gpd_df
 
 
 ## ---------------------------------------------------------------------
-## Multiple testing adjustment with adapt_BH
+## Gamma approximation for the same 10 tests
+## ---------------------------------------------------------------------
+
+# Gamma-related arguments are changed using make_gamma_ctrl()
+gamma_ctrl <- make_gamma_ctrl(gof_test = "none")
+
+res_gamma <- perm_approx(
+  obs_stats   = obs_stats,
+  perm_stats  = perm_mat,
+  method      = "gamma",
+  gamma_ctrl  = gamma_ctrl,
+  verbose     = FALSE
+)
+
+# Print and summary for Gamma approximation
+res_gamma
+summary(res_gamma)
+
+# Gamma fit parameters (successful fits)
+gamma_fit <- res_gamma$fit_result
+gamma_fit$shape
+gamma_fit$rate
+
+
+## ---------------------------------------------------------------------
+## Multiple testing adjustment with adapt_BH for GPD
 ## ---------------------------------------------------------------------
 
 # Adaptive BH method for multiple testing adjustment
@@ -357,10 +393,11 @@ res_adapt_BH <- perm_approx(
   verbose       = FALSE
 )
 
-# Adjusted vs. unadjusted p-values
+# Adjusted vs. unadjusted GPD-based p-values
 adj_unadj_df <- data.frame(
-  GPD_unadjusted = res_gpd$p_unadjusted,
-  GPD_adjusted   = res_adapt_BH$p_values
+GPD_unadj    = res_gpd$p_unadjusted,
+GPD_BH       = res_gpd$p_values, 
+GPD_adapt_BH = res_adapt_BH$p_values
 )
 adj_unadj_df
 
