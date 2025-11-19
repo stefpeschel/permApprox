@@ -27,6 +27,10 @@ Must be one of \code{"lme"}, \code{"mle1d"}, \code{"mle2d"}, \code{"mom"},
 
 \item{tol}{Numeric. Convergence tolerance (default 1e-8).}
 
+\item{epsilon}{Numeric scalar. Evaluation point shift (epsilon) used to
+enforce that the observed statistic plus epsilon lies within the GPD
+support when support constraints are active.}
+
 \item{constraint}{Character. Type of constraint to enforce during GPD fitting.
 Options are \code{"unconstrained"}, \code{"shape_nonneg"},
 \code{"support_at_obs"}, and \code{"support_at_max"}.}

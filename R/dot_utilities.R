@@ -79,6 +79,7 @@
 
 #-------------------------------------------------------------------------------
 #' @title Helper for 'default or user'
+#' @name percent-or-or-percent
 #' 
 #' @keywords internal
 #' 
