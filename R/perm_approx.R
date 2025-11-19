@@ -509,8 +509,12 @@ perm_approx <- function(
   fit_result <- NULL
   fit_method <- method   # store which one was actually used
   
-  # Control list for output: always include adjust_ctrl, add gpd/gamma if used
-  control_out <- list(adjust = adjust_ctrl)
+  # Control list for output
+  control_out <- list(
+    adjust        = adjust_ctrl,
+    fit_thresh    = fit_thresh,
+    adjust_method = adjust_method
+  )
   
   p_values <- p_empirical
   
@@ -591,5 +595,6 @@ perm_approx <- function(
     control       = control_out
   )
   
+  class(output) <- "perm_approx"
   output
 }

@@ -23,8 +23,7 @@
   return(list(perm_stats = perm_stats, obs_stats = obs_stats))
 }
 
-
-
+#-------------------------------------------------------------------------------
 #' @title Quantile function for the upper tail of the GPD
 #'
 #' @description
@@ -66,7 +65,7 @@
   res
 }
 
-
+#-------------------------------------------------------------------------------
 #' @title Define number of workers for parallel processing
 #' 
 #' @keywords internal
@@ -78,9 +77,44 @@
   }
 }
 
-
+#-------------------------------------------------------------------------------
 #' @title Helper for 'default or user'
 #' 
 #' @keywords internal
 #' 
 `%||%` <- function(x, y) if (is.null(x)) y else x
+
+
+#-------------------------------------------------------------------------------
+#' Tabulate status counts for perm_approx fits
+#'
+#' @param status A factor or character vector of status labels.
+#'
+#' @return A named integer vector with counts per status (possibly empty
+#'   if \code{status} is \code{NULL} or all \code{NA}).
+#'
+#' @keywords internal
+.perm_approx_status_counts <- function(status) {
+  if (is.null(status)) return(integer(0L))
+  status <- status[!is.na(status)]
+  if (!length(status)) return(integer(0L))
+  tab <- table(status)
+  as.integer(tab) |> stats::setNames(names(tab))
+}
+
+#-------------------------------------------------------------------------------
+#' Numeric summary helper for permApprox
+#'
+#' @param x Numeric vector.
+#' @return Named numeric vector with min, median, mean, max (or NULL if no finite values).
+#' @keywords internal
+.perm_approx_num_summary <- function(x) {
+  x <- x[is.finite(x)]
+  if (!length(x)) return(NULL)
+  c(
+    min    = min(x),
+    median = stats::median(x),
+    mean   = mean(x),
+    max    = max(x)
+  )
+}
