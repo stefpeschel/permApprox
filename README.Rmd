@@ -2,100 +2,253 @@
 output: github_document
 ---
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+```{r setup, echo = FALSE}
+knitr::opts_chunk$set(fig.path="man/figures/readme/")
 ```
 
-# permApprox - Permutation p-value approximation
+# permApprox <img src="man/figures/logo.png" align="right" height="180" />
 
-permApprox is an R package to compute empirical and approximated p-values from permutation tests, especially useful when the number of permutations is small and zero p-values should be strictly avoided. It offers approximation using the Gamma distribution or the Generalized Pareto Distribution (GPD) fitted to the tail of the permutation distribution.
+`permApprox` provides tools to **approximate small permutation p-values**
+when the number of permutations is limited and empirical p-values become
+coarse or problematic (e.g., many ties or values very close to zero).
 
-## Early version disclaimer
+The core function `perm_approx()` computes empirical p-values and, for tests
+with small empirical p-values, replaces them by parametric approximations
+derived from the permutation statistics using either
 
-**Note:** This is an early version of the permApprox package and is still under active development. While the core functionality is in place, the interface, parameter settings, and behavior of certain functions may change in future versions. Users are encouraged to use the package with care and avoid relying on its current structure for production workflows.
+- a **Generalized Pareto Distribution (GPD)** fitted to the **upper tail**
+  (exceedances above a data-driven threshold), or  
+- a **Gamma distribution** fitted to the **full permutation distribution**.
+
+For the GPD approach, `permApprox` supports **support constraints** to avoid
+zero p-values when the estimated shape parameter is negative. Multiple testing
+adjustment is performed on the resulting p-values using standard p-value based
+methods (e.g. BH, adaptive BH, local FDR).
+
+---
 
 ## Installation
 
+The package is currently available from GitHub:
+
 ```{r, eval=FALSE}
-install.packages("devtools")
-devtools::install_github("stefpeschel/permApprox")
+# install.packages("remotes")
+remotes::install_github("stefpeschel/permApprox")
 ```
 
-## Features
-
-- Computes empirical p-values for permutation tests
-- Approximates small p-values using the Gamma or GPD distributions
-- Strictly avoids zero p-values
-- Includes multiple testing correction support
-- Control objects allow fine-tuning of each fitting method
-
-## Usage
+Load the package:
 
 ```{r}
 library(permApprox)
-
-# Simulated example
-set.seed(12345)
-obs <- c(2.0, 3.0, 4.0, 5.0)
-perm <- matrix(rnorm(4000), nrow = 4)
-
-# Empirical p-values
-res_emp <- perm_approx(obs_stats = obs,
-                            perm_stats = perm,
-                            method = "empirical")
-
-# Gamma approximation
-gamma_ctrl <- make_gamma_ctrl(gof_test = "none")
-res_gamma <- perm_approx(obs_stats = obs,
-                              perm_stats = perm,
-                              method = "gamma",
-                              gamma_ctrl = gamma_ctrl)
-
-# GPD approximation without constraints
-gpd_ctrl <- make_gpd_ctrl(constraint = "unconstrained")
-res_gpd <- perm_approx(obs_stats = obs,
-                            perm_stats = perm,
-                            method = "gpd")
-
-# GPD approximation with constraint
-# (GPD must have support at t_obs + epsilon)
-gpd_ctrl <- make_gpd_ctrl(constraint = "support_at_obs")
-res_gpd_constr <- perm_approx(obs_stats = obs,
-                                   perm_stats = perm,
-                                   method = "gpd",
-                                   gpd_ctrl = gpd_ctrl)
-
-# GPD approximation with constraint and fixed epsilon
-gpd_ctrl <- make_gpd_ctrl(constraint = "support_at_max",
-                          eps_fun = eps_fixed,
-                          eps_par = list(value = 0.1))
-
-res_gpd_constr_eps0.1 <- perm_approx(obs_stats = obs,
-                                   perm_stats = perm,
-                                   method = "gpd",
-                                   gpd_ctrl = gpd_ctrl)
-
-# Data frame with (unadjusted) p-values
-p_values <- data.frame(empirical = res_emp$p_unadjusted,
-                       gamma = res_gamma$p_unadjusted,
-                       gpd = res_gpd$p_unadjusted,
-                       gpd_constr = res_gpd_constr$p_unadjusted,
-                       gpd_constr_eps0.1 = res_gpd_constr_eps0.1$p_unadjusted)
-
-p_values
 ```
 
+---
 
-## Documentation
+## Overview
 
-- The main function is `perm_approx()`
-- Control objects can be created using:
-  - `make_gpd_ctrl()` for GPD fitting
-  - `make_gamma_ctrl()` for Gamma fitting
-  - `make_adjust_ctrl()` for multiple testing correction
+Permutation tests are widely used when the null distribution of a test statistic
+is not available in closed form. With a limited number of permutations, empirical
+p-values are often too coarse and may even be zero for strong effects, which
+causes problems for multiple testing procedures.
 
-Use `?perm_approx` in R to see the full documentation and available options.
+`permApprox` addresses this by:
+
+1. Computing **empirical p-values** from permutation test statistics,
+2. Selecting tests with empirical p-values below an **approximation threshold**,
+3. Fitting a **GPD** to the tail (or a **Gamma** distribution to the full
+   permutation distribution),
+4. Enforcing **support constraints** to avoid zero p-values for negative shape
+   parameters, and
+5. Optionally applying **multiple testing correction** (BH, adaptive BH, lfdr, …).
+
+The main entry point is:
+
+```{r, eval=FALSE}
+perm_approx(
+  obs_stats,    # observed test statistics
+  perm_stats,   # permutation test statistics (rows = permutations, cols = tests)
+  method = c("gpd", "gamma", "empirical"),
+  ...
+)
+```
+
+---
+
+## Usage
+
+### Basic example: 10 tests, one true effect
+
+We illustrate the workflow with a simple two-sample mean comparison for 10 tests,
+where the first test has a true effect.
+
+```{r}
+set.seed(42)
+
+n_per_group <- 50
+m_tests     <- 10
+
+# Group labels: 0 = control, 1 = treatment
+group <- rep(c(0, 1), each = n_per_group)
+
+# Data matrix: rows = samples, cols = tests/features
+X <- matrix(
+  rnorm(2 * n_per_group * m_tests),
+  ncol = m_tests
+)
+
+# Introduce a true effect in the first test
+X[group == 1, 1] <- X[group == 1, 1] + 0.8
+
+# Observed test statistics: mean difference (treated - control)
+obs_stats <- colMeans(X[group == 1, , drop = FALSE]) -
+             colMeans(X[group == 0, , drop = FALSE])
+
+# Permutation distribution: shuffle group labels and recompute all 10 stats
+B <- 1000
+perm_mat <- matrix(NA_real_, nrow = B, ncol = m_tests)
+
+for (b in seq_len(B)) {
+  grp_perm <- sample(group)
+  perm_mat[b, ] <- colMeans(X[grp_perm == 1, , drop = FALSE]) -
+                   colMeans(X[grp_perm == 0, , drop = FALSE])
+}
+```
+
+### Empirical p-values
+
+```{r}
+res_emp <- perm_approx(
+  obs_stats  = obs_stats,
+  perm_stats = perm_mat,
+  method     = "empirical",
+  verbose    = FALSE
+)
+
+res_emp
+summary(res_emp)
+
+# Adjusted (BH) and unadjusted p-values
+res_emp$p_values
+res_emp$p_unadjusted
+```
+
+### GPD approximation
+
+We now approximate small p-values using a GPD tail model with a support
+constraint at the observed statistic (single-test mode).
+
+```{r}
+gpd_ctrl <- make_gpd_ctrl(
+  constraint   = "support_at_obs",
+  sample_size  = n_per_group
+)
+
+res_gpd <- perm_approx(
+  obs_stats  = obs_stats,
+  perm_stats = perm_mat,
+  method     = "gpd",
+  gpd_ctrl   = gpd_ctrl,
+  verbose    = FALSE
+)
+
+# Compact overview
+res_gpd
+
+# More detailed diagnostics
+summary(res_gpd)
+
+# Tail fit details (from .compute_pvals_gpd())
+fit_gpd <- res_gpd$fit_result
+fit_gpd$status      # success / discrete / no_threshold / gof_reject / fit_failed
+fit_gpd$shape       # GPD shape parameters
+fit_gpd$thresh      # thresholds per test
+fit_gpd$n_exceed    # number of exceedances
+```
+
+Compare empirical and GPD-based p-values:
+
+```{r}
+data.frame(
+  empirical = res_emp$p_unadjusted,
+  GPD       = res_gpd$p_unadjusted
+)
+```
+
+### Gamma approximation
+
+Alternatively, you can fit a Gamma distribution to the permutation statistics:
+
+```{r}
+gamma_ctrl <- make_gamma_ctrl(gof_test = "none")
+
+res_gamma <- perm_approx(
+  obs_stats   = obs_stats,
+  perm_stats  = perm_mat,
+  method      = "gamma",
+  gamma_ctrl  = gamma_ctrl,
+  verbose     = FALSE
+)
+
+res_gamma
+summary(res_gamma)
+
+gamma_fit <- res_gamma$fit_result
+gamma_fit$shape
+gamma_fit$rate
+```
+
+### Multiple testing adjustment
+
+`permApprox` can pass empirical / approximated p-values to a resampling-based
+multiple testing procedure. Supported methods include:
+
+* `"none"` – no adjustment
+* classical `stats::p.adjust()` methods (e.g. `"BH"`, `"holm"`, `"BY"`, …)
+* `"lfdr"` – local FDR via `fdrtool`
+* `"adapt_BH"` – adaptive BH based on estimated proportion of true nulls
+
+Example using adaptive BH on GPD-based p-values:
+
+```{r}
+adjust_ctrl <- make_adjust_ctrl(true_null_method = "lfdr")
+
+res_adapt <- perm_approx(
+  obs_stats     = obs_stats,
+  perm_stats    = perm_mat,
+  method        = "gpd",
+  gpd_ctrl      = gpd_ctrl,
+  adjust_method = "adapt_BH",
+  adjust_ctrl   = adjust_ctrl,
+  verbose       = FALSE
+)
+
+data.frame(
+  GPD_unadjusted = res_gpd$p_unadjusted,
+  GPD_adjusted   = res_adapt$p_values
+)
+```
+
+---
+
+## Key features
+
+* **Unified interface** for empirical, GPD, and Gamma-based p-values via `perm_approx()`.
+* **Support-constrained GPD fitting** to avoid zero p-values for negative shape
+  parameters, with options:
+
+  * `constraint = "support_at_obs"` – per-test constraint at the observed statistic
+  * `constraint = "support_at_max"` – global constraint at the maximum test statistic
+  * `constraint = "unconstrained"`
+* **Flexible epsilon definition** (evaluation point above the boundary) via
+  user-specified epsilon functions.
+* **Discreteness screening** for permutation distributions that are too coarse
+  for reliable tail fitting.
+* **Goodness-of-fit testing** (e.g. Cramér–von Mises) with fallback to empirical
+  p-values if the tail model is rejected.
+
+
+---
 
 ## License
 
-This package is licensed under GPL-3.
+This package is released under the GPL-3 license.

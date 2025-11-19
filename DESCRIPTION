@@ -2,16 +2,24 @@ Package: permApprox
 Type: Package
 Title: Permutation p-value approximation
 Version: 0.1.0.9000
-Date: 2025-07-02
+Date: 2025-11-19
 Authors@R: c(
-    person("Stefanie", "Peschel", email = "stefpeschel@gmail.com", 
-    role = c("aut", "cre"), comment = c(ORCID = "0000-0002-7936-7627")),
-    person("Christian L.", "Müller", role = "ctb", comment = c(ORCID = "0000-0002-3821-7083"))
+    person("Stefanie", "Peschel", email = "stefpeschel@gmail.com",
+           role = c("aut", "cre"), comment = c(ORCID = "0000-0002-7936-7627")),
+    person("Christian L.", "Müller",
+           role = "ctb", comment = c(ORCID = "0000-0002-3821-7083"))
   )
 Maintainer: Stefanie Peschel <stefpeschel@gmail.com>
-Description: Approximate p-values in permutation tests while strictly avoiding p-values of zero.
-License: GPL-3 + file LICENSE
-biocViews:
+Description: Provides methods to approximate small p-values in permutation tests 
+    using parametric tail modelling. Empirical p-values are combined with either 
+    a Generalized Pareto Distribution (GPD) fitted to the tail of the 
+    permutation distribution or a Gamma distribution fitted to the full 
+    distribution. Optional support constraints ensure that no p-values equal 
+    zero when the GPD shape parameter is negative.
+License: GPL-3
+Depends: R (>= 4.1.0)
+Encoding: UTF-8
+RoxygenNote: 7.3.3
 Imports:
     changepoint,
     eva,
@@ -24,9 +32,7 @@ Imports:
     progressr,
     Rdpack,
     stats
-RdMacros: Rdpack
-Encoding: UTF-8
-RoxygenNote: 7.3.3
-Suggests: 
+Suggests:
     testthat (>= 3.0.0)
 Config/testthat/edition: 3
+RdMacros: Rdpack
