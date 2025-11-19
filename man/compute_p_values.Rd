@@ -64,7 +64,7 @@ Options include:
 \itemize{
   \item \code{"none"}: No adjustment.
   \item \code{"lfdr"}: Local false discovery rates via \code{fdrtool}.
-  \item \code{"adaptBH"}: Adaptive Benjamini-Hochberg (requires estimation
+  \item \code{"adapt_BH"}: Adaptive Benjamini-Hochberg (requires estimation
   of the proportion of true nulls).
   \item Any method supported by \code{stats::p.adjust} (e.g., "holm", "BH",
   "BY").

@@ -48,7 +48,7 @@
 #'   \itemize{
 #'     \item \code{"none"}: No adjustment.
 #'     \item \code{"lfdr"}: Local false discovery rates via \code{fdrtool}.
-#'     \item \code{"adaptBH"}: Adaptive Benjamini-Hochberg (requires estimation
+#'     \item \code{"adapt_BH"}: Adaptive Benjamini-Hochberg (requires estimation
 #'     of the proportion of true nulls).
 #'     \item Any method supported by \code{stats::p.adjust} (e.g., "holm", "BH",
 #'     "BY").
@@ -225,7 +225,7 @@ compute_p_values <- function(
   
   # Validate multiple testing adjustment method
   adjust_method <- match.arg(adjust_method, c("none", p.adjust.methods,
-                                              "lfdr", "adaptBH", "rbFDR"))
+                                              "lfdr", "adapt_BH"))
   
   ## ---------------------------------------------------------------------------
   ## Ensure matrix format: permutations in rows, tests in columns
@@ -356,14 +356,13 @@ compute_p_values <- function(
     
   } else {
     
-    adjust_result <- mult_adjust(p_values = p_values,
-                                 method = adjust_method,
-                                 true_null_method = adjust_ctrl$true_null_method,
-                                 p_true_null = adjust_ctrl$p_true_null,
-                                 seq_length = adjust_ctrl$seq_length,
-                                 perm_stats = adjust_ctrl$perm_stats,
-                                 cores = cores,
-                                 verbose = verbose)
+    adjust_result <- mult_adjust(
+      p_values = p_values,
+      method = adjust_method,
+      true_null_method = adjust_ctrl$true_null_method,
+      p_true_null = adjust_ctrl$p_true_null,
+      verbose = verbose
+    )
     
     p_values <- adjust_result$p_adjusted
   }

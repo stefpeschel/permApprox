@@ -11,30 +11,24 @@
 #'
 make_adjust_ctrl <- function(
     true_null_method = "convest",
-    p_true_null = NULL,
-    seq_length = 100
+    p_true_null = NULL
 ) {
   
   true_null_method <- match.arg(true_null_method, c("farco", "lfdr", "mean",
                                                     "hist", "convest"))
   
   if (!is.null(p_true_null)) {
-    if (!is.numeric(p_true_null) || length(p_true_null) != 1 || is.na(p_true_null) ||
-        p_true_null < 0 || p_true_null > 1) {
+    if (!is.numeric(p_true_null) || length(p_true_null) != 1 || 
+        is.na(p_true_null) || p_true_null < 0 || p_true_null > 1) {
       stop("'p_true_null' must be a single numeric value between 0 and 1, or NULL.")
     }
   }
   
-  if (!is.numeric(seq_length) || length(seq_length) != 1 || seq_length < 1) {
-    stop("'seq_length' must be a positive integer.")
-  }
-  seq_length <- as.integer(seq_length)
-  
   control <- list(
     true_null_method = true_null_method,
-    p_true_null = p_true_null,
-    seq_length = seq_length
+    p_true_null = p_true_null
   )
+  
   class(control) <- "adjust_ctrl"
   return(control)
 }

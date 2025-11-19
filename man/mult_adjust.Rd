@@ -9,10 +9,6 @@ mult_adjust(
   method = "BH",
   true_null_method = "convest",
   p_true_null = NULL,
-  seq_length = 100,
-  perm_stats = NULL,
-  p_perm = NULL,
-  cores = 1,
   verbose = FALSE
 )
 }
@@ -22,14 +18,14 @@ mult_adjust(
 \item{method}{Character. Method for p-value adjustment. Options include:
 \itemize{
   \item \code{"lfdr"}: local false discovery rates via \code{fdrtool}.
-  \item \code{"adaptBH"}: adaptive Benjamini-Hochberg (requires estimation
+  \item \code{"adapt_BH"}: adaptive Benjamini-Hochberg (requires estimation
   of the proportion of true nulls).
   \item Any method supported by \code{stats::p.adjust} (e.g., "holm",
   "BH", "BY").
 }}
 
 \item{true_null_method}{Character. Method to estimate the proportion of true
-null hypotheses when \code{method = "adaptBH"}. Options (for
+null hypotheses when \code{method = "adapt_BH"}. Options (for
 \code{limma::propTrueNull}):
 \itemize{
   \item \code{"convest"} (default)
@@ -40,18 +36,8 @@ null hypotheses when \code{method = "adaptBH"}. Options (for
 }}
 
 \item{p_true_null}{Numeric or NULL. Pre-specified proportion of true nulls
-for \code{adaptBH}. If \code{NULL}, it is estimated using
+for \code{adapt_BH}. If \code{NULL}, it is estimated using
 \code{true_null_method}. Default: \code{NULL}.}
-
-\item{seq_length}{Integer. Number of grid points when computing FDR curves in
-\code{"rbFDR"} method. Default: \code{100}.}
-
-\item{perm_stats}{Permutation test statistics.}
-
-\item{p_perm}{Permutation p-values.}
-
-\item{cores}{Integer. Number of CPU cores to use for parallel computations
-(e.g., in \code{"rbFDR"}). Must be >=1. Default: \code{1}.}
 
 \item{verbose}{Logical. If \code{TRUE}, progress messages are printed.
 Default: \code{FALSE}.}

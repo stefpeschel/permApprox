@@ -4,15 +4,11 @@
 \alias{make_adjust_ctrl}
 \title{Create a control object for multiple testing adjustment in permApprox}
 \usage{
-make_adjust_ctrl(
-  true_null_method = "convest",
-  p_true_null = NULL,
-  seq_length = 100
-)
+make_adjust_ctrl(true_null_method = "convest", p_true_null = NULL)
 }
 \arguments{
 \item{true_null_method}{Character. Method to estimate the proportion of true
-null hypotheses when \code{method = "adaptBH"}. Options (for
+null hypotheses when \code{method = "adapt_BH"}. Options (for
 \code{limma::propTrueNull}):
 \itemize{
   \item \code{"convest"} (default)
@@ -23,11 +19,8 @@ null hypotheses when \code{method = "adaptBH"}. Options (for
 }}
 
 \item{p_true_null}{Numeric or NULL. Pre-specified proportion of true nulls
-for \code{adaptBH}. If \code{NULL}, it is estimated using
+for \code{adapt_BH}. If \code{NULL}, it is estimated using
 \code{true_null_method}. Default: \code{NULL}.}
-
-\item{seq_length}{Integer. Number of grid points when computing FDR curves in
-\code{"rbFDR"} method. Default: \code{100}.}
 }
 \value{
 A named list (class \code{"adjust_ctrl"}) with the specified settings.

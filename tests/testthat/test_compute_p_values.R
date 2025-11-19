@@ -98,7 +98,7 @@ test_that("compute_p_values accepts custom control parameters without errors", {
       fit_thresh = 0.3,
       alternative = "greater",
       null_center = "median",
-      adjust_method = "adaptBH",
+      adjust_method = "adapt_BH",
       gpd_ctrl = gpd_ctrl_custom,
       gamma_ctrl = gamma_ctrl_custom,
       adjust_ctrl = adjust_ctrl_custom
@@ -112,7 +112,7 @@ test_that("compute_p_values accepts custom control parameters without errors", {
       fit_thresh = 0.1,
       alternative = "less",
       null_center = 0,
-      adjust_method = "adaptBH",
+      adjust_method = "adapt_BH",
       gpd_ctrl = gpd_ctrl_custom,
       gamma_ctrl = gamma_ctrl_custom,
       adjust_ctrl = adjust_ctrl_custom

@@ -7,14 +7,14 @@
 #' @param method Character. Method for p-value adjustment. Options include:
 #'   \itemize{
 #'     \item \code{"lfdr"}: local false discovery rates via \code{fdrtool}.
-#'     \item \code{"adaptBH"}: adaptive Benjamini-Hochberg (requires estimation
+#'     \item \code{"adapt_BH"}: adaptive Benjamini-Hochberg (requires estimation
 #'     of the proportion of true nulls).
 #'     \item Any method supported by \code{stats::p.adjust} (e.g., "holm",
 #'     "BH", "BY").
 #'   }
 #'
 #' @param true_null_method Character. Method to estimate the proportion of true
-#'   null hypotheses when \code{method = "adaptBH"}. Options (for
+#'   null hypotheses when \code{method = "adapt_BH"}. Options (for
 #'   \code{limma::propTrueNull}):
 #'   \itemize{
 #'     \item \code{"convest"} (default)
@@ -25,21 +25,11 @@
 #'   }
 #'
 #' @param p_true_null Numeric or NULL. Pre-specified proportion of true nulls
-#'   for \code{adaptBH}. If \code{NULL}, it is estimated using
+#'   for \code{adapt_BH}. If \code{NULL}, it is estimated using
 #'   \code{true_null_method}. Default: \code{NULL}.
 #'
 #' @param verbose if \code{TRUE}, progress messages are returned.
-#'
-#' @param seq_length Integer. Number of grid points when computing FDR curves in
-#'   \code{"rbFDR"} method. Default: \code{100}.
-#'
-#' @param perm_stats Permutation test statistics.
-#'
-#' @param p_perm Permutation p-values.
-#'
-#' @param cores Integer. Number of CPU cores to use for parallel computations
-#'   (e.g., in \code{"rbFDR"}). Must be >=1. Default: \code{1}.
-#'
+#' 
 #' @param verbose Logical. If \code{TRUE}, progress messages are printed.
 #'   Default: \code{FALSE}.
 #'
@@ -53,10 +43,6 @@ mult_adjust <- function(p_values,
                         method = "BH",
                         true_null_method = "convest",
                         p_true_null = NULL,
-                        seq_length = 100,
-                        perm_stats = NULL,
-                        p_perm = NULL,
-                        cores = 1,
                         verbose = FALSE) {
   
   # Check input arguments
@@ -65,7 +51,7 @@ mult_adjust <- function(p_values,
     stop('Argument "p_values" must be a numeric vector.')
   }
   
-  method <- match.arg(method, c(p.adjust.methods, "lfdr", "adaptBH", "rbFDR"))
+  method <- match.arg(method, c(p.adjust.methods, "lfdr", "adapt_BH"))
   
   true_null_method <- match.arg(true_null_method, c("farco", "lfdr", "mean",
                                                     "hist", "convest"))
@@ -83,16 +69,16 @@ mult_adjust <- function(p_values,
       message("Execute fdrtool() ...")
     }
     
-    fdrout <- fdrtool::fdrtool(p_values, statistic = "pvalue", plot = FALSE,
+    fdr_out <- fdrtool::fdrtool(p_values, statistic = "pvalue", plot = FALSE,
                                verbose = verbose)
     
-    p_adjusted <- fdrout$lfdr
-    qValues <- fdrout$qval
-    names(p_adjusted) <- names(qValues) <- names(p_values)
+    p_adjusted <- fdr_out$lfdr
+    q_values <- fdr_out$qval
+    names(p_adjusted) <- names(q_values) <- names(p_values)
     
-    out <- list(p_adjusted = p_adjusted, qValues = qValues)
+    out <- list(p_adjusted = p_adjusted, q_values = q_values)
     
-  } else if (method == "adaptBH") {
+  } else if (method == "adapt_BH") {
     
     m <- length(p_values)
     ind <- m:1
@@ -130,52 +116,6 @@ mult_adjust <- function(p_values,
     names(p_adjusted) <- names(p_values)
     
     out <- list(p_adjusted = p_adjusted, p_true_null = p_true_null)
-    
-  } else if (method == "rbFDR") {
-    
-    n_perm <- ncol(perm_stats)
-    n_test <- nrow(perm_stats)
-    
-    #---------------------------------------------------------------------------
-    # Check p-values of the permutation test statistics
-    if (is.null(p_perm)) {
-      stop("Permutation p-values 'p_perm' are missing.")
-    }
-    #---------------------------------------------------------------------------
-    # True possible cut-points
-    ord <- order(p_values, decreasing = TRUE)
-    c_poss_true <- p_values[ord]
-    
-    # Sequence of possible cut points
-    c_poss <- seq(max(p_values) * 1.1, 0, length.out = seq_length)
-    
-    # Get proportion of rejected hypotheses given H_0 is true
-    get_v <- function(c, p_perm, pEst) {
-      B <- ncol(p_perm)
-      (sum(p_perm <= c) + sum(pEst <= c)) / (B + 1)
-    }
-    
-    # Get proportion of rejected hypotheses
-    get_r <- function(c, pEst) {
-      sum(pEst <= c)
-    }
-    
-    # V vector of the sequence
-    v_hat_seq <- sapply(c_poss, get_v, p_perm = p_perm, pEst = p_values)
-    
-    # Linear interpolation to get V for the original p-values
-    v_hat <- approx(c_poss, v_hat_seq, xout = c_poss_true)$y
-    
-    # R vector for the original p-values
-    r_hat <- sapply(c_poss_true, get_r, pEst = p_values)
-    
-    # FDR for the original p-values
-    fdr <- v_hat / r_hat
-    
-    # Reorder
-    p_adjusted <- fdr[order(ord)]
-    
-    out <- list(p_adjusted = p_adjusted, p_perm = p_perm)
     
   } else {
     p_adjusted <- stats::p.adjust(p_values, method)
