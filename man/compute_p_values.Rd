@@ -14,6 +14,7 @@ compute_p_values(
   power = 1,
   adjust_method = "BH",
   cores = 1,
+  parallel_min = 10L,
   verbose = TRUE,
   gpd_ctrl = NULL,
   gamma_ctrl = NULL,
@@ -72,6 +73,13 @@ Options include:
 
 \item{cores}{Integer >= 1. Number of CPU cores for parallel computations.
 Default: 1.}
+
+\item{parallel_min}{Integer. Minimum number of tests in a given
+computation step (e.g., threshold detection, GPD/Gamma fitting, epsilon
+refinement) for which parallel computation is used when \code{cores > 1}.
+If the number of tests is smaller than \code{parallel_min}, the
+corresponding step is run sequentially to avoid parallel overhead.
+Default: \code{10}.}
 
 \item{verbose}{Logical scalar. If \code{TRUE}, progress messages are printed.
 Default: TRUE.}

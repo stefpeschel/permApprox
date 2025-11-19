@@ -65,3 +65,22 @@
   
   res
 }
+
+
+#' @title Define number of workers for parallel processing
+#' 
+#' @keywords internal
+.choose_workers <- function(cores, n, parallel_min) {
+  if (cores > 1L && n >= parallel_min) {
+    min(cores, n)
+  } else {
+    1L
+  }
+}
+
+
+#' @title Helper for 'default or user'
+#' 
+#' @keywords internal
+#' 
+`%||%` <- function(x, y) if (is.null(x)) y else x

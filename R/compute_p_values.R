@@ -56,6 +56,13 @@
 #'
 #' @param cores Integer >= 1. Number of CPU cores for parallel computations.
 #'   Default: 1.
+#'   
+#' @param parallel_min Integer. Minimum number of tests in a given
+#'   computation step (e.g., threshold detection, GPD/Gamma fitting, epsilon
+#'   refinement) for which parallel computation is used when \code{cores > 1}.
+#'   If the number of tests is smaller than \code{parallel_min}, the
+#'   corresponding step is run sequentially to avoid parallel overhead.
+#'   Default: \code{10}.
 #'
 #' @param verbose Logical scalar. If \code{TRUE}, progress messages are printed.
 #'   Default: TRUE.
@@ -172,6 +179,7 @@ compute_p_values <- function(
     power = 1,
     adjust_method = "BH",
     cores = 1,
+    parallel_min = 10L,
     verbose = TRUE,
     gpd_ctrl = NULL,
     gamma_ctrl = NULL,
@@ -191,10 +199,17 @@ compute_p_values <- function(
   stopifnot(is.numeric(power))
   
   # Validate 'cores'
-  if (!(is.numeric(cores) && length(cores) == 1L && is.finite(cores) && cores >= 1))
+  if (!(is.numeric(cores) && length(cores) == 1L && 
+        is.finite(cores) && cores >= 1))
     stop("'cores' must be a single integer >= 1.")
   
   cores <- as.integer(cores)
+  
+  # Validate 'parallel_min'
+  parallel_min <- as.integer(parallel_min)
+  if (!is.finite(parallel_min) || parallel_min < 1L) {
+    stop("'parallel_min' must be a single integer >= 1.")
+  }
   
   # Validate 'verbose'
   if (!is.logical(verbose) || length(verbose) != 1L || is.na(verbose))
