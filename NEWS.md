@@ -1,5 +1,13 @@
 
-## permApprox 1.0.0 <img src="man/figures/logo.png" align="right" height="180" />
+## permApprox 1.0.1 <img src="man/figures/logo.png" align="right" height="180" />
+
+### 🐛 Bug-fixes
+
+- `.find_gpd_thresh()` threw an error (“Threshold method not
+  supported.”) if some of the GoF tests were accepted, but never three
+  in a row. In these cases, the loop does not stop early.
+
+## permApprox 1.0.0
 
 ### 🆕 New features
 

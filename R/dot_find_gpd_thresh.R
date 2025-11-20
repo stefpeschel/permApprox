@@ -199,7 +199,7 @@
   
   # Number of iterations
   niter <- length(thresh_poss)
-  
+
   #-----------------------------------------------------------------------------
   idx_vec <- n_exceed_vec <- shape_vec <- scale_vec <- gof_p_value_vec <-
     numeric(length(thresh_poss))
@@ -245,7 +245,8 @@
   if (is.na(idx_use)) {
     
     # Find threshold index					  
-    if (all(gof_p_value_vec <= gof_alpha)) {
+    if (all(gof_p_value_vec <= gof_alpha) || 
+        thresh_method %in% c("ftr", "rob_ftr")) {
       
       idx_use <- NA
       
