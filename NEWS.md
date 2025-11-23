@@ -1,6 +1,14 @@
 
 ## permApprox 1.0.1 <img src="man/figures/logo.png" align="right" height="180" />
 
+### 🚀️ Improvements
+
+- Improved parallel execution in `.compute_pvals_gpd()`: Workers are now
+  started only once and reused across all parallel phases (threshold
+  detection, GPD fitting, zero-guard refits). This avoids repeated
+  worker startup and large data transfers, resulting in substantially
+  faster runtime, especially on Windows.
+
 ### 🐛 Bug-fixes
 
 - `.find_gpd_thresh()` threw an error (“Threshold method not

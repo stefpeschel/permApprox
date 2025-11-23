@@ -140,6 +140,73 @@
   }
   
   ## -------------------------------------------------------------------------
+  ## Global parallel setup: decide ONCE whether to use futures
+  ## -------------------------------------------------------------------------
+  # Use idx_fit as upper bound for parallel decision; all later subsets are <= this.
+  n_workers_main <- .choose_workers(cores, length(idx_fit), parallel_min)
+  use_parallel   <- (n_workers_main > 1L)
+  
+  if (use_parallel) {
+    strategy <- if (.Platform$OS.type != "windows" && future::supportsMulticore())
+      future::multicore else future::multisession
+    old_plan <- future::plan(strategy, workers = n_workers_main)
+    on.exit(future::plan(old_plan), add = TRUE)
+  }
+  
+  # Small helper: choose between future_lapply and lapply based on subset size
+  .maybe_parallel_lapply <- function(idxs, FUN, with_progress = FALSE,
+                                     future_pkgs = c("permApprox", "progressr")) {
+    n_tasks <- length(idxs)
+    if (n_tasks == 0L) return(list())
+    
+    run_parallel <- use_parallel && (n_tasks >= parallel_min)
+    
+    if (with_progress) {
+      progressr::with_progress(
+        handlers = list(progressr::handler_txtprogressbar(clear = TRUE)),
+        {
+          if (verbose) {
+            p <- progressr::progressor(along = idxs)
+          } else {
+            p <- function(...) NULL
+          }
+          
+          if (run_parallel) {
+            future.apply::future_lapply(
+              idxs,
+              function(j) {
+                res <- FUN(j)
+                if (verbose) p()
+                res
+              },
+              future.packages = future_pkgs,
+              future.seed     = TRUE
+            )
+          } else {
+            lapply(idxs, function(j) {
+              res <- FUN(j)
+              if (verbose) p()
+              res
+            })
+          }
+        }
+      )
+    } else {
+      # without progress bar (used e.g. in zero-guard helper)
+      if (run_parallel) {
+        future.apply::future_lapply(
+          idxs,
+          FUN,
+          future.packages = future_pkgs,
+          future.seed     = TRUE
+        )
+      } else {
+        lapply(idxs, FUN)
+      }
+    }
+  }
+  
+  ## -------------------------------------------------------------------------
   ## Discreteness screening only on idx_fit
   ## -------------------------------------------------------------------------
   uniq_counts <- vapply(
@@ -179,47 +246,11 @@
   
   if (isTRUE(verbose)) writeLines("Run threshold detection ...")
   
-  n_workers <- .choose_workers(cores, length(idx_non_dis), parallel_min)
-  run_parallel_thresh <- (n_workers > 1L)
-  
-  if (run_parallel_thresh) {
-    strategy <- if (.Platform$OS.type != "windows" && future::supportsMulticore())
-      future::multicore else future::multisession
-    old_plan <- future::plan(strategy, workers = n_workers)
-    on.exit(future::plan(old_plan), add = TRUE)
-    
-    res_list_thr <- progressr::with_progress(
-      handlers = list(progressr::handler_txtprogressbar(clear = TRUE)),
-      {
-        if (verbose) p <- progressr::progressor(along = idx_non_dis)
-        
-        future.apply::future_lapply(
-          idx_non_dis,
-          function(j) {
-            res <- find_thresh_one(j)
-            if (verbose) p()
-            res
-          },
-          future.packages = c("permApprox","progressr"),
-          future.seed = TRUE
-        )
-      }
-    )
-    
-  } else {
-    res_list_thr <- progressr::with_progress(
-      handlers = list(progressr::handler_txtprogressbar(clear = TRUE)),
-      {
-        if (verbose) p <- progressr::progressor(along = idx_non_dis)
-        
-        lapply(idx_non_dis, function(j) {
-          res <- find_thresh_one(j)
-          if (verbose) p()
-          res
-        })
-      }
-    )
-  }
+  res_list_thr <- .maybe_parallel_lapply(
+    idxs          = idx_non_dis,
+    FUN           = find_thresh_one,
+    with_progress = TRUE
+  )
   
   thresh[idx_non_dis]   <- vapply(res_list_thr, `[[`, numeric(1),  "thresh")
   n_exceed[idx_non_dis] <- vapply(res_list_thr, `[[`, integer(1), "n_exceed")
@@ -239,7 +270,6 @@
   ## -------------------------------------------------------------------------
   ## Support boundary vector according to constraint (subset)
   ## -------------------------------------------------------------------------
-  
   support_boundaries <- rep(NA_real_, n_test)
   sb <- switch(
     control$constraint,
@@ -252,7 +282,6 @@
   ## -------------------------------------------------------------------------
   ## Helper to run GPD fit with given epsilon vector on an index subset
   ## -------------------------------------------------------------------------
-  
   .fit_one_gpd <- function(i, eps) {
     obs_i    <- obs_stats[i]
     perm_i   <- perm_stats[, i]
@@ -311,57 +340,21 @@
   
   if (isTRUE(verbose)) writeLines("Run GPD fit ...")
   
-  n_workers_fit <- .choose_workers(cores, length(idx_valid), parallel_min)
-  run_parallel_fit_all <- (n_workers_fit > 1L)
-  
-  if (run_parallel_fit_all) {
-    strategy <- if (.Platform$OS.type != "windows" && future::supportsMulticore())
-      future::multicore else future::multisession
-    old_plan <- future::plan(strategy, workers = n_workers_fit)
-    on.exit(future::plan(old_plan), add = TRUE)
-    
-    res_list <- progressr::with_progress(
-      handlers = list(progressr::handler_txtprogressbar(clear = TRUE)),
-      {
-        if (verbose) p <- progressr::progressor(along = idx_valid)
-        future.apply::future_lapply(
-          idx_valid,
-          function(j) {
-            res <- .fit_one_gpd(j, eps = epsilons)
-            if (verbose) p()
-            res
-          },
-          future.packages = c("permApprox", "progressr"),
-          future.seed = TRUE
-        )
-      }
-    )
-    
-  } else {
-    res_list <- progressr::with_progress(
-      handlers = list(progressr::handler_txtprogressbar(clear = TRUE)),
-      {
-        if (verbose) p <- progressr::progressor(along = idx_valid)
-        lapply(idx_valid, function(j) {
-          res <- .fit_one_gpd(j, eps = epsilons)
-          if (verbose) p()
-          res
-        })
-      }
-    )
-  }
+  res_list <- .maybe_parallel_lapply(
+    idxs          = idx_valid,
+    FUN           = function(j) .fit_one_gpd(j, eps = epsilons),
+    with_progress = TRUE
+  )
   
   if (isTRUE(verbose)) writeLines("Done.")
   
   ## -------------------------------------------------------------------------
   ## Optional: Adaptive epsilon refinement (zero-guard)
   ## -------------------------------------------------------------------------
-  
   supp_constr <- control$constraint %in% c("support_at_obs", "support_at_max")
   
   if (isTRUE(supp_constr) && isTRUE(control$zero_guard)) {
     
-    # Index of zero (or underflow) p-values
     .get_zero_idx <- function(pv, idx) {
       min_pos <- .Machine$double.xmin
       z <- idx[which(!is.na(pv[idx]) & pv[idx] <= min_pos)]
@@ -371,7 +364,58 @@
     # Extract p-values from results data frame
     .get_pvals_from_res <- function(res) {
       vapply(res, `[[`, numeric(1), "p_value")
-    } 
+    }
+    
+    # Count the number of zeros 
+    # (or values below the machine's smalles possible floating-point number)
+    .count_zeros <- function(pv) {
+      min_pos <- .Machine$double.xmin
+      sum(is.finite(pv) & pv <= min_pos)
+    }
+    
+    ## Digits to show for the tuning parameter based on bisect tolerance
+    .digits_from_tol <- function(tol) {
+      if (!is.finite(tol) || tol <= 0) return(6L)
+      d <- ceiling(-log10(tol)) + 1L  # +1 to make changes at the tolerance visible
+      d <- max(0L, min(16L, d))       # clamp to sane bounds
+      as.integer(d)
+    }
+    
+    # Run GPD fit for a subset without progress bar
+    .run_gpd_fit <- function(epsilons, idx_subset = idx_valid) {
+      .maybe_parallel_lapply(
+        idxs          = idx_subset,
+        FUN           = function(i) .fit_one_gpd(i, eps = epsilons),
+        with_progress = FALSE
+      )
+    }
+    
+    ## Evaluate a candidate tuning parameter on a subset only
+    .eval_tp_subset <- function(tp, idx_subset) {
+      eps_try <- .define_eps(
+        perm_stats   = perm_stats,
+        obs_stats    = obs_stats,
+        sample_size  = control$sample_size,
+        constraint   = control$constraint,
+        eps_fun      = control$eps_fun,
+        eps_tune     = tp,
+        eps_args     = control$eps_args
+      )
+      res_sub <- .run_gpd_fit(eps_try, idx_subset = idx_subset)
+      pv_sub  <- vapply(res_sub, `[[`, numeric(1), "p_value")
+      list(res = res_sub, pvals = pv_sub)
+    }
+    
+    ## --- Configuration parameters ----------------------------------------
+    tp0     <- control$eps_tune
+    step    <- control$eps_retry$step_init
+    grow    <- control$eps_retry$grow
+    max_exp <- control$eps_retry$max_expand_iter
+    max_bis <- control$eps_retry$bisect_iter_max
+    bis_tol <- control$eps_retry$bisect_tol
+    
+    tp_digits <- .digits_from_tol(bis_tol)
+    tp_fmt    <- function(x) sprintf(paste0("%.", tp_digits, "f"), x)
     
     # Identify current number of zero p-values
     pvals_tmp <- p_value
@@ -381,76 +425,6 @@
     zero_idx <- .get_zero_idx(pvals_tmp, idx_valid)
     
     if (length(zero_idx) > 0L) {
-      
-      ## --- Helpers ---------------------------------------------------------
-      
-      # Run GPD fit for a subset without progress bar
-      .run_gpd_fit <- function(epsilons, idx_subset = idx_valid) {
-        
-        n_workers_fit <- .choose_workers(cores, length(idx_subset), parallel_min)
-        run_parallel_fit <- (n_workers_fit > 1L)
-        
-        if (run_parallel_fit) {
-          strategy <- if (.Platform$OS.type != "windows" && future::supportsMulticore()) 
-            future::multicore else future::multisession
-          old_plan <- future::plan(strategy, workers = n_workers_fit)
-          on.exit(future::plan(old_plan), add = TRUE)
-          
-          res_list <- future.apply::future_lapply(
-            idx_subset, 
-            function(i) .fit_one_gpd(i, eps = epsilons), 
-            future.packages = c("permApprox","progressr"),
-            future.seed = TRUE
-          )
-        } else {
-          res_list <- lapply(idx_subset,
-                             function(i) .fit_one_gpd(i, eps = epsilons))
-        }
-        res_list
-      }
-      
-      # Count the number of zeros 
-      # (or values below the machine's smalles possible floating-point number)
-      .count_zeros <- function(pv) {
-        min_pos <- .Machine$double.xmin
-        sum(is.finite(pv) & pv <= min_pos)
-      }
-      
-      ## Digits to show for the tuning parameter based on bisect tolerance
-      .digits_from_tol <- function(tol) {
-        if (!is.finite(tol) || tol <= 0) return(6L)
-        d <- ceiling(-log10(tol)) + 1L  # +1 to make changes at the tolerance visible
-        d <- max(0L, min(16L, d))       # clamp to sane bounds
-        as.integer(d)
-      }
-      
-      ## Evaluate a candidate tuning parameter on a subset only
-      .eval_tp_subset <- function(tp, idx_subset) {
-        eps_try <- .define_eps(
-          perm_stats   = perm_stats,
-          obs_stats    = obs_stats,
-          sample_size  = control$sample_size,
-          constraint   = control$constraint,
-          eps_fun      = control$eps_fun,
-          eps_tune     = tp,
-          eps_args     = control$eps_args
-        )
-        res_sub <- .run_gpd_fit(eps_try, idx_subset = idx_subset)
-        pv_sub  <- vapply(res_sub, `[[`, numeric(1), "p_value")
-        list(res = res_sub, pvals = pv_sub)
-      }
-      
-      ## --- Configuration parameters ----------------------------------------
-      tp0     <- control$eps_tune
-      step    <- control$eps_retry$step_init
-      grow    <- control$eps_retry$grow
-      max_exp <- control$eps_retry$max_expand_iter
-      max_bis <- control$eps_retry$bisect_iter_max
-      bis_tol <- control$eps_retry$bisect_tol
-      
-      tp_digits <- .digits_from_tol(bis_tol)
-      tp_fmt    <- function(x) sprintf(paste0("%.", tp_digits, "f"), x)
-      
       # Work only on the subset that currently underflows
       need_idx <- zero_idx
       
@@ -459,10 +433,10 @@
           "Zero-guard: start with tp=%s; zeros: %d (of %d selected tests)",
           tp_fmt(tp0), length(zero_idx), length(idx_valid)
         ))
+        message("Zero-guard: expanding tuning parameter ...")
       }
       
       # --- EXPANSION PHASE (large increasing steps) -------------------------
-      if (isTRUE(verbose)) message("Zero-guard: expanding tuning parameter ...")
       tp_curr <- tp0
       tp_lo   <- tp0            # last tp that still produces zeros
       tp_hi   <- NA_real_       # first tp with no zeros in need_idx
@@ -485,14 +459,13 @@
           }
           break
         } else {
-          # still zeros → move forward and inflate step
           tp_lo   <- tp_try
           tp_curr <- tp_try
           step    <- step * grow
           
           # shrink subset to those still zero to save runtime
           need_idx_old <- need_idx
-          need_idx <- need_idx[which(is.finite(ev$pvals) & 
+          need_idx <- need_idx[which(is.finite(ev$pvals) &
                                        ev$pvals <= .Machine$double.xmin)]
           
           if (isTRUE(verbose) && length(need_idx) != length(need_idx_old)) {
@@ -535,7 +508,7 @@
             tp_left <- tp_mid
             # keep only those still zero at tp_mid to reduce work further
             ref_idx_old <- ref_idx
-            ref_idx <- ref_idx[which(is.finite(ev$pvals) & 
+            ref_idx <- ref_idx[which(is.finite(ev$pvals) &
                                        ev$pvals <= .Machine$double.xmin)]
             if (isTRUE(verbose) && length(ref_idx) != length(ref_idx_old)) {
               message(sprintf("    refining subset to the %d zero(s)", 
@@ -564,43 +537,11 @@
                 tp_fmt(final_tp))
       }
       
-      if (run_parallel_fit_all) {
-        strategy <- if (.Platform$OS.type != "windows" && 
-                        future::supportsMulticore())
-          future::multicore else future::multisession
-        old_plan <- future::plan(strategy, workers = n_workers_fit)
-        on.exit(future::plan(old_plan), add = TRUE)
-        
-        res_list <- progressr::with_progress(
-          handlers = list(progressr::handler_txtprogressbar(clear = TRUE)),
-          {
-            if (verbose) p <- progressr::progressor(along = idx_valid)
-            future.apply::future_lapply(
-              idx_valid,
-              function(j) {
-                res <- .fit_one_gpd(j, eps = eps_final)
-                if (verbose) p()
-                res
-              },
-              future.packages = c("permApprox", "progressr"),
-              future.seed = TRUE
-            )
-          }
-        )
-        
-      } else {
-        res_list <- progressr::with_progress(
-          handlers = list(progressr::handler_txtprogressbar(clear = TRUE)),
-          {
-            if (verbose) p <- progressr::progressor(along = idx_valid)
-            lapply(idx_valid, function(j) {
-              res <- .fit_one_gpd(j, eps = eps_final)
-              if (verbose) p()
-              res
-            })
-          }
-        )
-      }
+      res_list <- .maybe_parallel_lapply(
+        idxs          = idx_valid,
+        FUN           = function(j) .fit_one_gpd(j, eps = eps_final),
+        with_progress = TRUE
+      )
       
       pvals_tmp[idx_valid] <- vapply(res_list, `[[`, numeric(1), "p_value")
       
