@@ -72,6 +72,46 @@ perm_approx(
 
 ------------------------------------------------------------------------
 
+## Key features
+
+- **Unified interface** for empirical, GPD, and Gamma-based p-values via
+  `perm_approx()`.
+
+- **Support-constrained GPD fitting** to avoid zero p-values for
+  negative shape parameters, with options:
+
+  - `constraint = "support_at_obs"` – per-test constraint at the
+    observed statistic
+  - `constraint = "support_at_max"` – global constraint at the maximum
+    test statistic
+  - `constraint = "unconstrained"`
+
+- **Flexible epsilon definition** (evaluation point above the boundary)
+  via user-specified epsilon functions.
+
+- **Discreteness screening** for permutation distributions that are too
+  coarse for reliable tail fitting.
+
+- **Goodness-of-fit testing** (e.g. Cramér–von Mises) with fallback to
+  empirical p-values if the tail model is rejected.
+
+------------------------------------------------------------------------
+
+## Development version
+
+Everyone who wants to use new features not included in any releases is
+invited to install the development version:
+
+``` r
+remotes::install_github("stefpeschel/permApprox@develop")
+```
+
+Please check the
+[NEWS](https://github.com/stefpeschel/permApprox/blob/develop/NEWS.md)
+document for features implemented on develop branch.
+
+------------------------------------------------------------------------
+
 ## Usage
 
 ### Basic example: 10 tests, one true effect
@@ -95,7 +135,7 @@ X <- matrix(
 )
 
 # Introduce a true effect in the first test
-X[group == 1, 1] <- X[group == 1, 1] + 0.8
+X[group == 1, 1] <- X[group == 1, 1] + 1.5
 
 # Observed test statistics: mean difference (treated - control)
 obs_stats <- colMeans(X[group == 1, , drop = FALSE]) -
@@ -136,35 +176,6 @@ res_emp
     ##   min = 0.00999, median = 0.562, max = 0.987
     ## 
     ## Use summary() for detailed fit diagnostics.
-
-``` r
-summary(res_emp)
-```
-
-    ## Summary of permApprox result
-    ## ----------------------------
-    ## Number of tests              : 10
-    ## Approximation method         : empirical (no parametric tail approximation)
-    ## Approximation threshold      : p-values < 0.1
-    ## Multiple testing adjustment  : BH
-    ## 
-    ## Fit status counts:
-    ##   (no parametric fit information available)
-    ## 
-    ## P-value summary
-    ## ---------------
-    ## Empirical p-values:
-    ##   empirical:
-    ##     min = 0.000999, median = 0.31, mean = 0.39, max = 0.987
-    ## 
-    ## Final p-values (unadjusted):
-    ##   unadjusted:
-    ##     min = 0.000999, median = 0.31, mean = 0.39, max = 0.987
-    ## 
-    ## Final p-values (adjusted, BH):
-    ##   adjusted:
-    ##     min = 0.00999, median = 0.562, mean = 0.549, max = 0.987
-    ##   Rejections at alpha = 0.05: 1
 
 ``` r
 # Adjusted (BH) and unadjusted p-values
@@ -216,7 +227,7 @@ res_gpd
     ## GOF rejections               : 0
     ## 
     ## Final p-values:
-    ##   min = 0.000726, median = 0.562, max = 0.987
+    ##   min = 0.0000000507, median = 0.562, max = 0.987
     ## 
     ## Use summary() for detailed fit diagnostics.
 
@@ -243,16 +254,16 @@ summary(res_gpd)
     ## GPD parameter summary (successful fits)
     ## --------------------------------------
     ##   shape:
-    ##     min = -0.158, median = -0.122, mean = -0.133, max = -0.12
+    ##     min = -0.158, median = -0.12, mean = -0.12, max = -0.082
     ##   scale:
-    ##     min = 0.113, median = 0.128, mean = 0.124, max = 0.129
+    ##     min = 0.113, median = 0.128, mean = 0.127, max = 0.141
     ##   n_exceed:
     ##     min =  250, median =  250, mean =  250, max =  250
     ## 
     ## Goodness-of-fit p-values (all fitted tests)
     ## ------------------------------------------
     ##   GOF p-values:
-    ##     min = 0.218, median = 0.533, mean = 0.551, max = 0.902
+    ##     min = 0.171, median = 0.533, mean = 0.535, max = 0.902
     ## 
     ## P-value summary
     ## ---------------
@@ -262,63 +273,41 @@ summary(res_gpd)
     ## 
     ## Final p-values (unadjusted):
     ##   unadjusted:
-    ##     min = 0.0000726, median = 0.31, mean = 0.389, max = 0.987
+    ##     min = 0.00000000507, median = 0.31, mean = 0.389, max = 0.987
     ## 
     ## Final p-values (adjusted, BH):
     ##   adjusted:
-    ##     min = 0.000726, median = 0.562, mean = 0.548, max = 0.987
+    ##     min = 0.0000000507, median = 0.562, mean = 0.548, max = 0.987
     ##   Rejections at alpha = 0.05: 1
 
 ``` r
-# Tail fit details (from .compute_pvals_gpd())
+# Inspect GPD fit results
 fit_gpd <- res_gpd$fit_result
-fit_gpd$status      # success / discrete / no_threshold / gof_reject / fit_failed
-```
 
-    ##  [1] success      not_selected not_selected not_selected not_selected
-    ##  [6] not_selected not_selected not_selected success      success     
-    ## Levels: not_selected discrete no_threshold fit_failed gof_reject success
-
-``` r
-fit_gpd$shape       # GPD shape parameters
-```
-
-    ##  [1] -0.1220435         NA         NA         NA         NA         NA
-    ##  [7]         NA         NA -0.1578565 -0.1196676
-
-``` r
-fit_gpd$thresh      # thresholds per test
-```
-
-    ##  [1] 0.2688005        NA        NA        NA        NA        NA        NA
-    ##  [8]        NA 0.2496041 0.2653776
-
-``` r
-fit_gpd$n_exceed    # number of exceedances
-```
-
-    ##  [1] 250  NA  NA  NA  NA  NA  NA  NA 250 250
-
-Compare empirical and GPD-based p-values:
-
-``` r
-data.frame(
-  empirical = res_emp$p_unadjusted,
-  GPD       = res_gpd$p_unadjusted
+# Convert to a data frame
+fit_gpd_df <- data.frame(
+  pvals_emp     = res_gpd$p_empirical,
+  pvals_gpd     = res_gpd$p_unadjusted,
+  fit_status    = fit_gpd$status,
+  shape         = fit_gpd$shape,
+  thresh        = fit_gpd$thresh,
+  n_exceed      = fit_gpd$n_exceed
 )
+
+fit_gpd_df
 ```
 
-    ##      empirical          GPD
-    ## 1  0.000999001 0.0000726215
-    ## 2  0.490509491 0.4905094905
-    ## 3  0.848151848 0.8481518482
-    ## 4  0.271728272 0.2717282717
-    ## 5  0.987012987 0.9870129870
-    ## 6  0.172827173 0.1728271728
-    ## 7  0.348651349 0.3486513487
-    ## 8  0.652347652 0.6523476523
-    ## 9  0.040959041 0.0398134115
-    ## 10 0.081918082 0.0828961722
+    ##      pvals_emp    pvals_gpd   fit_status       shape    thresh n_exceed
+    ## 1  0.000999001 5.071830e-09      success -0.08196804 0.3180909      250
+    ## 2  0.490509491 4.905095e-01 not_selected          NA        NA       NA
+    ## 3  0.848151848 8.481518e-01 not_selected          NA        NA       NA
+    ## 4  0.271728272 2.717283e-01 not_selected          NA        NA       NA
+    ## 5  0.987012987 9.870130e-01 not_selected          NA        NA       NA
+    ## 6  0.172827173 1.728272e-01 not_selected          NA        NA       NA
+    ## 7  0.348651349 3.486513e-01 not_selected          NA        NA       NA
+    ## 8  0.652347652 6.523477e-01 not_selected          NA        NA       NA
+    ## 9  0.040959041 3.981341e-02      success -0.15785650 0.2496041      250
+    ## 10 0.081918082 8.289617e-02      success -0.11966759 0.2653776      250
 
 ### Gamma approximation
 
@@ -351,7 +340,7 @@ res_gamma
     ## GOF rejections               : 0
     ## 
     ## Final p-values:
-    ##   min = 0.023, median = 0.562, max = 0.987
+    ##   min = 0.000862, median = 0.562, max = 0.987
     ## 
     ## Use summary() for detailed fit diagnostics.
 
@@ -376,9 +365,9 @@ summary(res_gamma)
     ## Gamma parameter summary (successful fits)
     ## ----------------------------------------
     ##   shape:
-    ##     min = 1.33, median = 1.39, mean = 1.38, max = 1.43
+    ##     min = 1.33, median = 1.39, mean = 1.37, max =  1.4
     ##   rate:
-    ##     min = 7.21, median = 7.58, mean = 7.65, max = 8.16
+    ##     min = 6.39, median = 7.21, mean = 7.25, max = 8.16
     ## 
     ## P-value summary
     ## ---------------
@@ -388,27 +377,40 @@ summary(res_gamma)
     ## 
     ## Final p-values (unadjusted):
     ##   unadjusted:
-    ##     min = 0.0023, median = 0.31, mean = 0.393, max = 0.987
+    ##     min = 0.0000862, median = 0.31, mean = 0.393, max = 0.987
     ## 
     ## Final p-values (adjusted, BH):
     ##   adjusted:
-    ##     min = 0.023, median = 0.562, mean = 0.565, max = 0.987
+    ##     min = 0.000862, median = 0.562, mean = 0.563, max = 0.987
     ##   Rejections at alpha = 0.05: 1
 
 ``` r
-gamma_fit <- res_gamma$fit_result
-gamma_fit$shape
+# Inspect Gamma fit results
+fit_gamma <- res_gamma$fit_result
+
+# Convert to a data frame
+fit_gamma_df <- data.frame(
+  pvals_emp       = res_gamma$p_empirical,
+  pvals_gamma     = res_gamma$p_unadjusted,
+  fit_status      = fit_gamma$status,
+  shape           = fit_gamma$shape,
+  rate            = fit_gamma$rate
+)
+
+fit_gamma_df
 ```
 
-    ##  [1] 1.431798       NA       NA       NA       NA       NA       NA       NA
-    ##  [9] 1.390864 1.325764
-
-``` r
-gamma_fit$rate
-```
-
-    ##  [1] 7.580890       NA       NA       NA       NA       NA       NA       NA
-    ##  [9] 8.162339 7.207294
+    ##      pvals_emp  pvals_gamma   fit_status    shape     rate
+    ## 1  0.000999001 8.616786e-05      success 1.403064 6.392932
+    ## 2  0.490509491 4.905095e-01 not_selected       NA       NA
+    ## 3  0.848151848 8.481518e-01 not_selected       NA       NA
+    ## 4  0.271728272 2.717283e-01 not_selected       NA       NA
+    ## 5  0.987012987 9.870130e-01 not_selected       NA       NA
+    ## 6  0.172827173 1.728272e-01 not_selected       NA       NA
+    ## 7  0.348651349 3.486513e-01 not_selected       NA       NA
+    ## 8  0.652347652 6.523477e-01 not_selected       NA       NA
+    ## 9  0.040959041 6.044530e-02      success 1.390864 8.162339
+    ## 10 0.081918082 9.806895e-02      success 1.325764 7.207294
 
 ### Multiple testing adjustment
 
@@ -443,41 +445,16 @@ data.frame(
 ```
 
     ##    GPD_unadjusted GPD_adjusted
-    ## 1    0.0000726215 0.0005141617
-    ## 2    0.4905094905 0.4961167117
-    ## 3    0.8481518482 0.6672146680
-    ## 4    0.2717282717 0.3847683174
-    ## 5    0.9870129870 0.6988071646
-    ## 6    0.1728271728 0.3059049582
-    ## 7    0.3486513487 0.4114097511
-    ## 8    0.6523476523 0.5773292997
-    ## 9    0.0398134115 0.1409398741
-    ## 10   0.0828961722 0.1956355179
-
-------------------------------------------------------------------------
-
-## Key features
-
-- **Unified interface** for empirical, GPD, and Gamma-based p-values via
-  `perm_approx()`.
-
-- **Support-constrained GPD fitting** to avoid zero p-values for
-  negative shape parameters, with options:
-
-  - `constraint = "support_at_obs"` – per-test constraint at the
-    observed statistic
-  - `constraint = "support_at_max"` – global constraint at the maximum
-    test statistic
-  - `constraint = "unconstrained"`
-
-- **Flexible epsilon definition** (evaluation point above the boundary)
-  via user-specified epsilon functions.
-
-- **Discreteness screening** for permutation distributions that are too
-  coarse for reliable tail fitting.
-
-- **Goodness-of-fit testing** (e.g. Cramér–von Mises) with fallback to
-  empirical p-values if the tail model is rejected.
+    ## 1    5.071830e-09 3.590799e-08
+    ## 2    4.905095e-01 4.961075e-01
+    ## 3    8.481518e-01 6.672022e-01
+    ## 4    2.717283e-01 3.847611e-01
+    ## 5    9.870130e-01 6.987941e-01
+    ## 6    1.728272e-01 3.058993e-01
+    ## 7    3.486513e-01 4.114021e-01
+    ## 8    6.523477e-01 5.773185e-01
+    ## 9    3.981341e-02 1.409372e-01
+    ## 10   8.289617e-02 1.956319e-01
 
 ------------------------------------------------------------------------
 
