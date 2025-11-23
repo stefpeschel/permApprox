@@ -75,6 +75,38 @@ perm_approx(
 
 ---
 
+## Key features
+
+* **Unified interface** for empirical, GPD, and Gamma-based p-values via `perm_approx()`.
+* **Support-constrained GPD fitting** to avoid zero p-values for negative shape
+  parameters, with options:
+
+  * `constraint = "support_at_obs"` – per-test constraint at the observed statistic
+  * `constraint = "support_at_max"` – global constraint at the maximum test statistic
+  * `constraint = "unconstrained"`
+* **Flexible epsilon definition** (evaluation point above the boundary) via
+  user-specified epsilon functions.
+* **Discreteness screening** for permutation distributions that are too coarse
+  for reliable tail fitting.
+* **Goodness-of-fit testing** (e.g. Cramér–von Mises) with fallback to empirical
+  p-values if the tail model is rejected.
+
+---
+
+## Development version
+
+Everyone who wants to use new features not included in any releases 
+is invited to install the development version:
+
+```{r install_dev, eval=FALSE}
+remotes::install_github("stefpeschel/permApprox@develop")
+```
+
+Please check the [NEWS](https://github.com/stefpeschel/permApprox/blob/develop/NEWS.md) 
+document for features implemented on develop branch.
+
+---
+
 ## Usage
 
 ### Basic example: 10 tests, one true effect
@@ -98,7 +130,7 @@ X <- matrix(
 )
 
 # Introduce a true effect in the first test
-X[group == 1, 1] <- X[group == 1, 1] + 0.8
+X[group == 1, 1] <- X[group == 1, 1] + 1.5
 
 # Observed test statistics: mean difference (treated - control)
 obs_stats <- colMeans(X[group == 1, , drop = FALSE]) -
@@ -126,7 +158,6 @@ res_emp <- perm_approx(
 )
 
 res_emp
-summary(res_emp)
 
 # Adjusted (BH) and unadjusted p-values
 res_emp$p_values
@@ -158,21 +189,20 @@ res_gpd
 # More detailed diagnostics
 summary(res_gpd)
 
-# Tail fit details (from .compute_pvals_gpd())
+# Inspect GPD fit results
 fit_gpd <- res_gpd$fit_result
-fit_gpd$status      # success / discrete / no_threshold / gof_reject / fit_failed
-fit_gpd$shape       # GPD shape parameters
-fit_gpd$thresh      # thresholds per test
-fit_gpd$n_exceed    # number of exceedances
-```
 
-Compare empirical and GPD-based p-values:
-
-```{r}
-data.frame(
-  empirical = res_emp$p_unadjusted,
-  GPD       = res_gpd$p_unadjusted
+# Convert to a data frame
+fit_gpd_df <- data.frame(
+  pvals_emp     = res_gpd$p_empirical,
+  pvals_gpd     = res_gpd$p_unadjusted,
+  fit_status    = fit_gpd$status,
+  shape         = fit_gpd$shape,
+  thresh        = fit_gpd$thresh,
+  n_exceed      = fit_gpd$n_exceed
 )
+
+fit_gpd_df
 ```
 
 ### Gamma approximation
@@ -193,9 +223,19 @@ res_gamma <- perm_approx(
 res_gamma
 summary(res_gamma)
 
-gamma_fit <- res_gamma$fit_result
-gamma_fit$shape
-gamma_fit$rate
+# Inspect Gamma fit results
+fit_gamma <- res_gamma$fit_result
+
+# Convert to a data frame
+fit_gamma_df <- data.frame(
+  pvals_emp       = res_gamma$p_empirical,
+  pvals_gamma     = res_gamma$p_unadjusted,
+  fit_status      = fit_gamma$status,
+  shape           = fit_gamma$shape,
+  rate            = fit_gamma$rate
+)
+
+fit_gamma_df
 ```
 
 ### Multiple testing adjustment
@@ -228,25 +268,6 @@ data.frame(
   GPD_adjusted   = res_adapt$p_values
 )
 ```
-
----
-
-## Key features
-
-* **Unified interface** for empirical, GPD, and Gamma-based p-values via `perm_approx()`.
-* **Support-constrained GPD fitting** to avoid zero p-values for negative shape
-  parameters, with options:
-
-  * `constraint = "support_at_obs"` – per-test constraint at the observed statistic
-  * `constraint = "support_at_max"` – global constraint at the maximum test statistic
-  * `constraint = "unconstrained"`
-* **Flexible epsilon definition** (evaluation point above the boundary) via
-  user-specified epsilon functions.
-* **Discreteness screening** for permutation distributions that are too coarse
-  for reliable tail fitting.
-* **Goodness-of-fit testing** (e.g. Cramér–von Mises) with fallback to empirical
-  p-values if the tail model is rejected.
-
 
 ---
 
