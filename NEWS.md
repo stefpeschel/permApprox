@@ -1,5 +1,5 @@
 
-## permApprox 1.0.0.9000 (development version) <img src="man/figures/logo.png" align="right" height="180" />
+## permApprox 1.0.1 <img src="man/figures/logo.png" align="right" height="180" />
 
 ### ✨ New features
 
@@ -10,9 +10,10 @@
 - Added a new argument **`gof_test_thresh`** to `make_gpd_ctrl()` to
   control which GOF test is used during threshold search
   (Anderson–Darling or Cramér–von-Mises). The existing argument
-  `gof_test` is now used to define the test used for the final GPD fit
-  (with constraint).
-- Added internal GPD Anderson–Darling and Cramér–von Mises critical
+  **`gof_test`** is now used to define the GoF test used for the final
+  GPD fit (for the final threshold, with constraint, after epsilon
+  refinement, etc.).
+- Added internal GPD Anderson-Darling and Cramér-von Mises critical
   value tables derived from the `eva` package, removing the need to
   access `eva:::ADQuantiles` and `eva:::CVMQuantiles` at run time. These
   tables are now shipped as internal data and used by the GPD GOF
