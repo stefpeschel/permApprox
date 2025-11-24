@@ -594,8 +594,8 @@ perm_approx <- function(
       control      = gpd_ctrl,
       cores        = cores,
       parallel_min = parallel_min,
-      verbose      = verbose#,
-      #...
+      verbose      = verbose,
+      ...
     )
     
     success <- fit_result$status == "success"

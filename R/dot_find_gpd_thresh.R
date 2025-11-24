@@ -357,6 +357,13 @@
   }
   
   n_exceed <- as.integer(n_exceed)
-  
-  return(list(thresh = thresh, n_exceed = n_exceed))
+
+  list(
+    thresh       = thresh, 
+    n_exceed     = n_exceed,
+    thresh_poss  = thresh_poss,
+    shapes       = shape_vec,
+    scales       = scale_vec,
+    gof_p_values = gof_p_value_vec
+  )
 }
