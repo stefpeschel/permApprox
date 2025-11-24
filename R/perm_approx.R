@@ -519,11 +519,11 @@ perm_approx <- function(
   transformed <- lapply(seq_len(n_test), function(i) {
     .transform_stats(
       perm_stats  = perm_stats[, i],
-      obs_stats   = obs_stats[i],
+      obs_stat    = obs_stats[i],
       alternative = alternative
     )
   })
-  t_obs       <- vapply(transformed, `[[`, numeric(1), "obs_stats")
+  t_obs       <- vapply(transformed, `[[`, numeric(1), "obs_stat")
   t_perm_list <- lapply(transformed, `[[`, "perm_stats")
   t_perm      <- do.call(cbind, t_perm_list)
   dimnames(t_perm) <- dimnames(perm_stats)
@@ -540,24 +540,38 @@ perm_approx <- function(
   n_perm_exceed <- pvals_emp_list$n_perm_exceed # exceeding permutation statistics
   method_used   <- rep("empirical", n_test)
   
-  # Decide which tests are candidates for parametric approximation
-  idx_fit <- which(!is.na(p_empirical) & (p_empirical < approx_thresh))
+  ## ---------------------------------------------------------------------------
+  ## Decide which tests are candidates for parametric approximation
+  ## Only consider tests with:
+  ## - finite empirical p-value
+  ## - p_empirical < approx_thresh
+  ## - positive transformed observed statistic (t_obs > 0)
+  ##   => ensures we're in the upper tail on the working scale
+  ## ---------------------------------------------------------------------------
+  idx_fit <- which(
+    !is.na(p_empirical) &
+      (p_empirical < approx_thresh) &
+      (t_obs > 0)
+  )
   
-  if (length(idx_fit) == 0L && method != "empirical" && verbose) {
-    message("No empirical p-values below 'approx_thresh'; returning empirical p-values.")
+  if (length(idx_fit) == 0L && method != "empirical" && isTRUE(verbose)) {
+    message(
+      "No tests selected for parametric approximation ",
+      "(either p_empirical >= approx_thresh or transformed obs_stat <= 0); ",
+      "returning empirical p-values."
+    )
   }
   
   ## ---------------------------------------------------------------------------
   ## Approximate p-values
   ## ---------------------------------------------------------------------------
-  
   fit_result <- NULL
   fit_method <- method   # store which one was actually used
   
   # Control list for output
   control_out <- list(
     adjust        = adjust_ctrl,
-    approx_thresh    = approx_thresh,
+    approx_thresh = approx_thresh,
     adjust_method = adjust_method
   )
   
@@ -566,6 +580,27 @@ perm_approx <- function(
   if (method == "empirical") {
     
     fit_result <- NULL
+    
+  } else if (method == "gpd") {
+    
+    control_out$gpd <- gpd_ctrl
+    
+    # Call GPD fitter even if idx_fit is empty: skeleton list if so
+    fit_result <- .compute_pvals_gpd(
+      obs_stats    = t_obs,
+      perm_stats   = t_perm,
+      n_perm       = n_perm,
+      idx_fit      = idx_fit,
+      control      = gpd_ctrl,
+      cores        = cores,
+      parallel_min = parallel_min,
+      verbose      = verbose#,
+      #...
+    )
+    
+    success <- fit_result$status == "success"
+    p_values[success]    <- fit_result$p_value[success]
+    method_used[success] <- "gpd"
     
   } else if (method == "gamma") {
     
@@ -586,25 +621,6 @@ perm_approx <- function(
     p_values[success]    <- fit_result$p_value[success]
     method_used[success] <- "gamma"
     
-  } else if (method == "gpd") {
-    
-    control_out$gpd <- gpd_ctrl
-    
-    # Call GPD fitter even if idx_fit is empty: skeleton list if so
-    fit_result <- .compute_pvals_gpd(
-      obs_stats    = t_obs,
-      perm_stats   = t_perm,
-      idx_fit      = idx_fit,
-      control      = gpd_ctrl,
-      cores        = cores,
-      parallel_min = parallel_min,
-      verbose      = verbose,
-      ...
-    )
-    
-    success <- fit_result$status == "success"
-    p_values[success]    <- fit_result$p_value[success]
-    method_used[success] <- "gpd"
   }
   
   ## ---------------------------------------------------------------------------

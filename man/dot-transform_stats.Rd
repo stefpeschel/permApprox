@@ -4,7 +4,7 @@
 \alias{.transform_stats}
 \title{Transform test statistics for tail modeling}
 \usage{
-.transform_stats(perm_stats, obs_stats, alternative)
+.transform_stats(perm_stats, obs_stat, alternative)
 }
 \description{
 Transforms observed and permutation test statistics according to the specified

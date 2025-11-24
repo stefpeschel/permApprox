@@ -145,7 +145,7 @@
   }
   
   # Initial threshold vector
-  thresh_init <- c(0, t_sort)
+  thresh_init <- c(0, t_sort[t_sort > 0])
   
   #-----------------------------------------------------------------------------
   # Fix threshold or number of exceedances
