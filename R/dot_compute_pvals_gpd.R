@@ -275,6 +275,7 @@
     control$constraint,
     "support_at_max" = rep(max(obs_stats, na.rm = TRUE), length(idx_valid)),
     "support_at_obs" = obs_stats[idx_valid],
+    "shape_nonneg"   = rep(NA_real_, length(idx_valid)),
     "unconstrained"  = rep(NA_real_, length(idx_valid))
   )
   support_boundaries[idx_valid] <- sb
