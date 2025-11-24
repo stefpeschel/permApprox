@@ -102,9 +102,14 @@
 #'
 #' @param exceed_min Integer >= 0. Minimum number of exceedances required for
 #'   fitting. Default: \code{10}.
+#'   
+#' @param gof_test_thresh Character. Goodness-of-fit test used for threshold 
+#'   search. Possible values are \code{"ad"} (Anderson-Darling) and 
+#'   \code{"cvm"} (Cramér-von-Mises).
 #'
-#' @param gof_test Character. Goodness-of-fit test for the GPD:
-#'   \code{"ad"}, \code{"cvm"}, or \code{"none"}. Default: \code{"ad"}.
+#' @param gof_test Character. Goodness-of-fit test for the final GPD parameters.
+#'   Possible values: \code{"ad"} (Anderson-Darling), \code{"cvm"} 
+#'   (Cramér-von-Mises), or \code{"none"} (no test; default).
 #'
 #' @param gof_alpha Numeric in (0, 1). Significance level for the GOF test.
 #'   Default: \code{0.05}.
@@ -127,16 +132,17 @@ make_gpd_ctrl <- function(
       bisect_iter_max = 30L,
       bisect_tol      = 0.1
     ),
-    sample_size   = NULL,
-    tol           = 1e-7,
-    thresh_method = "rob_ftr",
-    thresh0       = NULL,
-    thresh_step   = 10,
-    exceed0       = 0.25,
-    exceed0_min   = 250,
-    exceed_min    = 10,
-    gof_test      = "ad",
-    gof_alpha     = 0.05
+    sample_size     = NULL,
+    tol             = 1e-7,
+    thresh_method   = "rob_ftr",
+    thresh0         = NULL,
+    thresh_step     = 10,
+    exceed0         = 0.25,
+    exceed0_min     = 250,
+    exceed_min      = 10,
+    gof_test_thresh = "ad",
+    gof_test        = "none",
+    gof_alpha       = 0.05
 ) {
   ## ------------------------------------------------------------------------
   ## Basic validation
@@ -218,6 +224,8 @@ make_gpd_ctrl <- function(
   ## GOF
   ## ------------------------------------------------------------------------
   gof_test <- match.arg(gof_test, c("ad", "cvm", "none"))
+  gof_test_thresh <- match.arg(gof_test_thresh, c("ad", "cvm"))
+  
   if (!(is.numeric(gof_alpha) && length(gof_alpha) == 1L &&
         is.finite(gof_alpha) && gof_alpha > 0 && gof_alpha < 1))
     stop("'gof_alpha' must be a single numeric in (0,1).")
@@ -332,6 +340,7 @@ make_gpd_ctrl <- function(
     exceed0       = exceed0,
     exceed0_min   = exceed0_min,
     exceed_min    = as.integer(exceed_min),
+    gof_test_thresh = gof_test_thresh,
     gof_test      = gof_test,
     gof_alpha     = gof_alpha
   )

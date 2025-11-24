@@ -1,7 +1,57 @@
 
-## permApprox 1.0.0 <img src="man/figures/logo.png" align="right" height="180" />
+## permApprox 1.0.1 <img src="man/figures/logo.png" align="right" height="180" />
 
-### 🆕 New features
+### ✨ New features
+
+- `perm_approx()` now exports the object **`n_perm_exceed`**, giving
+  per-test counts of permutations that are at least as extreme as the
+  observed statistic. This corresponds to the numerator $r$ in the
+  empirical permutation p-value formula $p = (r + 1) / (B + 1)$.
+- Added a new argument **`gof_test_thresh`** to `make_gpd_ctrl()` to
+  control which GOF test is used during threshold search
+  (Anderson–Darling or Cramér–von-Mises). The existing argument
+  **`gof_test`** is now used to define the GoF test used for the final
+  GPD fit (for the final threshold, with constraint, after epsilon
+  refinement, etc.).
+- Added internal GPD Anderson-Darling and Cramér-von Mises critical
+  value tables derived from the `eva` package, removing the need to
+  access `eva:::ADQuantiles` and `eva:::CVMQuantiles` at run time. These
+  tables are now shipped as internal data and used by the GPD GOF
+  machinery.
+
+### 🚀️ Improvements
+
+- Improved parallel execution in **`.compute_pvals_gpd()`**: Workers are
+  now started only once and reused across all parallel phases (threshold
+  detection, GPD fitting, zero-guard refits). This avoids repeated
+  worker startup and large data transfers, resulting in substantially
+  faster runtime, especially on Windows.
+- Removed the unused `doPlot` argument from internal functions,
+  simplifying the GPD threshold/diagnostic code path.
+- Applied several minor internal refactorings and clean-ups to the GPD
+  approximation code and related helpers.
+
+### 🐛 Bug-fixes
+
+- `.find_gpd_thresh()` threw an error (“Threshold method not
+  supported.”) for the `rob_ftr` threshold selection method if some of
+  the GoF tests were accepted, but never three in a row. In these cases,
+  the loop does not stop early, which caused an error.
+- Empirical / approximated p-values were not computed correctly for the
+  one-sided alternatives `"greater"` and `"less"`.
+- Fixed a bug in the `shape_nonneg` constraint for GPD fitting that
+  could lead to incorrect or failed fits when enforcing non-negative
+  shape parameters.
+
+### 📚 Documentation & tests
+
+- Added more comprehensive unit tests for `perm_approx()` and the GPD
+  approximation stack, increasing coverage of different alternatives,
+  constraints, and control settings.
+
+## permApprox 1.0.0
+
+### ✨ New features
 
 - Renamed the main function from `compute_p_values()` to
   **`perm_approx()`** — more concise and package-branded.

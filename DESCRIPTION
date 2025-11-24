@@ -1,8 +1,8 @@
 Package: permApprox
 Type: Package
 Title: Permutation p-value approximation
-Version: 1.0.0
-Date: 2025-11-19
+Version: 1.0.1
+Date: 2025-11-24
 Authors@R: c(
     person("Stefanie", "Peschel", email = "stefpeschel@gmail.com",
            role = c("aut", "cre"), comment = c(ORCID = "0000-0002-7936-7627")),
@@ -16,6 +16,8 @@ Description: Provides methods to approximate small p-values in permutation tests
     permutation distribution or a Gamma distribution fitted to the full 
     distribution. Optional support constraints ensure that no p-values equal 
     zero when the GPD shape parameter is negative.
+    The package includes internal GPD AD and CvM critical value tables derived 
+    from the 'eva' package (Bader and Yan; GPL >= 2).
 License: GPL-3
 Depends: R (>= 4.1.0)
 Encoding: UTF-8

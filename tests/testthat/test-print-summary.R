@@ -1,7 +1,7 @@
 # tests/testthat/test-print-summary.R
 
 test_that("print.perm_approx and summary.perm_approx run without error", {
-  set.seed(99)
+  set.seed(42)
   
   n_per_group <- 20
   m_tests     <- 3

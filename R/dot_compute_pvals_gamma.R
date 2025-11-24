@@ -81,6 +81,9 @@
   gof_alpha   <- control$gof_alpha
   fit_args    <- control$fit_args %||% list()  # optional fitting arguments
   
+  # Effective number of permutation draws (incl. obs if used)
+  n_perm_eff <- if (include_obs) n_perm + 1L else n_perm
+  
   # Optionally include observed statistics in the fit
   if (include_obs) {
     # obs_stats is a row vector, perm_stats has rows = permutations
@@ -96,23 +99,25 @@
   p_value      <- rep(NA_real_, n_test)
   shape        <- rep(NA_real_, n_test)
   rate         <- rep(NA_real_, n_test)
+  n_exceed     <- rep(NA_integer_, n_test)
   gof_p_value  <- rep(NA_real_, n_test)
   gof_rejected <- rep(FALSE,     n_test)
   method_used  <- rep("empirical", n_test)
   discrete     <- rep(FALSE,     n_test)
   status       <- factor(rep("not_selected", n_test), levels = status_levels)
-  perm_stats_fit <- vector("list", length = n_test)
+  perm_stats_fit <- vector("list", length = n_test)  # will store exceedances (> 0)
   
   .pack_result <- function() {
     list(
-      p_value       = p_value,
-      shape         = shape,
-      rate          = rate,
-      gof_p_value   = gof_p_value,
-      status        = status,
-      discrete      = discrete,
-      gof_rejected  = gof_rejected,
-      method_used   = method_used,
+      p_value        = p_value,
+      shape          = shape,
+      rate           = rate,
+      n_exceed       = n_exceed,
+      gof_p_value    = gof_p_value,
+      status         = status,
+      discrete       = discrete,
+      gof_rejected   = gof_rejected,
+      method_used    = method_used,
       perm_stats_fit = perm_stats_fit
     )
   }
@@ -142,19 +147,40 @@
   }
   
   ## -------------------------------------------------------------------------
-  ## Helper: fit Gamma for a single test j
+  ## Helper: fit Gamma for a single test j on exceedances > 0
   ## -------------------------------------------------------------------------
   fit_one <- function(j) {
     obs  <- obs_stats[j]
     perm <- perm_stats[, j]
     
-    # Store used permutation stats
-    perm_fit <- perm
+    # Exceedances above fixed threshold u = 0
+    exceed <- perm[perm > 0]
+    n_exceed <- length(exceed)
     
-    # Build argument list for fitdist:
+    # Store used permutation stats (for diagnostics: fitted tail sample)
+    perm_fit <- exceed
+    
+    # If there is no positive tail to fit or obs is not in the tail,
+    # fall back to empirical p-value.
+    if (n_exceed < 2L || obs <= 0 || !is.finite(obs)) {
+      return(list(
+        p_value      = NA_real_,
+        shape        = NA_real_,
+        rate         = NA_real_,
+        n_exceed     = NA_integer_,
+        gof_p_value  = NA_real_,
+        gof_rejected = FALSE,
+        method_used  = "empirical",
+        ok           = FALSE,
+        gof_fail     = FALSE,
+        perm_fit     = perm_fit
+      ))
+    }
+    
+    # Build argument list for fitdist on exceedances
     args_list <- c(
       list(
-        data  = perm,
+        data  = exceed,
         distr = "gamma"
       ),
       fit_args
@@ -173,6 +199,7 @@
         p_value      = NA_real_,
         shape        = NA_real_,
         rate         = NA_real_,
+        n_exceed     = NA_integer_,
         gof_p_value  = NA_real_,
         gof_rejected = FALSE,
         method_used  = "empirical",
@@ -185,23 +212,28 @@
     shape_j <- as.numeric(gamma_fit$estimate["shape"])
     rate_j  <- as.numeric(gamma_fit$estimate["rate"])
     
-    # Tail probability under fitted Gamma
-    factor_len <- if (include_obs) length(perm) / n_perm else 1
-    p_val_raw <- factor_len * stats::pgamma(
-      q          = abs(obs),
+    # Tail probability under fitted Gamma for obs (on the same scale as exceed)
+    # Note: exceedances are perm > 0, Gamma support is [0, inf),
+    # so P(Z > obs | Z > 0) = P_Gamma(Z > obs).
+    p_tail <- stats::pgamma(
+      q          = obs,
       shape      = shape_j,
       rate       = rate_j,
       lower.tail = FALSE
     )
+    
+    # Scale by empirical tail mass n_exceed / n_perm_eff
+    p_val_raw <- (n_exceed / n_perm_eff) * p_tail
     
     gof_p  <- NA_real_
     rej    <- FALSE
     method <- "gamma"
     
     if (identical(gof_test, "cvm")) {
+      # GOF test on exceedances
       cvmtest <- tryCatch(
         goftest::cvm.test(
-          x     = perm,
+          x     = exceed,
           null  = "gamma",
           shape = shape_j,
           rate  = rate_j
@@ -226,6 +258,7 @@
       p_value      = if (ok) p_val_raw else NA_real_,
       shape        = shape_j,
       rate         = rate_j,
+      n_exceed     = n_exceed,
       gof_p_value  = gof_p,
       gof_rejected = rej,
       method_used  = method,
@@ -238,14 +271,14 @@
   ## -------------------------------------------------------------------------
   ## Decide if we run in parallel
   ## -------------------------------------------------------------------------
-  n_workers   <- .choose_workers(cores, length(idx_non_dis), parallel_min)
+  n_workers    <- .choose_workers(cores, length(idx_non_dis), parallel_min)
   run_parallel <- (n_workers > 1L)
   n_tasks      <- length(idx_non_dis)
   
   if (isTRUE(verbose)) {
     mode_txt <- if (run_parallel) "parallel" else "sequential"
     writeLines(sprintf(
-      "Fitting Gamma distribution for %d tests (%s) ...",
+      "Fitting Gamma (tail > 0) for %d tests (%s) ...",
       n_tasks, mode_txt
     ))
   }
@@ -297,12 +330,13 @@
     j   <- idx_non_dis[k]
     res <- res_list[[k]]
     
-    p_value[j]        <- res$p_value
-    shape[j]          <- res$shape
-    rate[j]           <- res$rate
-    gof_p_value[j]    <- res$gof_p_value
-    gof_rejected[j]   <- res$gof_rejected
-    method_used[j]    <- res$method_used
+    p_value[j]          <- res$p_value
+    shape[j]            <- res$shape
+    rate[j]             <- res$rate
+    n_exceed[j]         <- res$n_exceed
+    gof_p_value[j]      <- res$gof_p_value
+    gof_rejected[j]     <- res$gof_rejected
+    method_used[j]      <- res$method_used
     perm_stats_fit[[j]] <- res$perm_fit
   }
   

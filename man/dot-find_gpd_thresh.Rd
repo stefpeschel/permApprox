@@ -18,7 +18,6 @@
   gof_alpha = 0.05,
   shape_var_window = 7L,
   seed = NULL,
-  doPlot = FALSE,
   ...
 )
 }
@@ -80,8 +79,8 @@ candidate thresholds. Only every \code{thresh_step}-th candidate is
 evaluated, starting from the first.}
 
 \item{gof_test}{Character string specifying the goodness-of-fit test to be
-used in \code{\link{fit_gpd}}. Typically \code{"ad"} for the
-Anderson–Darling test (default).}
+used in \code{\link{fit_gpd}}. By default \code{"ad"} for the
+Anderson–Darling test.}
 
 \item{gof_alpha}{Numeric scalar in \eqn{(0, 1)}. Significance level used to
 decide whether the GPD GOF test is accepted or rejected.}
@@ -93,9 +92,6 @@ variance of the estimated GPD shape parameter over accepted thresholds.}
 \item{seed}{Integer scalar or \code{NULL}. Optional random seed to ensure
 reproducibility for methods that involve randomness (e.g., changepoint
 detection with added pseudo p-values).}
-
-\item{doPlot}{Logical. If \code{TRUE}, produce a diagnostic plot of GOF
-p-values against candidate thresholds, marking the selected threshold.}
 
 \item{...}{Additional arguments reserved for internal use (currently
 ignored).}

@@ -54,8 +54,8 @@
 #'   candidate thresholds. Only every \code{thresh_step}-th candidate is
 #'   evaluated, starting from the first.
 #' @param gof_test Character string specifying the goodness-of-fit test to be
-#'   used in \code{\link{fit_gpd}}. Typically \code{"ad"} for the
-#'   Anderson–Darling test (default).
+#'   used in \code{\link{fit_gpd}}. By default \code{"ad"} for the
+#'   Anderson–Darling test.
 #' @param gof_alpha Numeric scalar in \eqn{(0, 1)}. Significance level used to
 #'   decide whether the GPD GOF test is accepted or rejected.
 #' @param shape_var_window Integer scalar. Window length used by the
@@ -64,8 +64,6 @@
 #' @param seed Integer scalar or \code{NULL}. Optional random seed to ensure
 #'   reproducibility for methods that involve randomness (e.g., changepoint
 #'   detection with added pseudo p-values).
-#' @param doPlot Logical. If \code{TRUE}, produce a diagnostic plot of GOF
-#'   p-values against candidate thresholds, marking the selected threshold.
 #' @param ... Additional arguments reserved for internal use (currently
 #'   ignored).
 #'
@@ -108,7 +106,6 @@
                              gof_alpha = 0.05,
                              shape_var_window = 7L,
                              seed = NULL,
-                             doPlot = FALSE,
                              ...) {
   if (!is.null(seed)) set.seed(seed)
   
@@ -146,7 +143,7 @@
   }
   
   # Initial threshold vector
-  thresh_init <- c(0, t_sort)
+  thresh_init <- c(0, t_sort[t_sort > 0])
   
   #-----------------------------------------------------------------------------
   # Fix threshold or number of exceedances
@@ -199,7 +196,7 @@
   
   # Number of iterations
   niter <- length(thresh_poss)
-  
+
   #-----------------------------------------------------------------------------
   idx_vec <- n_exceed_vec <- shape_vec <- scale_vec <- gof_p_value_vec <-
     numeric(length(thresh_poss))
@@ -233,19 +230,20 @@
     # Early stopping for FTR variants
     if (thresh_method == "ftr" && is.na(idx_use) && res$p_value > gof_alpha) {
       idx_use <- i
-      if (!doPlot) break
+      break
       
     } else if (thresh_method == "rob_ftr" && i > min(niter, 2) && is.na(idx_use) &&
                all(gof_p_value_vec[(i-min(niter, 2)):i] > gof_alpha)) {
       idx_use <- i - min(niter, 2)
-      if (!doPlot) break
+      break
     }
   }
   
   if (is.na(idx_use)) {
     
     # Find threshold index					  
-    if (all(gof_p_value_vec <= gof_alpha)) {
+    if (all(gof_p_value_vec <= gof_alpha) || 
+        thresh_method %in% c("ftr", "rob_ftr")) {
       
       idx_use <- NA
       
@@ -358,24 +356,14 @@
     n_exceed <- n_exceed_vec[idx_use]
   }
   
-  if (doPlot) {
-    #tmp <- gof_p_value_vec[(idx_use-50):(idx_use+100)]
-    #thtmp <- thresh_poss[(idx_use-50):(idx_use+100)]
-    #thtmp <- seq(thresh_poss[1], rev(thresh_poss)[1], length = 10)
-    
-    plot(gof_p_value_vec ~ thresh_poss, pch = 20,
-         ylab = "AD pvalue", xlab = "threshold")
-    #abline(v = thtmp, col = "lightgray")
-    graphics::grid(50, NA, lwd = 1, lty = 1)
-    graphics::abline(h = gof_alpha)
-    graphics::abline(v = thresh, col = "red")
-    graphics::points(gof_p_value_vec ~ thresh_poss, pch = 20)
-    graphics::legend("topleft",
-                     legend = c("AD p-values", "AD alpha", "selected threshold"),
-                     col = c(1, 1, 2), pch = c(20, NA, NA), lty = c(NA, 1, 1))
-  }
-  
   n_exceed <- as.integer(n_exceed)
-  
-  return(list(thresh = thresh, n_exceed = n_exceed))
+
+  list(
+    thresh       = thresh, 
+    n_exceed     = n_exceed,
+    thresh_poss  = thresh_poss,
+    shapes       = shape_vec,
+    scales       = scale_vec,
+    gof_p_values = gof_p_value_vec
+  )
 }

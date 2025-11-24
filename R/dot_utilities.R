@@ -7,20 +7,31 @@
 #' in the appropriate tail of the null distribution.
 #'
 #' @keywords internal
-.transform_stats <- function(perm_stats, obs_stats, alternative) {
+.transform_stats <- function(perm_stats, obs_stat, alternative) {
+  stopifnot(length(obs_stat) == 1L)
+  
   if (alternative == "less") {
-    perm_stats <- perm_stats[perm_stats < 0]
-    perm_stats <- - perm_stats
-    obs_stats <- -obs_stats
+    # left tail of T becomes right tail of -T
+    t_perm <- -perm_stats
+    t_obs  <- -obs_stat
     
   } else if (alternative == "greater") {
-    perm_stats <- perm_stats[perm_stats > 0]
+    t_perm <- perm_stats
+    t_obs  <- obs_stat
+    
+  } else if (alternative == "two_sided") {
+    # test is based on |T|
+    t_perm <- abs(perm_stats)
+    t_obs  <- abs(obs_stat)
     
   } else {
-    perm_stats <- abs(perm_stats)
-    obs_stats <- abs(obs_stats)
+    stop("Unknown 'alternative': ", alternative)
   }
-  return(list(perm_stats = perm_stats, obs_stats = obs_stats))
+  
+  list(
+    perm_stats = t_perm,
+    obs_stat   = t_obs
+  )
 }
 
 #-------------------------------------------------------------------------------
