@@ -118,6 +118,14 @@ A list with the following components:
     Numeric vector of raw empirical p-values computed directly from the
     permutation distribution (before any approximation or adjustment).
   }
+  \item{\code{n_perm_exceed}}{
+  Integer vector of length \code{n_test} giving, for each test,
+  the number of permutation test statistics that are as or more
+  extreme than the observed statistic, according to the specified
+  test \code{alternative}. 
+  This corresponds to the numerator \eqn{r} in the empirical
+  permutation p-value formula \eqn{p = (r + 1) / (B + 1)}.
+  }
   \item{\code{fit_method}}{
     Character scalar indicating the parametric tail-approximation method
     used: one of \code{"gpd"}, \code{"gamma"}, or \code{"empirical"}.

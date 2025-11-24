@@ -101,6 +101,14 @@
 #'     Numeric vector of raw empirical p-values computed directly from the
 #'     permutation distribution (before any approximation or adjustment).
 #'   }
+#'   \item{\code{n_perm_exceed}}{
+#'   Integer vector of length \code{n_test} giving, for each test,
+#'   the number of permutation test statistics that are as or more
+#'   extreme than the observed statistic, according to the specified
+#'   test \code{alternative}. 
+#'   This corresponds to the numerator \eqn{r} in the empirical
+#'   permutation p-value formula \eqn{p = (r + 1) / (B + 1)}.
+#'   }
 #'   \item{\code{fit_method}}{
 #'     Character scalar indicating the parametric tail-approximation method
 #'     used: one of \code{"gpd"}, \code{"gamma"}, or \code{"empirical"}.
@@ -463,8 +471,8 @@ perm_approx <- function(
     perm_stats <- as.matrix(perm_stats)
   }
   
-  n_perm <- nrow(perm_stats)    # permutations
-  n_test <- ncol(perm_stats)    # tests
+  n_perm <- nrow(perm_stats)    # number of permutations
+  n_test <- ncol(perm_stats)    # number of tests
   
   # Match observed statistics length
   if (length(obs_stats) != n_test) {
@@ -528,9 +536,9 @@ perm_approx <- function(
     perm_stats = t_perm
   )
   
-  p_empirical      <- pvals_emp_list$pvals
-  n_perm_exceeding <- pvals_emp_list$n_perm_exceeding  # kept if needed later
-  method_used      <- rep("empirical", n_test)
+  p_empirical   <- pvals_emp_list$pvals
+  n_perm_exceed <- pvals_emp_list$n_perm_exceed # exceeding permutation statistics
+  method_used   <- rep("empirical", n_test)
   
   # Decide which tests are candidates for parametric approximation
   idx_fit <- which(!is.na(p_empirical) & (p_empirical < approx_thresh))
@@ -625,6 +633,7 @@ perm_approx <- function(
     p_values      = p_values,
     p_unadjusted  = p_unadjusted,
     p_empirical   = p_empirical,
+    n_perm_exceed = n_perm_exceed,
     fit_method    = fit_method,
     fit_result    = fit_result,
     method_used   = method_used,
