@@ -51,10 +51,22 @@
 
 ## permApprox 1.0.0
 
+### ⚠️ Compatibility
+
+Version 1.0.0 introduces changes that are **not fully compatible** with
+version 0.1.0.  
+Most importantly, the permutation statistic matrix **must now have tests
+in columns and permutations in rows** (the opposite orientation from
+earlier versions).
+
+Several other interface and workflow changes may also require minor
+updates in existing analysis scripts. Please review the NEWS entries
+below for details.
+
 ### ✨ New features
 
 - Renamed the main function from `compute_p_values()` to
-  **`perm_approx()`** — more concise and package-branded.
+  **`perm_approx()`** to be more concise and package-branded.
 - Added a new argument **`approx_thresh`** (formerly `fit_thresh`) to
   specify the empirical p-value threshold under which parametric
   approximation is applied.
@@ -77,8 +89,6 @@
 - Cleaned up and simplified the workflow: one-sided transformation moved
   to global helper, argument defaults updated, improved error-handling
   and documentation.
-- Updated examples in documentation to reflect the new API (including
-  print/summary calls for users).
 
 ### 🐛 Bug-fixes
 
