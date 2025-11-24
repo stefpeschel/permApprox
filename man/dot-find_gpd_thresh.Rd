@@ -18,7 +18,6 @@
   gof_alpha = 0.05,
   shape_var_window = 7L,
   seed = NULL,
-  doPlot = FALSE,
   ...
 )
 }
@@ -93,9 +92,6 @@ variance of the estimated GPD shape parameter over accepted thresholds.}
 \item{seed}{Integer scalar or \code{NULL}. Optional random seed to ensure
 reproducibility for methods that involve randomness (e.g., changepoint
 detection with added pseudo p-values).}
-
-\item{doPlot}{Logical. If \code{TRUE}, produce a diagnostic plot of GOF
-p-values against candidate thresholds, marking the selected threshold.}
 
 \item{...}{Additional arguments reserved for internal use (currently
 ignored).}

@@ -108,7 +108,6 @@
                              gof_alpha = 0.05,
                              shape_var_window = 7L,
                              seed = NULL,
-                             doPlot = FALSE,
                              ...) {
   if (!is.null(seed)) set.seed(seed)
   
@@ -233,12 +232,12 @@
     # Early stopping for FTR variants
     if (thresh_method == "ftr" && is.na(idx_use) && res$p_value > gof_alpha) {
       idx_use <- i
-      if (!doPlot) break
+      break
       
     } else if (thresh_method == "rob_ftr" && i > min(niter, 2) && is.na(idx_use) &&
                all(gof_p_value_vec[(i-min(niter, 2)):i] > gof_alpha)) {
       idx_use <- i - min(niter, 2)
-      if (!doPlot) break
+      break
     }
   }
   
@@ -357,23 +356,6 @@
   } else {
     thresh <- thresh_poss[idx_use]
     n_exceed <- n_exceed_vec[idx_use]
-  }
-  
-  if (doPlot) {
-    #tmp <- gof_p_value_vec[(idx_use-50):(idx_use+100)]
-    #thtmp <- thresh_poss[(idx_use-50):(idx_use+100)]
-    #thtmp <- seq(thresh_poss[1], rev(thresh_poss)[1], length = 10)
-    
-    plot(gof_p_value_vec ~ thresh_poss, pch = 20,
-         ylab = "AD pvalue", xlab = "threshold")
-    #abline(v = thtmp, col = "lightgray")
-    graphics::grid(50, NA, lwd = 1, lty = 1)
-    graphics::abline(h = gof_alpha)
-    graphics::abline(v = thresh, col = "red")
-    graphics::points(gof_p_value_vec ~ thresh_poss, pch = 20)
-    graphics::legend("topleft",
-                     legend = c("AD p-values", "AD alpha", "selected threshold"),
-                     col = c(1, 1, 2), pch = c(20, NA, NA), lty = c(NA, 1, 1))
   }
   
   n_exceed <- as.integer(n_exceed)
