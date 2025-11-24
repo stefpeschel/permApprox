@@ -55,26 +55,26 @@
     p <- (sum(teststat > stat) + 1)/(eff + 2)
   }
   else {
-    row <- which(rownames(eva:::ADQuantiles) == max(round(shape,
+    row <- which(rownames(.ADQ_gpd) == max(round(shape,
                                                           2), -0.5))
-    if (stat > eva:::ADQuantiles[row, 999]) {
-      pvals <- -log(as.numeric(colnames(eva:::ADQuantiles[950:999])))
-      x <- as.numeric(eva:::ADQuantiles[row, 950:999])
+    if (stat > .ADQ_gpd[row, 999]) {
+      pvals <- -log(as.numeric(colnames(.ADQ_gpd[950:999])))
+      x <- as.numeric(.ADQ_gpd[row, 950:999])
       y <- lm(pvals ~ x)
       stat <- as.data.frame(stat)
       colnames(stat) <- c("x")
       p <- as.numeric(exp(-predict(y, stat)))
     }
     else {
-      bound <- as.numeric(colnames(eva:::ADQuantiles)[which.max(stat <
-                                                                  eva:::ADQuantiles[row, ])])
+      bound <- as.numeric(colnames(.ADQ_gpd)[which.max(stat <
+                                                                  .ADQ_gpd[row, ])])
       if (bound == 0.999) {
         p <- 0.999
       }
       else {
-        lower <- eva:::ADQuantiles[row, which(colnames(eva:::ADQuantiles) ==
+        lower <- .ADQ_gpd[row, which(colnames(.ADQ_gpd) ==
                                                 bound + 0.001)]
-        upper <- eva:::ADQuantiles[row, which(colnames(eva:::ADQuantiles) ==
+        upper <- .ADQ_gpd[row, which(colnames(.ADQ_gpd) ==
                                                 bound)]
         dif <- (upper - stat)/(upper - lower)
         val <- (dif * (-log(bound) - -log(bound + 0.001))) +
@@ -149,26 +149,26 @@
     p <- (sum(teststat > stat) + 1)/(eff + 2)
   }
   else {
-    row <- which(rownames(eva:::CVMQuantiles) == max(round(shape,
+    row <- which(rownames(.CVMQ_gpd) == max(round(shape,
                                                            2), -0.5))
-    if (stat > eva:::CVMQuantiles[row, 999]) {
-      pvals <- -log(as.numeric(colnames(eva:::CVMQuantiles[950:999])))
-      x <- as.numeric(eva:::CVMQuantiles[row, 950:999])
+    if (stat > .CVMQ_gpd[row, 999]) {
+      pvals <- -log(as.numeric(colnames(.CVMQ_gpd[950:999])))
+      x <- as.numeric(.CVMQ_gpd[row, 950:999])
       y <- lm(pvals ~ x)
       stat <- as.data.frame(stat)
       colnames(stat) <- c("x")
       p <- as.numeric(exp(-predict(y, stat)))
     }
     else {
-      bound <- as.numeric(colnames(eva:::CVMQuantiles)[which.max(stat <
-                                                                   eva:::CVMQuantiles[row, ])])
+      bound <- as.numeric(colnames(.CVMQ_gpd)[which.max(stat <
+                                                                   .CVMQ_gpd[row, ])])
       if (bound == 0.999) {
         p <- 0.999
       }
       else {
-        lower <- eva:::CVMQuantiles[row, which(colnames(eva:::CVMQuantiles) ==
+        lower <- .CVMQ_gpd[row, which(colnames(.CVMQ_gpd) ==
                                                  bound + 0.001)]
-        upper <- eva:::CVMQuantiles[row, which(colnames(eva:::CVMQuantiles) ==
+        upper <- .CVMQ_gpd[row, which(colnames(.CVMQ_gpd) ==
                                                  bound)]
         dif <- (upper - stat)/(upper - lower)
         val <- (dif * (-log(bound) - -log(bound + 0.001))) +

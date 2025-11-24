@@ -1,0 +1,7 @@
+# inst/COPYRIGHTS
+
+The internal objects .ADQ_gpd and .CVMQ_gpd are derived from the 'eva' package 
+(Bader and Yan), licensed under GPL (>= 2). They contain critical quantile 
+tables for the Anderson–Darling and Cramér–von Mises goodness-of-fit tests 
+for the generalized Pareto distribution. The data were extracted verbatim and 
+included under the terms of the GPL.
