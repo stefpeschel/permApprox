@@ -151,7 +151,7 @@ fit_gpd <- function(data,
     shape <- fit$shape; scale <- fit$scale
     
     p_val <- if (gof_test == "none") {
-      NULL
+      NA_real_
     } else {
       tfun <- if (gof_test == "ad") .gof_gpd_ad else .gof_gpd_cvm
       tmp  <- try(tfun(excess, scale = scale, shape = shape), silent = TRUE)

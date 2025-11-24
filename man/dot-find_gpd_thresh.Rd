@@ -79,8 +79,8 @@ candidate thresholds. Only every \code{thresh_step}-th candidate is
 evaluated, starting from the first.}
 
 \item{gof_test}{Character string specifying the goodness-of-fit test to be
-used in \code{\link{fit_gpd}}. Typically \code{"ad"} for the
-Anderson–Darling test (default).}
+used in \code{\link{fit_gpd}}. By default \code{"ad"} for the
+Anderson–Darling test.}
 
 \item{gof_alpha}{Numeric scalar in \eqn{(0, 1)}. Significance level used to
 decide whether the GPD GOF test is accepted or rejected.}

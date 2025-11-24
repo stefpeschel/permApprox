@@ -238,7 +238,7 @@
       exceed0_min   = control$exceed0_min,
       exceed_min    = control$exceed_min,
       thresh_step   = control$thresh_step,
-      gof_test      = control$gof_test,
+      gof_test      = control$gof_test_thresh,
       gof_alpha     = control$gof_alpha,
       ...
     )
@@ -299,7 +299,6 @@
       constraint       = control$constraint,
       support_boundary = bound_i,
       gof_test         = control$gof_test,
-      gof_alpha        = control$gof_alpha,
       ...
     )
     

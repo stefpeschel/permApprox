@@ -22,7 +22,8 @@ make_gpd_ctrl(
   exceed0 = 0.25,
   exceed0_min = 250,
   exceed_min = 10,
-  gof_test = "ad",
+  gof_test_thresh = "ad",
+  gof_test = "none",
   gof_alpha = 0.05
 )
 }
@@ -115,8 +116,13 @@ If \code{NULL}, no minimum is enforced. Default: \code{250}.}
 \item{exceed_min}{Integer >= 0. Minimum number of exceedances required for
 fitting. Default: \code{10}.}
 
-\item{gof_test}{Character. Goodness-of-fit test for the GPD:
-\code{"ad"}, \code{"cvm"}, or \code{"none"}. Default: \code{"ad"}.}
+\item{gof_test_thresh}{Character. Goodness-of-fit test used for threshold 
+search. Possible values are \code{"ad"} (Anderson-Darling) and 
+\code{"cvm"} (Cramér-von-Mises).}
+
+\item{gof_test}{Character. Goodness-of-fit test for the final GPD parameters.
+Possible values: \code{"ad"} (Anderson-Darling), \code{"cvm"} 
+(Cramér-von-Mises), or \code{"none"} (no test; default).}
 
 \item{gof_alpha}{Numeric in (0, 1). Significance level for the GOF test.
 Default: \code{0.05}.}

@@ -54,8 +54,8 @@
 #'   candidate thresholds. Only every \code{thresh_step}-th candidate is
 #'   evaluated, starting from the first.
 #' @param gof_test Character string specifying the goodness-of-fit test to be
-#'   used in \code{\link{fit_gpd}}. Typically \code{"ad"} for the
-#'   Anderson–Darling test (default).
+#'   used in \code{\link{fit_gpd}}. By default \code{"ad"} for the
+#'   Anderson–Darling test.
 #' @param gof_alpha Numeric scalar in \eqn{(0, 1)}. Significance level used to
 #'   decide whether the GPD GOF test is accepted or rejected.
 #' @param shape_var_window Integer scalar. Window length used by the
@@ -64,8 +64,6 @@
 #' @param seed Integer scalar or \code{NULL}. Optional random seed to ensure
 #'   reproducibility for methods that involve randomness (e.g., changepoint
 #'   detection with added pseudo p-values).
-#' @param doPlot Logical. If \code{TRUE}, produce a diagnostic plot of GOF
-#'   p-values against candidate thresholds, marking the selected threshold.
 #' @param ... Additional arguments reserved for internal use (currently
 #'   ignored).
 #'
