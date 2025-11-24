@@ -1,7 +1,7 @@
 # tests/testthat/test-perm_approx_adjustment.R
 
 test_that("perm_approx multiple testing adjustment behaves as expected", {
-  set.seed(777)
+  set.seed(42)
   
   n_per_group <- 40
   m_tests     <- 8
