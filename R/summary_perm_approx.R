@@ -82,10 +82,17 @@ summary.perm_approx <- function(object, digits = 3L, alpha = 0.05, ...) {
     status_counts <- .perm_approx_status_counts(fit_res$status)
     if (length(status_counts)) {
       # Order statuses in a logical order if present
-      status_order <- c("success", "gof_reject", "fit_failed",
-                        "discrete", "no_threshold", "not_selected")
-      status_names <- intersect(status_order, names(status_counts))
-      status_counts <- status_counts[status_names]
+      status_order <- c("Successful fits"    = "success", 
+                        "GOF rejections"     = "gof_reject", 
+                        "Fit failed"         = "fit_failed",
+                        "No threshold found" = "no_threshold",
+                        "Discrete distributions"   = "discrete",
+                        "Not selected for fitting" = "not_selected")
+      
+      status_order <- status_order[status_order %in% names(status_counts)]
+      status_counts <- status_counts[status_order]
+      status_names <- names(status_order)
+      names(status_counts) <- status_names
       w <- max(nchar(status_names))
       for (nm in status_names) {
         cat("  ", sprintf(paste0("%-", w, "s : %d"), nm, status_counts[[nm]]), "\n", sep = "")
