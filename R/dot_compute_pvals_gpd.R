@@ -65,6 +65,8 @@
 #'         fit was obtained).}
 #'   \item{\code{epsilon}}{Final epsilon used in the GPD fit (after refinement
 #'         if zero-guard was active).}
+#'   \item{\code{eps_tune}}{Final tuning parameter passed to \code{eps_fun} 
+#'         to determine the epsilon values.}
 #'   \item{\code{gof_p_value}}{Goodness-of-fit p-value (Anderson–Darling or
 #'         Cramér–von Mises depending on \code{control$gof_test}).}
 #'   \item{\code{status}}{Factor describing the per-test fitting outcome:
@@ -112,6 +114,7 @@
   shape       <- rep(NA_real_,    n_test)
   scale       <- rep(NA_real_,    n_test)
   epsilon     <- rep(NA_real_,    n_test)
+  eps_tune    <- NA_real_
   gof_p_value <- rep(NA_real_,    n_test)
   status      <- factor(rep("not_selected", n_test), levels = status_levels)
   discrete    <- rep(FALSE, n_test)
@@ -127,6 +130,7 @@
       shape         = shape,
       scale         = scale,
       epsilon       = epsilon,
+      eps_tune = eps_tune,
       gof_p_value   = gof_p_value,
       status        = status,
       discrete      = discrete,
@@ -342,6 +346,8 @@
     eps_args     = control$eps_args
   )
   
+  eps_tune <- control$eps_tune
+  
   if (isTRUE(verbose)) writeLines("Run GPD fit ...")
   
   res_list <- .maybe_parallel_lapply(
@@ -536,9 +542,12 @@
         eps_tune     = final_tp,
         eps_args     = control$eps_args
       )
+      
+      eps_tune <- final_tp
+      
       if (isTRUE(verbose)) {
         message("Zero-guard: refitting all selected tests with tuning parameter = ", 
-                tp_fmt(final_tp))
+                tp_fmt(eps_tune))
       }
       
       res_list <- .maybe_parallel_lapply(
