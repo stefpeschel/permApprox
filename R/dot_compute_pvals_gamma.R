@@ -130,20 +130,24 @@
   ## -------------------------------------------------------------------------
   ## Discreteness screening
   ## -------------------------------------------------------------------------
-  uniq_counts <- vapply(
-    idx_fit,
-    function(i) length(unique(perm_stats[, i])),
-    integer(1)
-  )
-  is_discrete_sub <- uniq_counts < max(1L, floor(n_perm * 0.02))
-  discrete[idx_fit] <- is_discrete_sub
-  status[idx_fit[is_discrete_sub]] <- "discrete"
-  
-  idx_non_dis <- idx_fit[!is_discrete_sub]
-  
-  # Early exit if all tests are discrete
-  if (length(idx_non_dis) == 0L) {
-    return(.pack_result())
+  if (isTRUE(control$discrete_screen)) {
+    uniq_counts <- vapply(
+      idx_fit,
+      function(i) length(unique(perm_stats[, i])),
+      integer(1)
+    )
+    is_discrete_sub <- uniq_counts < max(1L, floor(n_perm * 0.02))
+    discrete[idx_fit] <- is_discrete_sub
+    status[idx_fit[is_discrete_sub]] <- "discrete"
+    
+    idx_non_dis <- idx_fit[!is_discrete_sub]
+    
+    # Early exit if all tests are discrete
+    if (length(idx_non_dis) == 0L) {
+      return(.pack_result())
+    }
+  } else {
+    idx_non_dis <- idx_fit
   }
   
   ## -------------------------------------------------------------------------

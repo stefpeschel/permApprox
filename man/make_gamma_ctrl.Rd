@@ -6,6 +6,7 @@
 \usage{
 make_gamma_ctrl(
   include_obs = FALSE,
+  discrete_screen = TRUE,
   gof_test = c("none", "cvm"),
   gof_alpha = 0.05,
   fit_args = NULL
@@ -15,6 +16,11 @@ make_gamma_ctrl(
 \item{include_obs}{Logical. If \code{TRUE}, the observed test statistic is
 included into the tail approximation (considered as permutation test
 statistic). Default: \code{FALSE}.}
+
+\item{discrete_screen}{Logical scalar. If \code{TRUE} (default), performs a
+discreteness screening step before Gamma fitting and falls back to 
+empirical p-values for tests flagged as too discrete for reliable fitting.
+If \code{FALSE}, this screening step is skipped.}
 
 \item{gof_test}{Character. Goodness-of-fit test for the Gamma distribution.
 Options: "cvm" (Cramer-von-Mises), "none". Default: "cvm".}

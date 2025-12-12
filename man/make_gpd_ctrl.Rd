@@ -7,6 +7,7 @@
 make_gpd_ctrl(
   fit_method = "lme",
   include_obs = FALSE,
+  discrete_screen = TRUE,
   constraint = "support_at_obs",
   eps_fun = eps_slls,
   eps_tune = 0.25,
@@ -35,6 +36,11 @@ Options: \code{"lme"}, \code{"mle1d"}, \code{"mle2d"}, \code{"mom"},
 \item{include_obs}{Logical scalar. If \code{TRUE}, the observed test
 statistic is included into the tail approximation (treated as an additional
 permutation statistic). Default: \code{FALSE}.}
+
+\item{discrete_screen}{Logical scalar. If \code{TRUE} (default), performs a
+discreteness screening step before GPD fitting and falls back to empirical
+p-values for tests flagged as too discrete for reliable tail modeling.
+If \code{FALSE}, this screening step is skipped.}
 
 \item{constraint}{Character. Constraint for the fitting process.
 Default: \code{"support_at_obs"}. Options:

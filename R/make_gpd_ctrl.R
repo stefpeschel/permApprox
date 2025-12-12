@@ -22,6 +22,11 @@
 #' @param include_obs Logical scalar. If \code{TRUE}, the observed test
 #'   statistic is included into the tail approximation (treated as an additional
 #'   permutation statistic). Default: \code{FALSE}.
+#'   
+##' @param discrete_screen Logical scalar. If \code{TRUE} (default), performs a
+#'   discreteness screening step before GPD fitting and falls back to empirical
+#'   p-values for tests flagged as too discrete for reliable tail modeling.
+#'   If \code{FALSE}, this screening step is skipped.
 #'
 #' @param constraint Character. Constraint for the fitting process.
 #'   Default: \code{"support_at_obs"}. Options:
@@ -118,14 +123,15 @@
 #'
 #' @export
 make_gpd_ctrl <- function(
-    fit_method    = "lme",
-    include_obs   = FALSE,
-    constraint    = "support_at_obs",
-    eps_fun       = eps_slls,
-    eps_tune      = 0.25,
-    eps_args      = list(),
-    zero_guard    = TRUE,
-    eps_retry     = list(
+    fit_method      = "lme",
+    include_obs     = FALSE,
+    discrete_screen = TRUE,
+    constraint      = "support_at_obs",
+    eps_fun         = eps_slls,
+    eps_tune        = 0.25,
+    eps_args        = list(),
+    zero_guard      = TRUE,
+    eps_retry       = list(
       step_init       = 10,
       grow            = (1 + sqrt(5)) / 2,   # ~1.618
       max_expand_iter = 20L,
@@ -154,6 +160,12 @@ make_gpd_ctrl <- function(
   
   if (!is.logical(include_obs) || length(include_obs) != 1L || is.na(include_obs))
     stop("'include_obs' must be a single logical.")
+  
+  if (!is.logical(discrete_screen) ||
+      length(discrete_screen) != 1L ||
+      is.na(discrete_screen)) {
+    stop("'discrete_screen' must be a single logical.")
+  }
   
   constraint <- match.arg(
     constraint,
@@ -324,25 +336,26 @@ make_gpd_ctrl <- function(
   ## Assemble control object
   ## ------------------------------------------------------------------------
   control <- list(
-    fit_method    = fit_method,
-    include_obs   = include_obs,
-    constraint    = constraint,
-    eps_fun       = eps_fun,
-    eps_tune      = eps_tune,
-    eps_args      = eps_args,
-    zero_guard    = zero_guard,
-    eps_retry     = eps_retry,
-    sample_size   = sample_size,
-    tol           = tol,
-    thresh_method = thresh_method,
-    thresh0       = thresh0,
-    thresh_step   = as.integer(thresh_step),
-    exceed0       = exceed0,
-    exceed0_min   = exceed0_min,
-    exceed_min    = as.integer(exceed_min),
-    gof_test_thresh = gof_test_thresh,
-    gof_test      = gof_test,
-    gof_alpha     = gof_alpha
+    fit_method       = fit_method,
+    include_obs      = include_obs,
+    discrete_screen  = discrete_screen,
+    constraint       = constraint,
+    eps_fun          = eps_fun,
+    eps_tune         = eps_tune,
+    eps_args         = eps_args,
+    zero_guard       = zero_guard,
+    eps_retry        = eps_retry,
+    sample_size      = sample_size,
+    tol              = tol,
+    thresh_method    = thresh_method,
+    thresh0          = thresh0,
+    thresh_step      = as.integer(thresh_step),
+    exceed0          = exceed0,
+    exceed0_min      = exceed0_min,
+    exceed_min       = as.integer(exceed_min),
+    gof_test_thresh  = gof_test_thresh,
+    gof_test         = gof_test,
+    gof_alpha        = gof_alpha
   )
   
   class(control) <- "gpd_ctrl"
