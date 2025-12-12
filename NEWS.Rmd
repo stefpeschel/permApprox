@@ -2,7 +2,23 @@
 output: github_document
 ---
 
-## permApprox 1.0.1 <img src="man/figures/logo.png" align="right" height="180" />
+## permApprox 1.0.1.9000 <img src="man/figures/logo.png" align="right" height="180" />
+
+### ✨ New features
+
+* Add option to disable discreteness screening in GPD and Gamma approximation. 
+* `perm_approx()` now exports the tuning parameter used for the epsilon rule. 
+
+### 🚀️ Improvements
+
+* Update `print()` and `summary()` methods for `perm_approx` results. 
+* Make `limma` an optional dependency to make package installation easier.
+
+### 🐛 Bug-fixes
+
+* Fix parallel execution in GPD approximation and add proper testing
+
+## permApprox 1.0.1
 
 ### ✨ New features
 
