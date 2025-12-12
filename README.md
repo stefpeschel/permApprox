@@ -167,10 +167,10 @@ res_emp
 
     ## permApprox result
     ## -----------------
-    ## Number of tests              : 10
-    ## Approximation method         : empirical (no approximation)
-    ## Approximation threshold      : p-values < 0.1
-    ## Multiple testing adjustment  : BH
+    ## Number of tests             : 10
+    ## Approximation method        : empirical (no approximation)
+    ## Approximation threshold     : p-values < 0.1
+    ## Multiple testing adjustment : BH
     ## 
     ## Final p-values:
     ##   min = 0.00999, median = 0.562, max = 0.987
@@ -217,14 +217,17 @@ res_gpd
 
     ## permApprox result
     ## -----------------
-    ## Number of tests              : 10
-    ## Approximation method         : GPD tail approximation
-    ## Approximation threshold      : p-values < 0.1
-    ## Multiple testing adjustment  : BH
+    ## Number of tests             : 10
+    ## Approximation method        : GPD tail approximation
+    ## Approximation threshold     : p-values < 0.1
+    ## Multiple testing adjustment : BH
     ## 
-    ## Successful fits              : 3
-    ## Discrete distributions       : 0
-    ## GOF rejections               : 0
+    ## Successful fits          : 3
+    ## GOF rejections           : 0
+    ## Fit failed               : 0
+    ## No threshold found       : 0
+    ## Discrete distributions   : 0
+    ## Not selected for fitting : 7
     ## 
     ## Final p-values:
     ##   min = 0.0000000507, median = 0.562, max = 0.987
@@ -238,18 +241,18 @@ summary(res_gpd)
 
     ## Summary of permApprox result
     ## ----------------------------
-    ## Number of tests              : 10
-    ## Approximation method         : GPD tail approximation
-    ## Approximation threshold      : p-values < 0.1
-    ## Multiple testing adjustment  : BH
+    ## Number of tests             : 10
+    ## Approximation method        : GPD tail approximation
+    ## Approximation threshold     : p-values < 0.1
+    ## Multiple testing adjustment : BH
     ## 
     ## Fit status counts:
-    ##   success      : 3
-    ##   gof_reject   : 0
-    ##   fit_failed   : 0
-    ##   discrete     : 0
-    ##   no_threshold : 0
-    ##   not_selected : 7
+    ##   Successful fits          : 3
+    ##   GOF rejections           : 0
+    ##   Fit failed               : 0
+    ##   No threshold found       : 0
+    ##   Discrete distributions   : 0
+    ##   Not selected for fitting : 7
     ## 
     ## GPD parameter summary (successful fits)
     ## --------------------------------------
@@ -259,11 +262,6 @@ summary(res_gpd)
     ##     min = 0.113, median = 0.128, mean = 0.127, max = 0.141
     ##   n_exceed:
     ##     min =  250, median =  250, mean =  250, max =  250
-    ## 
-    ## Goodness-of-fit p-values (all fitted tests)
-    ## ------------------------------------------
-    ##   GOF p-values:
-    ##     min = 0.171, median = 0.533, mean = 0.535, max = 0.902
     ## 
     ## P-value summary
     ## ---------------
@@ -330,14 +328,16 @@ res_gamma
 
     ## permApprox result
     ## -----------------
-    ## Number of tests              : 10
-    ## Approximation method         : Gamma approximation
-    ## Approximation threshold      : p-values < 0.1
-    ## Multiple testing adjustment  : BH
+    ## Number of tests             : 10
+    ## Approximation method        : Gamma approximation
+    ## Approximation threshold     : p-values < 0.1
+    ## Multiple testing adjustment : BH
     ## 
-    ## Successful fits              : 3
-    ## Discrete distributions       : 0
-    ## GOF rejections               : 0
+    ## Successful fits          : 3
+    ## GOF rejections           : 0
+    ## Fit failed               : 0
+    ## Discrete distributions   : 0
+    ## Not selected for fitting : 7
     ## 
     ## Final p-values:
     ##   min = 0.000862, median = 0.562, max = 0.987
@@ -350,17 +350,17 @@ summary(res_gamma)
 
     ## Summary of permApprox result
     ## ----------------------------
-    ## Number of tests              : 10
-    ## Approximation method         : Gamma approximation
-    ## Approximation threshold      : p-values < 0.1
-    ## Multiple testing adjustment  : BH
+    ## Number of tests             : 10
+    ## Approximation method        : Gamma approximation
+    ## Approximation threshold     : p-values < 0.1
+    ## Multiple testing adjustment : BH
     ## 
     ## Fit status counts:
-    ##   success      : 3
-    ##   gof_reject   : 0
-    ##   fit_failed   : 0
-    ##   discrete     : 0
-    ##   not_selected : 7
+    ##   Successful fits          : 3
+    ##   GOF rejections           : 0
+    ##   Fit failed               : 0
+    ##   Discrete distributions   : 0
+    ##   Not selected for fitting : 7
     ## 
     ## Gamma parameter summary (successful fits)
     ## ----------------------------------------

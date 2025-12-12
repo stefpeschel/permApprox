@@ -56,24 +56,24 @@ summary.perm_approx <- function(object, digits = 3L, alpha = 0.05, ...) {
   # Header ----------------------------------------------------------------
   cat("Summary of permApprox result\n")
   cat("----------------------------\n")
-  cat("Number of tests              : ", n_test, "\n", sep = "")
+  cat("Number of tests             : ", n_test, "\n", sep = "")
   
   if (fit_method == "gpd") {
-    cat("Approximation method         : GPD tail approximation\n")
+    cat("Approximation method        : GPD tail approximation\n")
   } else if (fit_method == "gamma") {
-    cat("Approximation method         : Gamma approximation\n")
+    cat("Approximation method        : Gamma approximation\n")
   } else {
-    cat("Approximation method         : empirical (no parametric tail approximation)\n")
+    cat("Approximation method        : empirical (no parametric tail approximation)\n")
   }
   
   if (!is.null(approx_thresh)) {
-    cat("Approximation threshold      : p-values <", fmt(approx_thresh), "\n", sep = "")
+    cat("Approximation threshold     : p-values <", fmt(approx_thresh), "\n", sep = "")
   }
   
   if (adjust_method == "none" || is.null(adjust_res)) {
-    cat("Multiple testing adjustment  : none\n")
+    cat("Multiple testing adjustment : none\n")
   } else {
-    cat("Multiple testing adjustment  : ", adjust_method, "\n", sep = "")
+    cat("Multiple testing adjustment : ", adjust_method, "\n", sep = "")
   }
   
   # Fit status counts -----------------------------------------------------
