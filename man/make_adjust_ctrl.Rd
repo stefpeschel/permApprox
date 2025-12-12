@@ -8,13 +8,10 @@ make_adjust_ctrl(true_null_method = "convest", p_true_null = NULL)
 }
 \arguments{
 \item{true_null_method}{Character. Method to estimate the proportion of true
-null hypotheses when \code{method = "adapt_BH"}. Options (for
-\code{limma::propTrueNull}):
+null hypotheses when \code{method = "adapt_BH"}. Options:
 \itemize{
-  \item \code{"convest"} (default)
-  \item \code{"lfdr"}
-  \item \code{"mean"}
-  \item \code{"hist"}
+  \item \code{"convest"} (default), \code{"lfdr"}, \code{"mean"}, \code{"hist"}:
+    estimated via \code{limma::propTrueNull} (requires \pkg{limma}).
   \item \code{"farco"}: Farcomeni (2007) iterative plug-in method.
 }}
 
