@@ -1,8 +1,8 @@
 Package: permApprox
 Type: Package
 Title: Permutation p-value approximation
-Version: 1.0.1
-Date: 2025-11-24
+Version: 1.0.2
+Date: 2025-12-19
 Authors@R: c(
     person("Stefanie", "Peschel", email = "stefpeschel@gmail.com",
            role = c("aut", "cre"), comment = c(ORCID = "0000-0002-7936-7627")),
@@ -30,11 +30,11 @@ Imports:
     future,
     future.apply,
     goftest,
-    limma,
     progressr,
     Rdpack,
     stats
 Suggests:
-    testthat (>= 3.0.0)
+    testthat (>= 3.0.0),
+    limma
 Config/testthat/edition: 3
 RdMacros: Rdpack

@@ -6,6 +6,11 @@
 #' @param include_obs Logical. If \code{TRUE}, the observed test statistic is
 #'   included into the tail approximation (considered as permutation test
 #'   statistic). Default: \code{FALSE}.
+#'   
+#' @param discrete_screen Logical scalar. If \code{TRUE} (default), performs a
+#'   discreteness screening step before Gamma fitting and falls back to 
+#'   empirical p-values for tests flagged as too discrete for reliable fitting.
+#'   If \code{FALSE}, this screening step is skipped.
 #'
 #' @param gof_test Character. Goodness-of-fit test for the Gamma distribution.
 #'   Options: "cvm" (Cramer-von-Mises), "none". Default: "cvm".
@@ -23,13 +28,21 @@
 #'
 #' @export
 make_gamma_ctrl <- function(
-    include_obs = FALSE,
-    gof_test    = c("none", "cvm"),
-    gof_alpha   = 0.05,
-    fit_args    = NULL
+    include_obs     = FALSE,
+    discrete_screen = TRUE,
+    gof_test        = c("none", "cvm"),
+    gof_alpha       = 0.05,
+    fit_args        = NULL
 ) {
   
   stopifnot(is.logical(include_obs))
+  
+  if (!is.logical(discrete_screen) ||
+      length(discrete_screen) != 1L ||
+      is.na(discrete_screen)) {
+    stop("'discrete_screen' must be a single logical.")
+  }
+  
   
   gof_test <- match.arg(gof_test)
   
@@ -41,10 +54,11 @@ make_gamma_ctrl <- function(
   }
   
   control <- list(
-    include_obs = include_obs,
-    gof_test   = gof_test,
-    gof_alpha  = gof_alpha,
-    fit_args   = fit_args
+    include_obs     = include_obs,
+    discrete_screen = discrete_screen,
+    gof_test        = gof_test,
+    gof_alpha       = gof_alpha,
+    fit_args        = fit_args
   )
   
   class(control) <- "gamma_ctrl"

@@ -68,6 +68,8 @@ A named \code{list} with one element per output quantity. Except for
         fit was obtained).}
   \item{\code{epsilon}}{Final epsilon used in the GPD fit (after refinement
         if zero-guard was active).}
+  \item{\code{eps_tune}}{Final tuning parameter passed to \code{eps_fun} 
+        to determine the epsilon values.}
   \item{\code{gof_p_value}}{Goodness-of-fit p-value (Anderson–Darling or
         Cramér–von Mises depending on \code{control$gof_test}).}
   \item{\code{status}}{Factor describing the per-test fitting outcome:

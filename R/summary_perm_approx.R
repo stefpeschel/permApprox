@@ -56,24 +56,24 @@ summary.perm_approx <- function(object, digits = 3L, alpha = 0.05, ...) {
   # Header ----------------------------------------------------------------
   cat("Summary of permApprox result\n")
   cat("----------------------------\n")
-  cat("Number of tests              : ", n_test, "\n", sep = "")
+  cat("Number of tests             : ", n_test, "\n", sep = "")
   
   if (fit_method == "gpd") {
-    cat("Approximation method         : GPD tail approximation\n")
+    cat("Approximation method        : GPD tail approximation\n")
   } else if (fit_method == "gamma") {
-    cat("Approximation method         : Gamma approximation\n")
+    cat("Approximation method        : Gamma approximation\n")
   } else {
-    cat("Approximation method         : empirical (no parametric tail approximation)\n")
+    cat("Approximation method        : empirical (no parametric tail approximation)\n")
   }
   
   if (!is.null(approx_thresh)) {
-    cat("Approximation threshold      : p-values <", fmt(approx_thresh), "\n", sep = "")
+    cat("Approximation threshold     : p-values <", fmt(approx_thresh), "\n", sep = "")
   }
   
   if (adjust_method == "none" || is.null(adjust_res)) {
-    cat("Multiple testing adjustment  : none\n")
+    cat("Multiple testing adjustment : none\n")
   } else {
-    cat("Multiple testing adjustment  : ", adjust_method, "\n", sep = "")
+    cat("Multiple testing adjustment : ", adjust_method, "\n", sep = "")
   }
   
   # Fit status counts -----------------------------------------------------
@@ -82,10 +82,17 @@ summary.perm_approx <- function(object, digits = 3L, alpha = 0.05, ...) {
     status_counts <- .perm_approx_status_counts(fit_res$status)
     if (length(status_counts)) {
       # Order statuses in a logical order if present
-      status_order <- c("success", "gof_reject", "fit_failed",
-                        "discrete", "no_threshold", "not_selected")
-      status_names <- intersect(status_order, names(status_counts))
-      status_counts <- status_counts[status_names]
+      status_order <- c("Successful fits"    = "success", 
+                        "GOF rejections"     = "gof_reject", 
+                        "Fit failed"         = "fit_failed",
+                        "No threshold found" = "no_threshold",
+                        "Discrete distributions"   = "discrete",
+                        "Not selected for fitting" = "not_selected")
+      
+      status_order <- status_order[status_order %in% names(status_counts)]
+      status_counts <- status_counts[status_order]
+      status_names <- names(status_order)
+      names(status_counts) <- status_names
       w <- max(nchar(status_names))
       for (nm in status_names) {
         cat("  ", sprintf(paste0("%-", w, "s : %d"), nm, status_counts[[nm]]), "\n", sep = "")

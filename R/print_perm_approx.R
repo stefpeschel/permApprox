@@ -25,37 +25,50 @@ print.perm_approx <- function(x, digits = 3L, ...) {
   
   cat("permApprox result\n")
   cat("-----------------\n")
-  cat("Number of tests              : ", n_test, "\n", sep = "")
+  cat("Number of tests             : ", n_test, "\n", sep = "")
   
   # Method
   if (fit_method == "gpd") {
-    cat("Approximation method         : GPD tail approximation\n")
+    cat("Approximation method        : GPD tail approximation\n")
   } else if (fit_method == "gamma") {
-    cat("Approximation method         : Gamma approximation\n")
+    cat("Approximation method        : Gamma approximation\n")
   } else {
-    cat("Approximation method         : empirical (no approximation)\n")
+    cat("Approximation method        : empirical (no approximation)\n")
   }
   
   # Threshold + adjustment
   if (!is.null(approx_thresh))
-    cat("Approximation threshold      : p-values <", fmt(approx_thresh), "\n", sep = "")
+    cat("Approximation threshold     : p-values <", fmt(approx_thresh), "\n", sep = "")
   
   if (adjust_method == "none")
-    cat("Multiple testing adjustment  : none\n")
+    cat("Multiple testing adjustment : none\n")
   else
-    cat("Multiple testing adjustment  : ", adjust_method, "\n", sep = "")
-  
+    cat("Multiple testing adjustment : ", adjust_method, "\n", sep = "")
+
   # Fit summary (compact)
   if (!is.null(fit_res) && !is.null(fit_res$status)) {
     status <- fit_res$status
     
-    success_count  <- sum(status == "success", na.rm = TRUE)
-    discrete_count <- sum(status == "discrete", na.rm = TRUE)
-    gof_count      <- sum(status == "gof_reject", na.rm = TRUE)
+    # Define the order AND labels you want to print
+    status_labels <- c(
+      success       = "Successful fits",
+      gof_reject    = "GOF rejections",
+      fit_failed    = "Fit failed",
+      no_threshold  = "No threshold found",
+      discrete      = "Discrete distributions",
+      not_selected  = "Not selected for fitting"
+    )
     
-    cat("\nSuccessful fits              : ", success_count,  "\n", sep = "")
-    cat("Discrete distributions       : ", discrete_count, "\n", sep = "")
-    cat("GOF rejections               : ", gof_count,      "\n", sep = "")
+    # Tabulate present statuses
+    status_tab <- table(status)
+    
+    cat("\n")
+    # Print in your desired order, but only if present
+    for (nm in names(status_labels)) {
+      if (nm %in% names(status_tab)) {
+        cat(sprintf("%-25s: %d\n", status_labels[nm], status_tab[[nm]]))
+      }
+    }
   }
   
   # Final p-values

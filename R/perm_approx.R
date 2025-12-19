@@ -589,7 +589,6 @@ perm_approx <- function(
     fit_result <- .compute_pvals_gpd(
       obs_stats    = t_obs,
       perm_stats   = t_perm,
-      n_perm       = n_perm,
       idx_fit      = idx_fit,
       control      = gpd_ctrl,
       cores        = cores,

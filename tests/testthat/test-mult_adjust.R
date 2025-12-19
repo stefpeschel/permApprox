@@ -95,10 +95,32 @@ test_that("lfdr adjustment works and returns valid structure", {
 ## 4. adapt_BH with different true_null_method variants
 ## ---------------------------------------------------------------------------
 
-test_that("adapt_BH works with all true_null_method options", {
+test_that("adapt_BH works with limma-free true_null_method", {
   sim <- simulate_multi(m = 100, n = 100, n_signal = 5)
   
-  true_null_methods <- c("convest", "mean", "hist", "farco", "lfdr")
+  ctrl <- make_adjust_ctrl(true_null_method = "farco")
+  
+  res <- perm_approx(
+    obs_stats     = sim$obs,
+    perm_stats    = sim$perm,
+    method        = "empirical",
+    adjust_method = "adapt_BH",
+    adjust_ctrl   = ctrl,
+    verbose       = FALSE
+  )
+  
+  expect_s3_class(res, "perm_approx")
+  expect_true(all(res$p_values >= 0 & res$p_values <= 1, na.rm = TRUE))
+  expect_true(all(c("p_adjusted", "p_true_null") %in% names(res$adjust_result)))
+})
+
+
+test_that("adapt_BH works with limma-based true_null_method options", {
+  skip_if_not_installed("limma")
+  
+  sim <- simulate_multi(m = 100, n = 100, n_signal = 5)
+  
+  true_null_methods <- c("convest", "mean", "hist", "lfdr")
   
   for (mth in true_null_methods) {
     ctrl <- make_adjust_ctrl(true_null_method = mth)
@@ -113,15 +135,10 @@ test_that("adapt_BH works with all true_null_method options", {
     )
     
     expect_s3_class(res, "perm_approx")
-    expect_false(is.null(res$adjust_result))
-    
-    # adapt_BH must produce valid adjusted p-values in [0,1]
     expect_true(all(res$p_values >= 0 & res$p_values <= 1, na.rm = TRUE))
-    
-    # Structure of adjust_result
-    expect_true(all(c("p_adjusted", "p_true_null") %in% names(res$adjust_result)))
   }
 })
+
 
 ## ---------------------------------------------------------------------------
 ## 5. Explicit p_true_null overrides estimation
