@@ -2,7 +2,7 @@
 output: github_document
 ---
 
-## permApprox 1.0.1.9000 <img src="man/figures/logo.png" align="right" height="180" />
+## permApprox 1.0.2 <img src="man/figures/logo.png" align="right" height="180" />
 
 ### ✨ New features
 
