@@ -99,6 +99,29 @@ perm_approx(
 
 ------------------------------------------------------------------------
 
+## Citation
+
+If you use **permApprox** in your research, please cite it as:
+
+> Peschel, S. (2025). *permApprox: permutation p-value approximation* (R
+> package version 1.0.2). Zenodo.
+> <https://doi.org/10.5281/zenodo.17987670>
+
+### BibTeX
+
+``` bibtex
+@software{peschel2025permapprox,
+  author  = {Peschel, Stefanie},
+  title   = {permApprox: permutation p-value approximation},
+  year    = {2025},
+  version = {1.0.2},
+  doi     = {10.5281/zenodo.17987670},
+  url     = {https://doi.org/10.5281/zenodo.17987670}
+}
+```
+
+------------------------------------------------------------------------
+
 ## Development version
 
 Everyone who wants to use new features not included in any releases is
