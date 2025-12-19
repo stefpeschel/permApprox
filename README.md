@@ -1,6 +1,8 @@
 
 # permApprox <img src="man/figures/logo.png" align="right" height="180" />
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.17987670.svg)](https://doi.org/10.5281/zenodo.17987670)
+
 The `permApprox` (**perm**utation p-value **approx**imation) package
 provides tools to **approximate small permutation p-values** when the
 number of permutations is limited and empirical p-values become coarse

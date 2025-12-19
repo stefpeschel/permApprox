@@ -1,0 +1,14 @@
+cff-version: 1.2.0
+title: "permApprox: permutation p-value approximation"
+message: "If you use this software, please cite it as below."
+type: software
+
+authors:
+  - family-names: Peschel
+    given-names: Stefanie
+
+version: "1.0.2"
+doi: "10.5281/zenodo.17987670"
+date-released: "2025-09-19"
+
+repository-code: "https://github.com/stefpeschel/permApprox"

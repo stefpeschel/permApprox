@@ -1,0 +1,23 @@
+citHeader("To cite the package 'permApprox' in publications use:")
+
+title <- "{permApprox: permutation p-value approximation}"
+title_text <- "permApprox: permutation p-value approximation"
+
+year <- sub("-.*", "", meta$Date)
+note <- sprintf("R package version %s", meta$Version)
+
+doi <- "10.5281/zenodo.17987670"
+doi_url <- paste0("https://doi.org/", doi)
+
+bibentry(
+  bibtype  = "Manual",
+  title    = title,
+  author   = c(person("Stefanie", "Peschel")),
+  year     = year,
+  note     = note,
+  doi      = doi,
+  url      = doi_url,
+  textVersion = paste0(
+    "Peschel, S. (", year, "). ", title_text, ". ", note, ". Zenodo. ", doi_url
+  )
+)
