@@ -11,7 +11,10 @@ print.perm_approx <- function(x, digits = 3L, ...) {
     stop("Object 'x' is not of class 'perm_approx'.")
   
   # Helpers
-  fmt <- function(z) formatC(z, digits = digits, format = "fg")
+  # Helper for fixed-point, significant digits
+  fmt_fg <- function(z) formatC(z, digits = digits, format = "fg")
+  # Helper for scientific notation
+  fmt_e  <- function(z) formatC(z, digits = digits, format = "e")
   
   pvals <- x$p_values
   n_test <- length(pvals)
@@ -38,7 +41,8 @@ print.perm_approx <- function(x, digits = 3L, ...) {
   
   # Threshold + adjustment
   if (!is.null(approx_thresh))
-    cat("Approximation threshold     : p-values <", fmt(approx_thresh), "\n", sep = "")
+    cat("Approximation threshold     : p-values <", 
+        fmt_fg(approx_thresh), "\n", sep = "")
   
   if (adjust_method == "none")
     cat("Multiple testing adjustment : none\n")
@@ -74,9 +78,9 @@ print.perm_approx <- function(x, digits = 3L, ...) {
   # Final p-values
   if (any(is.finite(pvals))) {
     cat("\nFinal p-values:\n")
-    cat("  min = ", fmt(min(pvals, na.rm = TRUE)), ", ", 
-        "median = ", fmt(median(pvals, na.rm = TRUE)), ", ",
-        "max = ", fmt(max(pvals, na.rm = TRUE)), "\n", sep = "")
+    cat("  min = ", fmt_e(min(pvals, na.rm = TRUE)), ", ", 
+        "median = ", fmt_e(median(pvals, na.rm = TRUE)), ", ",
+        "max = ", fmt_e(max(pvals, na.rm = TRUE)), "\n", sep = "")
   }
   
   cat("\nUse summary() for detailed fit diagnostics.\n")

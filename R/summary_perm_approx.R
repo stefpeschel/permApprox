@@ -26,9 +26,12 @@ summary.perm_approx <- function(object, digits = 3L, alpha = 0.05, ...) {
   }
   
   # Helpers ---------------------------------------------------------------
-  fmt <- function(z) formatC(z, digits = digits, format = "fg")
+  # Helper for fixed-point, significant digits
+  fmt_fg <- function(z) formatC(z, digits = digits, format = "fg")
+  # Helper for scientific notation
+  fmt_e  <- function(z) formatC(z, digits = digits, format = "e")
   
-  summarize_and_print <- function(label, x) {
+  summarize_and_print <- function(label, x, fmt = fmt_fg) {
     s <- .perm_approx_num_summary(x)
     if (is.null(s)) {
       cat("  ", label, ": no finite values\n", sep = "")
@@ -67,7 +70,7 @@ summary.perm_approx <- function(object, digits = 3L, alpha = 0.05, ...) {
   }
   
   if (!is.null(approx_thresh)) {
-    cat("Approximation threshold     : p-values <", fmt(approx_thresh), "\n", sep = "")
+    cat("Approximation threshold     : p-values <", fmt_fg(approx_thresh), "\n", sep = "")
   }
   
   if (adjust_method == "none" || is.null(adjust_res)) {
@@ -143,20 +146,20 @@ summary.perm_approx <- function(object, digits = 3L, alpha = 0.05, ...) {
   cat("---------------\n")
   
   cat("Empirical p-values:\n")
-  summarize_and_print("empirical", p_emp)
+  summarize_and_print("empirical", p_emp, fmt = fmt_e)
   
   cat("\nFinal p-values (unadjusted):\n")
-  summarize_and_print("unadjusted", p_unadj)
+  summarize_and_print("unadjusted", p_unadj, fmt = fmt_e)
   
   if (!is.null(adjust_res)) {
     cat("\nFinal p-values (adjusted, ", adjust_method, "):\n", sep = "")
-    summarize_and_print("adjusted", p_final)
+    summarize_and_print("adjusted", p_final, fmt = fmt_e)
     
     # Rejections at alpha
     if (is.numeric(alpha) && length(alpha) == 1L && is.finite(alpha) &&
         alpha > 0 && alpha < 1 && any(is.finite(p_final))) {
       n_rej <- sum(p_final <= alpha, na.rm = TRUE)
-      cat("  Rejections at alpha = ", fmt(alpha), ": ", n_rej, "\n", sep = "")
+      cat("  Rejections at alpha = ", fmt_fg(alpha), ": ", n_rej, "\n", sep = "")
     }
   }
   
