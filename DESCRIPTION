@@ -1,7 +1,7 @@
 Package: permApprox
 Type: Package
 Title: Permutation p-value approximation
-Version: 1.0.2
+Version: 1.0.2.9000
 Date: 2025-12-19
 Authors@R: c(
     person("Stefanie", "Peschel", email = "stefpeschel@gmail.com",

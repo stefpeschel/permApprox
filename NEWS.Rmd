@@ -2,7 +2,13 @@
 output: github_document
 ---
 
-## permApprox 1.0.2 <img src="man/figures/logo.png" align="right" height="180" />
+## permApprox 1.0.2.9000 <img src="man/figures/logo.png" align="right" height="180" />
+
+### 🐛 Bug-fixes
+
+* The print and summary methods did not print p-values in scientific format.
+
+## permApprox 1.0.2
 
 ### ✨ New features
 
